@@ -871,3 +871,149 @@ class QueueStorage:
 
         return items
 ```
+
+## Bot Initialization and Core Services
+
+### Bot Initialization Sequence
+```python
+import discord
+from discord.ext import commands
+from typing import Optional
+
+class BossBot(commands.Bot):
+    def __init__(self):
+        intents = discord.Intents.default()
+        intents.message_content = True
+
+        super().__init__(
+            command_prefix="$",
+            intents=intents,
+            description="Boss-Bot: A Discord Media Download Assistant"
+        )
+
+        # Initialize services
+        self.queue_manager = QueueManager()
+        self.download_manager = DownloadManager()
+
+    async def setup_hook(self):
+        """Initialize services and load extensions"""
+        # Load command extensions
+        await self.load_extension("boss_bot.cogs.downloads")
+        await self.load_extension("boss_bot.cogs.queue")
+
+    async def on_ready(self):
+        """Called when bot is ready and connected"""
+        print(f'Logged in as {self.user} (ID: {self.user.id})')
+```
+
+### Core Services
+
+1. **Discord Connection Service**
+   - Utilizes discord.py v2.5.2's built-in features:
+     - Automatic reconnection handling
+     - Exponential backoff for reconnection attempts
+     - Shard management (if needed)
+     - Rate limit handling
+
+2. **Download Manager Service**
+   - Leverages existing tools:
+     - gallery-dl: Image/media downloads with built-in retry mechanism
+     - yt-dlp: Video downloads with built-in retry mechanism
+   - Responsibilities:
+     - Platform detection and routing
+     - Download progress tracking
+     - Error handling and reporting
+
+3. **Queue Management Service**
+```python
+from dataclasses import dataclass
+from datetime import datetime
+from enum import Enum
+from typing import Dict, Optional
+import asyncio
+
+class DownloadStatus(Enum):
+    QUEUED = "queued"
+    DOWNLOADING = "downloading"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+@dataclass
+class QueueItem:
+    id: str
+    url: str
+    user_id: int
+    channel_id: int
+    status: DownloadStatus
+    created_at: datetime
+    error: Optional[str] = None
+
+class QueueManager:
+    def __init__(self, max_concurrent: int = 3):
+        self.queue: asyncio.Queue[QueueItem] = asyncio.Queue()
+        self.active_downloads: Dict[str, QueueItem] = {}
+        self.max_concurrent = max_concurrent
+
+    async def add_download(self, item: QueueItem) -> None:
+        await self.queue.put(item)
+
+    async def get_next_download(self) -> Optional[QueueItem]:
+        if len(self.active_downloads) >= self.max_concurrent:
+            return None
+        try:
+            return await self.queue.get_nowait()
+        except asyncio.QueueEmpty:
+            return None
+```
+
+4. **Command System**
+   - Implements discord.py's commands extension
+   - Supports both slash commands and prefix commands
+   - Includes permission handling and rate limiting
+   - Command categories:
+     - Download commands
+     - Queue management
+     - Status and information
+
+### Error Handling Strategy
+```python
+@bot.event
+async def on_error(event: str, *args, **kwargs):
+    """Global error handler for all events"""
+    logger.error(f"Error in {event}", exc_info=True)
+
+@bot.tree.error
+async def on_app_command_error(
+    interaction: discord.Interaction,
+    error: app_commands.AppCommandError
+):
+    """Handle errors in application (slash) commands"""
+    if isinstance(error, app_commands.CommandOnCooldown):
+        await interaction.response.send_message(
+            f"This command is on cooldown. Try again in {error.retry_after:.2f}s",
+            ephemeral=True
+        )
+    else:
+        logger.error("Command error", exc_info=error)
+```
+
+### Supported Platforms and Limitations
+
+1. **Media Sources**
+   - Twitter/X (via gallery-dl)
+   - Instagram (via gallery-dl)
+   - Reddit (via gallery-dl)
+   - YouTube (via yt-dlp)
+   - TikTok (via yt-dlp)
+
+2. **Download Capabilities**
+   - Single media downloads
+   - Playlist/album downloads
+   - Thread/post downloads
+   - Bulk download support
+
+3. **Limitations**
+   - Discord file size limit: 25MB (or 100MB with nitro)
+   - Maximum concurrent downloads: 3
+   - Rate limits per platform
+   - Queue size limit: 50 items

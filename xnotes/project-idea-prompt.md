@@ -1,7 +1,81 @@
-Draft your initial prompt or ideas for a project here. Use this to then kickstart the project with the cursor agent mode when using the agile workflow, documented in docs/agile-readme.md. After the initial prd is drafted, work with the LLM in cursor or with an external LLM to ask questions, have the LLM ask you questions, etc., to really define an adequate prd and story list. Then continue with generating of the architecture document to ensure the project is built in a way that is easy to maintain and scale as you need it to be, along with a clear specification of what technologies and libraries you want to use. This will also help you figure out what rules you might want to initial generate to help you build the project.
+# Discord RAG Bot PRD Generation Prompts
 
-Example:
+## Prompt 1: Initial Project Scope and MVP Features
+```
+Let's follow the @workflow-agile-manual to create a PRD for a Discord RAG bot project. The MVP will focus on implementing a basic RAG system with Redis as the vector store and OpenAI for embeddings and LLM.
 
-Let's build a nextJs 15 web app to track our monthly income and expenses. I want a modern UI created with tailwind css and shadcn components, secure storage in supabase, and a modern API. I also want it to integrate social login via facebook or google. It also needs to be mobile friendly so I can input expenses on the go quickly, and also access all information when I need to. I envision a login page if I am not authenticated already, and once authenticated a main landing page that shows my overall account balance minus expenses prominently along with the 5 most recent income and expense entries. I would like from the page a very quick mobile friendly way to enter a quick expense or income with minimally the amount and a description. All entries should be saved automatically and securely. I should be logged out automatically if not active for more than 5 minutes.
+Key MVP Features:
+- Discord bot integration with discord.py
+- RAG implementation using LangChain and LangGraph
+- Redis vector store integration
+- Basic document ingestion and query commands
+- Modular architecture with clear separation of concerns
 
-{ The more details to drive the initial prd draft the better! BUT, you don't have to think of everything up front, get the draft prd done, and then use the AI to communicate with as a PRD expert, and then an architecture expert to further flesh out the details! Also be open to allowing the AI expert to suggest libraries and technology choices if there is something you are not too particular about. Some apps may be better suited to the one you know best, and this can also help you get exposure and learn new technologies. Consider using deeper web research so you are not constrained to the LLM of choice internal knowledge cut offs, you can enable this through MCP to expand the llm capabilities to use perplexity, tavily, or basic web searches to ensure you will be using the latest and greatest available models and libraries. It is also recommended if doing this in Cursor to select the Sonnet or Deepseek Thinking Agent modes, or use a mcp plugin that supports deeper thought. }
+Future enhancements will include:
+- Media download capabilities (yt-dlp and gallery_dl)
+- Advanced RAG features and optimizations
+- Extended command set through Discord Cogs
+- CLI interface using Typer
+
+Please help me create a detailed PRD that emphasizes clean code principles, modularity (max 120 lines per module), and follows Python best practices. The target audience is a junior developer who needs to understand both the architecture and implementation details.
+```
+
+## Prompt 2: Technical Architecture and Dependencies
+```
+Let's create the technical architecture section of our Discord RAG bot PRD. We need to detail:
+
+1. Core Dependencies:
+   - Python 3.12 with uv package manager
+   - LangChain and LangGraph for RAG
+   - Redis vector store
+   - OpenAI for embeddings and LLM
+   - discord.py for Discord integration
+   - Typer for CLI
+
+2. Architecture Requirements:
+   - Modular design with clear boundaries
+   - Maximum 120 lines per module
+   - DRY and YAGNI principles
+   - Clear separation between:
+     * Discord bot interface
+     * RAG system
+     * Vector store management
+     * Media download utilities
+     * CLI interface
+
+Please help me define the technical architecture that will support both MVP and future features while maintaining clean code principles and scalability.
+```
+
+## Prompt 3: Implementation Strategy and Timeline
+```
+Let's define the implementation strategy and timeline for our Discord RAG bot PRD. We need to break down the development into clear phases:
+
+Phase 1 (MVP):
+- Core RAG system setup
+- Discord bot integration
+- Basic command structure
+- Redis vector store implementation
+
+Phase 2 (Enhanced Features):
+- Media download capabilities
+- Advanced RAG optimizations
+- CLI interface
+- Extended Discord commands
+
+For each phase, we need to:
+1. Define clear acceptance criteria
+2. Establish testing requirements
+3. Set up monitoring and logging
+4. Plan for documentation
+5. Consider scalability and performance metrics
+
+Please help me create a detailed implementation plan that follows our modular architecture (120 lines per module max) and emphasizes maintainable, well-tested code.
+```
+
+## Notes for PRD Generation
+- Each prompt should be used in sequence
+- Iterate on the responses to refine the PRD
+- Ensure all technical requirements are clearly documented
+- Focus on maintainability and scalability
+- Consider junior developer understanding
+- Document all assumptions and constraints

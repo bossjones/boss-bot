@@ -89,24 +89,109 @@ Boss-Bot is a Discord bot designed to enhance server productivity by providing r
 <epic_1_stories>
 ## Epic 1: Story List
 
-- Story 1: Bot Infrastructure Setup
+- Story 1: Project Initialization and Environment Setup
   Status: ''
   Requirements:
   - Initialize Python project with uv
-  - Set up Discord bot with basic command handling
-  - Implement logging system with loguru and better-exceptions
-  - Create test infrastructure with pytest and all testing dependencies
-  - Set up performance monitoring
+  - Create project structure following the defined layout
+  - Set up pyproject.toml with initial dependencies
   - Configure ruff for linting and formatting
-  - Set up tox-uv for test automation
+  - Create initial README.md with setup instructions
+  - Set up pre-commit hooks for code quality
+  Acceptance Criteria:
+  - Project can be cloned and installed with uv
+  - Ruff runs successfully on empty project
+  - README contains clear setup steps
+  Dependencies: None
 
-- Story 2: Download Queue System
+- Story 2: Test Infrastructure Setup
   Status: ''
   Requirements:
-  - Implement download queue manager
-  - Create progress tracking system
-  - Set up temporary file storage
-  - Add queue status commands
+  - Set up pytest with all testing dependencies
+  - Create basic test configuration in conftest.py
+  - Set up coverage reporting with coverage[toml]
+  - Configure tox-uv for test automation
+  - Create test helper utilities and fixtures
+  - Add example tests to validate setup
+  Acceptance Criteria:
+  - All test dependencies installed and configured
+  - Example tests run successfully
+  - Coverage reports generate correctly
+  Dependencies: Story 1
+
+- Story 3: Logging and Monitoring Setup
+  Status: ''
+  Requirements:
+  - Implement logging system with loguru
+  - Configure better-exceptions for error handling
+  - Set up basic performance monitoring
+  - Create logging configuration file
+  - Add log rotation and management
+  Acceptance Criteria:
+  - Logs are properly formatted and stored
+  - Better-exceptions shows detailed error traces
+  - Basic metrics are collected
+  Dependencies: Story 1
+
+- Story 4: Basic Discord Bot Setup
+  Status: ''
+  Requirements:
+  - Create Discord application and bot user
+  - Implement basic bot client with required intents
+  - Set up environment configuration with pydantic-settings
+  - Create connection and basic event handling
+  - Add health check command
+  Acceptance Criteria:
+  - Bot successfully connects to Discord
+  - Basic events (ready, disconnect) are handled
+  - Health check command responds
+  Dependencies: Story 1, Story 3
+
+- Story 5: Command Framework Implementation
+  Status: ''
+  Requirements:
+  - Set up command handling framework using discord.py cogs
+  - Implement basic command error handling
+  - Create help command override
+  - Add command registration system
+  - Create command testing utilities
+  Acceptance Criteria:
+  - Commands can be registered and respond
+  - Error handling works for basic cases
+  - Help command shows available commands
+  - Command tests pass
+  Dependencies: Story 2, Story 4
+
+- Story 6: Event System Implementation
+  Status: ''
+  Requirements:
+  - Implement core event handlers
+  - Add event logging and monitoring
+  - Create event testing framework
+  - Implement reconnection handling
+  - Add event error recovery
+  Acceptance Criteria:
+  - All core events are handled and logged
+  - Event tests pass
+  - Bot recovers from disconnections
+  Dependencies: Story 4, Story 5
+
+- Story 7: Queue System Foundation
+  Status: ''
+  Requirements:
+  - Design queue data structures
+  - Implement basic queue manager
+  - Add queue persistence
+  - Create queue status command
+  - Implement queue tests
+  Acceptance Criteria:
+  - Queue can add and remove items
+  - Queue state persists across restarts
+  - Queue status is queryable
+  - Queue tests pass
+  Dependencies: Story 5, Story 6
+
+Each story includes clear dependencies, making it easier for junior developers to understand the progression. Stories are broken down into smaller, manageable tasks with clear acceptance criteria. 🏗️
 </epic_1_stories>
 
 <tech_stack>

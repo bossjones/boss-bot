@@ -149,7 +149,7 @@ jobs:
           limit-access-to-actor: true
 
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           flags: "${{ runner.os }},${{ runner.arch }},${{ matrix.python-version }}"
           verbose: true

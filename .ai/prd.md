@@ -6,7 +6,7 @@
 
 ## Intro
 
-Boss-Bot is a Discord bot designed to enhance server productivity by providing robust media download capabilities and future RAG (Retrieval-Augmented Generation) features. The initial MVP focuses on reliable media downloading from popular platforms like Twitter and Reddit, with a strong foundation for future AI-powered features. The bot emphasizes test-driven development, clean code practices, and modular design to ensure maintainability and extensibility.
+Boss-Bot is a Discord bot designed to enhance server productivity by providing robust media download capabilities and future RAG (Retrieval-Augmented Generation) features. The initial MVP focuses on reliable media downloads from popular platforms like Twitter and Reddit, with a strong foundation for future AI-powered features. The bot emphasizes test-driven development, clean code practices, and modular design to ensure maintainability and extensibility.
 
 ## Goals
 
@@ -17,6 +17,7 @@ Boss-Bot is a Discord bot designed to enhance server productivity by providing r
 - Provide clear progress tracking and queue management for downloads
 - Maintain clear documentation and type hints for junior developer onboarding
 
+<requirements>
 ## Features and Requirements
 
 ### Functional Requirements
@@ -61,7 +62,9 @@ Boss-Bot is a Discord bot designed to enhance server productivity by providing r
 - Reddit API integration via gallery_dl
 - File system management
 - Future: Vector store integration
+</requirements>
 
+<epic_list>
 ## Epic List
 
 ### Epic-1: Core Bot Infrastructure
@@ -81,7 +84,9 @@ Boss-Bot is a Discord bot designed to enhance server productivity by providing r
 - Redis vector store setup
 - Extended command set
 - CLI interface
+</epic_list>
 
+<epic_1_stories>
 ## Epic 1: Story List
 
 - Story 1: Bot Infrastructure Setup
@@ -102,7 +107,9 @@ Boss-Bot is a Discord bot designed to enhance server productivity by providing r
   - Create progress tracking system
   - Set up temporary file storage
   - Add queue status commands
+</epic_1_stories>
 
+<tech_stack>
 ## Technology Stack
 
 | Technology | Description |
@@ -142,7 +149,9 @@ Boss-Bot is a Discord bot designed to enhance server productivity by providing r
 | OpenAI | Embeddings and LLM via LangChain |
 | Redis | Vector store |
 | Typer | CLI interface |
+</tech_stack>
 
+<project_structure>
 ## Project Structure
 
 ```text
@@ -213,6 +222,7 @@ boss-bot/
 ├── pyproject.toml
 └── README.md
 ```
+</project_structure>
 
 ## Data Models
 
@@ -221,6 +231,7 @@ boss-bot/
 
 ```
 
+<implementation_timeline>
 ## Implementation Strategy and Timeline
 
 Our implementation follows a strict TDD-first approach with two main phases:
@@ -273,7 +284,9 @@ Each task must pass these gates before being considered complete:
 6. All error handling scenarios tested
 7. Clean code principles verified
 8. Type hints and docstrings complete
+</implementation_timeline>
 
+<discord_integration>
 ## Discord Integration and Download System
 
 ### 1. Discord Bot Configuration
@@ -334,7 +347,9 @@ Each task must pass these gates before being considered complete:
 - File system for temporary storage
 - Discord CDN for file uploads
 - Rate limiting systems
+</discord_integration>
 
+<test_strategy>
 ## Test-Driven Development Strategy
 
 ### 1. Core Test Infrastructure
@@ -471,3 +486,4 @@ class TestPerformance:
 - Follow AAA pattern (Arrange-Act-Assert)
 - Document test purposes and scenarios
 - Regular test execution in CI/CD pipeline
+</test_strategy>

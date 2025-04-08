@@ -1,0 +1,81 @@
+---
+description: This rule governs the usage of UV package manager in the project. It should be applied whenever: (1) Installing or managing Python packages, (2) Setting up Python environments, (3) Running Python code or tests, or (4) Modifying dependency files. This rule ensures consistent package management and environment setup across the project.
+globs: pyproject.toml, requirements*.txt, Makefile
+alwaysApply: false
+---
+
+# UV Package Manager Standards
+
+## Critical Rules
+
+- NEVER use `uv pip install` for package installation
+- ALWAYS use `uv add` for individual package installation
+- ALWAYS use `uv sync` for installing from pyproject.toml/lockfile
+- ALWAYS use `--frozen` flag with `uv sync` to ensure reproducible environments
+- Use `uv venv` with explicit Python version for environment creation
+- Use provided make tasks for common UV operations
+- Run Python code and tests using `uv run`
+- Add development dependencies with `uv add --dev`
+- Add production dependencies with `uv add` (without --dev)
+
+## Examples
+
+<example>
+# Valid UV Usage
+
+## Environment Setup
+```bash
+# Create new environment
+uv venv --python 3.12.0
+
+# Install dependencies
+uv sync --frozen
+```
+
+## Package Management
+```bash
+# Add dependencies
+uv add fastapi
+uv add --dev pytest black
+
+# Sync dependencies
+make uv-sync-all
+make uv-sync-dev
+
+# Upgrade specific package
+make uv-upgrade-package package=fastapi
+```
+
+## Running Code
+```bash
+# Run Python scripts
+uv run python script.py
+
+# Run modules
+uv run python -m my_module
+
+# Run tests
+uv run pytest tests/
+```
+</example>
+
+<example type="invalid">
+# Invalid UV Usage
+
+```bash
+# DON'T use pip install
+uv pip install package_name
+
+# DON'T install without lockfile
+uv sync
+
+# DON'T create venv without specific Python version
+uv venv
+
+# DON'T run Python directly without uv run
+python script.py
+
+# DON'T use pip for any package management
+pip install -r requirements.txt
+```
+</example>

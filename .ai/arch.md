@@ -1380,3 +1380,159 @@ async def on_app_command_error(
 └── temp/                       # In-progress downloads
     └── {download_id}/         # Temporary processing
 ```
+
+## Monitoring & Observability
+
+Monitoring and observability are crucial for maintaining the health and performance of the system. These features can be feature-flagged for future implementation.
+
+### Monitoring Metrics Definition
+- **Request Rate**: Number of requests per second
+- **Error Rate**: Percentage of failed requests
+- **Resource Utilization**: CPU, memory, and disk usage
+- **Queue Length**: Number of items in the download queue
+
+### Alerting Thresholds
+- **High Error Rate**: Alert if error rate exceeds 5%
+- **High CPU Usage**: Alert if CPU usage exceeds 80%
+- **Long Queue Length**: Alert if queue length exceeds 50 items
+
+### Logging Levels and Retention
+- **INFO**: General operational information
+- **WARN**: Non-critical issues that require attention
+- **ERROR**: Critical issues that need immediate action
+- **Retention**: Logs retained for 30 days
+
+### Performance Monitoring
+- **Response Time**: Track average and peak response times
+- **Throughput**: Measure data processed per second
+- **Latency**: Monitor delays in processing requests
+
+### Health Check Endpoints
+- **/health**: Basic health check for the application
+- **/metrics**: Expose application metrics for monitoring tools
+
+### Dashboard Requirements
+- **Visualization**: Graphs for request rates, error rates, and resource utilization
+- **Alerts**: Real-time alerts for threshold breaches
+- **Historical Data**: Access to historical performance data
+
+## Documentation Requirements
+
+Current State: Basic structure provided
+
+Needed Additions:
+- [ ] API documentation standards
+- [ ] Logging standards
+- [ ] Contribution guidelines
+- [ ] Development setup guide
+- [ ] Deployment guide
+- [ ] Troubleshooting guide
+
+## GitHub Workflow for Documentation Deployment
+
+```yaml
+name: docs-mkdocs-gh-deploy
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
+      - ".github/workflows/docs.yml"
+      - "Makefile.ci"
+  # Allow manual triggering
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        description: Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)
+        required: false
+        default: "false"
+concurrency:
+  cancel-in-progress: true
+  group: publish-workflow
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    name: Mkdocs ${{ matrix.os }} / Python ${{ matrix.python-version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.12"]
+    runs-on: ${{ matrix.os }}
+    env:
+      GH_PAGER: cat
+      UV_NO_PROMPT: 1
+      UV_PROJECT_ENVIRONMENT: true
+      SKIP: commitizen-branch # Skip commitizen checks for gh-pages
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git Credentials
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+
+      - name: Set shell path
+        id: set-shell
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
+            echo "SHELL_PATH=/opt/homebrew/bin/zsh" >> $GITHUB_ENV
+          else
+            echo "SHELL_PATH=/bin/bash" >> $GITHUB_ENV
+          fi
+          echo "Shell path set to: $SHELL_PATH"
+
+      - name: Install UV
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          version: "0.6.11"
+
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Setup debug tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled == 'true' }}
+        with:
+          limit-access-to-actor: true
+
+      - name: Install additional macos dependencies zsh etc
+        run: |
+          sudo apt-get update
+          sudo apt-get install zsh -y
+
+      - name: Sync dependencies with UV
+        run: uv sync --dev
+
+      - name: Display environment information
+        run: |
+          make -f Makefile.ci env-info
+
+      - name: Install dependencies
+        run: |
+          make -f Makefile.ci ci-install
+
+      - name: build mkdocs documentation site
+        run: |
+          uv run mkdocs build
+
+      - name: Deploy mkdocs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          touch .nojekyll
+          uv run mkdocs gh-deploy --force --message 'docs(mkdocs): update documentation [skip ci]'
+```

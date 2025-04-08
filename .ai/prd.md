@@ -34,6 +34,12 @@ Boss-Bot is a Discord bot designed to enhance server productivity by providing r
 - Type hints for all functions and classes
 - Comprehensive docstrings following Google style
 - Test coverage >90%
+- Adherence to DRY (Don't Repeat Yourself) and YAGNI (You Aren't Gonna Need It) principles
+- Performance testing requirements:
+  * Load testing for concurrent downloads (minimum 10 simultaneous)
+  * Memory usage monitoring (max 500MB under load)
+  * CPU usage monitoring (max 50% under load)
+  * Network bandwidth monitoring and throttling capabilities
 
 ### User Experience Requirements
 - Clear progress indicators for downloads
@@ -74,10 +80,11 @@ Boss-Bot is a Discord bot designed to enhance server productivity by providing r
 - Story 1: Bot Infrastructure Setup
   Status: ''
   Requirements:
-  - Initialize Python project with poetry
+  - Initialize Python project with uv
   - Set up Discord bot with basic command handling
   - Implement logging system
   - Create test infrastructure with pytest and dpytest
+  - Set up performance monitoring
 
 - Story 2: Download Queue System
   Status: ''
@@ -91,16 +98,20 @@ Boss-Bot is a Discord bot designed to enhance server productivity by providing r
 
 | Technology | Description |
 |------------|-------------|
-| Python 3.11+ | Primary development language |
+| Python 3.12 | Primary development language |
+| uv | Package management and dependency resolution |
 | discord.py | Discord bot framework |
 | pytest | Testing framework |
 | dpytest | Discord.py testing utilities |
-| poetry | Dependency management |
+| gallery-dl | Reddit media download utility |
+| yt-dlp | Twitter/video download utility |
 | aiohttp | Async HTTP client |
 | pydantic | Data validation |
+| pydantic-settings | Configuration management |
 | loguru | Logging utility |
 | Future: LangChain | RAG framework |
 | Future: LangGraph | RAG workflow management |
+| Future: OpenAI | Embeddings and LLM via LangChain |
 | Future: Redis | Vector store |
 | Future: Typer | CLI interface |
 

@@ -130,27 +130,47 @@ Please help me define the integration specifications that ensure robust Discord 
 Let's define our TDD strategy for the Discord RAG bot project, following the Red-Green-Refactor cycle:
 
 1. Testing Infrastructure:
-   - pytest as primary testing framework
+   - pytest as primary testing framework with pytest-asyncio
+   - dpytest for Discord.py testing
    - Directory structure:
-     * tests/unit/ - Unit tests for individual components
-     * tests/integration/ - Integration tests for component interactions
-     * tests/fixtures/ - Reusable test data and configurations
-     * tests/conftest.py - Shared pytest fixtures
+     * tests/
+       - conftest.py - Shared pytest fixtures
+       - unit/ - Unit tests for individual components
+       - integration/ - Integration tests
+       - fixtures/ - Test data and configurations
 
 2. Core Testing Areas:
-   a) RAG System Testing:
+   a) Discord Bot Testing (using dpytest):
+      - Mock Discord.py interactions
+      - Test command parsing and responses
+      - Validate message handling
+      - Test permission checks
+      - Fixtures for Discord events
+      Example:
+      ```python
+      @pytest_asyncio.fixture
+      async def bot():
+          intents = discord.Intents.default()
+          intents.members = True
+          intents.message_content = True
+          b = commands.Bot(command_prefix="!", intents=intents)
+          await b._async_setup_hook()
+          dpytest.configure(b)
+          yield b
+          await dpytest.empty_queue()  # Cleanup
+
+      @pytest.mark.asyncio
+      async def test_rag_query(bot):
+          await dpytest.message("!query What is Python?")
+          assert dpytest.verify().message().contains().content("Python is")
+      ```
+
+   b) RAG System Testing:
       - Mock vector store interactions
       - Test document processing pipeline
       - Validate embedding generation
       - Test query/response accuracy
       - Fixtures for sample documents
-
-   b) Discord Bot Testing:
-      - Mock Discord.py interactions
-      - Test command parsing
-      - Validate permission checks
-      - Test response formatting
-      - Fixtures for Discord events
 
    c) Media Download Testing:
       - Mock download operations
@@ -173,14 +193,43 @@ Let's define our TDD strategy for the Discord RAG bot project, following the Red
    - Validate RAG accuracy
    - Mock LLM interactions for fast tests
 
-Please help me establish a robust TDD workflow that ensures code quality and maintainability while following pytest best practices.
+Please help me establish a robust TDD workflow that ensures code quality and maintainability while following pytest and dpytest best practices.
 ```
 
 ## Prompt 7: Test Case Examples and Fixtures
 ```
 Let's define example test cases and fixtures for our core components:
 
-1. RAG System Tests:
+1. Discord Bot Tests (with dpytest):
+```python
+import pytest
+import pytest_asyncio
+import discord.ext.test as dpytest
+from discord.ext import commands
+
+@pytest_asyncio.fixture
+async def bot():
+    intents = discord.Intents.default()
+    intents.members = True
+    intents.message_content = True
+    bot = commands.Bot(command_prefix="!", intents=intents)
+    await bot._async_setup_hook()
+    dpytest.configure(bot)
+    yield bot
+    await dpytest.empty_queue()
+
+@pytest.mark.asyncio
+async def test_document_ingestion(bot):
+    await dpytest.message("!ingest sample.pdf")
+    assert dpytest.verify().message().contains().content("Document ingested")
+
+@pytest.mark.asyncio
+async def test_rag_query(bot):
+    await dpytest.message("!query What is RAG?")
+    assert dpytest.verify().message().contains().content("response")
+```
+
+2. RAG System Tests:
 ```python
 @pytest.fixture
 def sample_documents():
@@ -189,36 +238,30 @@ def sample_documents():
         {"content": "Test document 2", "metadata": {"type": "pdf"}}
     ]
 
-def test_document_ingestion(sample_documents):
-    # Red: Write failing test for document ingestion
-    result = rag_system.ingest_documents(sample_documents)
+@pytest.mark.asyncio
+async def test_document_processing(sample_documents):
+    result = await rag_system.process_documents(sample_documents)
     assert len(result.processed) == 2
     assert result.failed == 0
 
 @pytest.mark.asyncio
 async def test_query_processing():
-    # Red: Write failing test for query processing
     response = await rag_system.process_query("test query")
     assert response.answer is not None
-    assert response.sources >= 1
+    assert len(response.sources) >= 1
 ```
 
-2. Discord Command Tests:
+3. Media Download Tests:
 ```python
 @pytest.fixture
-def mock_discord_message():
-    return {
-        "content": "!query test question",
-        "author": {"id": "123"},
-        "channel": {"id": "456"}
-    }
+def mock_download_url():
+    return "https://example.com/video.mp4"
 
 @pytest.mark.asyncio
-async def test_query_command(mock_discord_message):
-    # Red: Write failing test for Discord command
-    response = await bot.process_command(mock_discord_message)
-    assert response.content is not None
-    assert response.error is None
+async def test_media_download(bot, mock_download_url):
+    await dpytest.message(f"!download {mock_download_url}")
+    assert dpytest.verify().message().contains().content("Download complete")
+    assert dpytest.verify().message().contains().content("File size:")
 ```
 
 Please help me develop comprehensive test cases that cover our core functionality while following TDD principles.
@@ -237,9 +280,12 @@ Please help me develop comprehensive test cases that cover our core functionalit
 - Keep security in mind with proper credentials management via .env and pydantic-settings
 - Follow TDD principles strictly: Red-Green-Refactor
 - Write tests before implementing features
+- Use dpytest for Discord.py testing
 - Use pytest fixtures for reusable test components
 - Implement comprehensive test coverage
 - Mock external dependencies for faster tests
 - Document test cases and their purposes
 - Use parameterized tests for edge cases
 - Include both positive and negative test scenarios
+- Clean up test resources properly using fixtures
+- Use dpytest's message verification for Discord interactions

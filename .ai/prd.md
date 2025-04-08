@@ -8,6 +8,92 @@
 
 Boss-Bot is a Discord bot designed to enhance server productivity by providing robust media download capabilities and future RAG (Retrieval-Augmented Generation) features. The initial MVP focuses on reliable media downloads from popular platforms like Twitter and Reddit, with a strong foundation for future AI-powered features. The bot emphasizes test-driven development, clean code practices, and modular design to ensure maintainability and extensibility.
 
+## Development Environment
+
+### Setup Requirements
+- Python 3.12 or higher
+- UV package manager
+- Git
+
+### Quick Start
+```bash
+# Clone the repository
+git clone https://github.com/bossjones/boss-bot.git
+cd boss-bot
+
+# Install dependencies
+uv sync --dev
+```
+
+### Key Configuration Files
+
+#### 1. Package Management (pyproject.toml)
+```toml
+[project]
+name = "boss-bot"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "discord-py>=2.5.2",
+    "gallery-dl>=1.29.3",
+    "loguru>=0.7.3",
+    "pydantic-settings>=2.8.1",
+    # ... other dependencies
+]
+```
+
+#### 2. Code Quality Tools
+- **Ruff**: Primary linter and formatter
+  ```yaml
+  # .pre-commit-config.yaml
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
+  ```
+
+#### 3. Testing Framework
+- pytest with extensions:
+  - pytest-asyncio for async testing
+  - pytest-recording for HTTP mocking
+  - pytest-cov for coverage reporting
+  - pytest-retry for flaky tests
+
+#### 4. Documentation
+- MkDocs with extensions:
+  ```yaml
+  # mkdocs.yml configuration
+  plugins:
+    - mkdocstrings
+    - coverage
+    - git-revision-date-localized
+    - macros
+  ```
+
+### Development Workflow
+1. Create feature branch
+2. Write tests first (TDD)
+3. Implement feature
+4. Run pre-commit hooks
+5. Submit PR
+
+### CI/CD Pipeline
+GitHub Actions workflow includes:
+- Linting with Ruff
+- Testing with pytest
+- Documentation generation
+- Coverage reporting
+
+### Environment Variables
+Required for development:
+```bash
+DISCORD_TOKEN=required                # Discord bot token
+DISCORD_CLIENT_ID=required           # Discord application client ID
+DISCORD_SERVER_ID=required           # Target Discord server ID
+DISCORD_ADMIN_USER_ID=required       # Admin user ID
+```
+
 ## Goals
 
 - Create a reliable and efficient Discord bot for media downloads with >99% uptime
@@ -16,6 +102,81 @@ Boss-Bot is a Discord bot designed to enhance server productivity by providing r
 - Build a foundation for future RAG capabilities
 - Provide clear progress tracking and queue management for downloads
 - Maintain clear documentation and type hints for junior developer onboarding
+
+## Test-Driven Development Guidelines
+
+### Core Principles
+1. Write failing test first
+2. Keep tests focused and small
+3. Use descriptive test names that explain the behavior
+4. Follow the Arrange-Act-Assert pattern
+5. No implementation without a failing test
+
+### Example Test Patterns
+
+#### Command Testing
+```python
+async def test_download_command_validates_url():
+    """Test that download command properly validates URLs."""
+    # Arrange
+    bot = await create_test_bot()
+    invalid_url = "not-a-url"
+
+    # Act
+    await send_command(bot, f"$dlt {invalid_url}")
+
+    # Assert
+    assert_bot_replied_with(bot, "Invalid URL")
+
+async def test_download_command_handles_valid_url():
+    """Test that download command processes valid URLs."""
+    # Arrange
+    bot = await create_test_bot()
+    valid_url = "https://twitter.com/user/status/123"
+
+    # Act
+    await send_command(bot, f"$dlt {valid_url}")
+
+    # Assert
+    assert_download_started(bot, valid_url)
+```
+
+#### Event Testing
+```python
+async def test_bot_handles_disconnect():
+    """Test that bot properly handles disconnection events."""
+    # Arrange
+    bot = await create_test_bot()
+    await ensure_bot_connected(bot)
+
+    # Act
+    await simulate_disconnect(bot)
+
+    # Assert
+    assert_reconnection_attempted(bot)
+    assert_event_logged(bot, "disconnect")
+```
+
+### Best Practices
+1. **Test Isolation**
+   - Each test should be independent
+   - Clean up resources after each test
+   - Use fresh fixtures for each test
+
+2. **Meaningful Names**
+   - Test names should describe behavior
+   - Use consistent naming patterns
+   - Include success and failure cases
+
+3. **Test Organization**
+   - Group related tests in classes
+   - Use descriptive test class names
+   - Keep test files focused and small
+
+4. **Mocking and Fixtures**
+   - Mock external dependencies
+   - Use fixtures for common setup
+   - Keep mocks simple and focused
 
 <requirements>
 ## Features and Requirements
@@ -234,6 +395,86 @@ class DownloadMetrics(BaseModel):
     active_downloads: int = 0
     success_rate: float = 100.0
 ```
+
+### Prometheus Metrics Structure
+
+The following metrics will be collected and exposed via Prometheus:
+
+```python
+from prometheus_client import Counter, Gauge, Histogram
+
+# Core Download Metrics
+DOWNLOAD_REQUESTS = Counter(
+    'download_requests_total',
+    'Total download requests',
+    ['platform', 'status']  # platform: twitter/reddit, status: success/failed
+)
+
+DOWNLOAD_DURATION = Histogram(
+    'download_duration_seconds',
+    'Time spent downloading',
+    ['platform'],
+    buckets=[1, 5, 10, 30, 60, 120, 300]  # 1s to 5min buckets
+)
+
+QUEUE_SIZE = Gauge(
+    'download_queue_size',
+    'Current size of download queue'
+)
+
+# Performance Metrics
+COMMAND_LATENCY = Histogram(
+    'command_latency_seconds',
+    'Command processing time',
+    ['command'],
+    buckets=[0.1, 0.5, 1, 2, 5]  # 100ms to 5s buckets
+)
+
+DISCORD_API_LATENCY = Gauge(
+    'discord_api_latency_seconds',
+    'Discord API latency'
+)
+
+# Error Metrics
+ERROR_COUNT = Counter(
+    'error_total',
+    'Total errors by type',
+    ['error_type', 'platform']
+)
+
+# Resource Usage Metrics
+MEMORY_USAGE = Gauge(
+    'memory_usage_bytes',
+    'Memory usage in bytes'
+)
+
+CPU_USAGE = Gauge(
+    'cpu_usage_percent',
+    'CPU usage percentage'
+)
+
+# File Management Metrics
+FILE_SIZE = Histogram(
+    'download_file_size_bytes',
+    'Size of downloaded files',
+    ['platform'],
+    buckets=[1024*1024*x for x in [1, 5, 10, 25, 50]]  # 1MB to 50MB buckets
+)
+
+TEMP_FILES = Gauge(
+    'temp_files_count',
+    'Number of files in temporary storage'
+)
+```
+
+These metrics provide comprehensive monitoring of:
+- Download performance and success rates
+- Command response times
+- Resource utilization
+- Error tracking
+- File management statistics
+
+Metrics will be exposed on `/metrics` endpoint for Prometheus scraping.
 
 These models provide a strong foundation for type safety and data validation throughout the application. Each model includes:
 - Comprehensive type hints
@@ -755,36 +996,53 @@ Would you like me to:
   - Health check command responds
   Dependencies: Story 1, Story 3
 
-- Story 5: Command Framework Implementation
+- Story 4a: Discord Connection Setup
   Status: ''
   Requirements:
-  - Set up command handling framework using discord.py cogs
-  - Implement basic command error handling
-  - Create help command override
-  - Add command registration system
+  - Create Discord application and bot user
+  - Implement basic bot client with required intents
+  - Set up environment configuration with pydantic-settings
+  - Implement connection handling and basic event loop
+  - Add health check endpoint
+  Acceptance Criteria:
+  - Bot successfully connects to Discord
+  - Bot responds to health check command
+  - Bot handles connection state changes
+  - Environment variables are properly loaded
+  Dependencies: Story 1, Story 3
+
+- Story 4b: Command Framework Base
+  Status: ''
+  Requirements:
+  - Set up command registration system
+  - Implement basic error handling for commands
+  - Add help command structure
   - Create command testing utilities
+  - Implement command cooldowns and rate limiting
   Acceptance Criteria:
   - Commands can be registered and respond
   - Error handling works for basic cases
   - Help command shows available commands
   - Command tests pass
-  Dependencies: Story 2, Story 4
+  - Rate limiting prevents command spam
+  Dependencies: Story 4a
 
-- Story 6: Event System Implementation
+- Story 4c: Event Handler Implementation
   Status: ''
   Requirements:
-  - Implement core event handlers
-  - Add event logging and monitoring
+  - Add core event handlers (ready, disconnect, etc.)
+  - Implement reconnection logic
+  - Add basic event logging
   - Create event testing framework
-  - Implement reconnection handling
-  - Add event error recovery
+  - Implement error recovery for events
   Acceptance Criteria:
   - All core events are handled and logged
-  - Event tests pass
   - Bot recovers from disconnections
-  Dependencies: Story 4, Story 5
+  - Event tests pass
+  - Error recovery works as expected
+  Dependencies: Story 4b
 
-- Story 7: Queue System Foundation
+- Story 5: Queue System Foundation
   Status: ''
   Requirements:
   - Design queue data structures
@@ -1179,6 +1437,59 @@ class TestPerformance:
 - Follow AAA pattern (Arrange-Act-Assert)
 - Document test purposes and scenarios
 - Regular test execution in CI/CD pipeline
+
+### Test Infrastructure
+
+#### Directory Structure
+```text
+tests/
+├── conftest.py              # Shared test configuration and fixtures
+├── fixtures/               # Test data and mock responses
+│   ├── tweet_data.py      # Twitter API mock responses
+│   ├── reddit_data.py     # Reddit API mock responses
+│   └── discord_data.py    # Discord API mock responses
+├── unit/                  # Unit tests directory
+│   ├── test_bot/         # Bot-specific tests
+│   ├── test_commands/    # Command handler tests
+│   └── test_downloaders/ # Download functionality tests
+├── integration/          # Integration tests
+│   ├── test_discord/    # Discord API integration tests
+│   └── test_gallery_dl/ # Gallery-dl integration tests
+└── eval/                # Future RAG evaluation tests
+```
+
+#### Test Data Management
+```python
+# Example test fixture in tests/fixtures/tweet_data.py
+@pytest.fixture
+def sample_tweet_data():
+    """Sample tweet data for testing."""
+    return {
+        "url": "https://twitter.com/user/status/123",
+        "media": ["video.mp4"],
+        "text": "Sample tweet"
+    }
+
+# Example VCR configuration in conftest.py
+@pytest.fixture(scope="module")
+def vcr_config():
+    """VCR configuration for HTTP interaction recording."""
+    return {
+        "filter_headers": ["authorization"],
+        "filter_post_data_parameters": ["token", "api_key"],
+        "match_on": ["method", "scheme", "host", "port", "path", "query"]
+    }
+```
+
+#### Coverage Requirements (MVP)
+| Component          | Target Coverage |
+|-------------------|-----------------|
+| Core Download     | 30%            |
+| Command Parsing   | 25%            |
+| Discord Events    | 20%            |
+| File Management   | 20%            |
+
+Note: These are minimum targets for MVP. Higher coverage will be required for critical paths.
 </test_strategy>
 
 <technical_implementation>
@@ -1197,32 +1508,85 @@ class BotErrorType(str, Enum):
     DISCORD_ERROR = "discord_error"
 ```
 
-#### Error Handling Strategy
-1. **User-Facing Errors (MVP)**:
-   - Clear, actionable error messages
-   - Basic retry instructions when applicable
-   - Error tracking for debugging
+### Logging Configuration
+
+The application uses Loguru for structured logging with the following configuration:
 
 ```python
-ERROR_MESSAGES = {
-    BotErrorType.DOWNLOAD_FAILED: "Download failed. {detail}",
-    BotErrorType.INVALID_URL: "Invalid URL. Please provide a valid Twitter or Reddit URL.",
-    BotErrorType.QUEUE_FULL: "Queue is full. Please try again in a few minutes.",
-    BotErrorType.FILE_TOO_LARGE: "File exceeds Discord's 50MB limit.",
-    BotErrorType.DISCORD_ERROR: "Discord API error. Please try again."
-}
+import sys
+from loguru import logger
+
+# Remove default handler
+logger.remove()
+
+# Configure Loguru
+logger.configure(
+    handlers=[
+        {
+            "sink": sys.stdout,
+            "format": "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
+            "level": "INFO",
+            "colorize": True,
+            "backtrace": True,
+            "diagnose": True,
+            "enqueue": True,
+        }
+    ]
+)
+
+# Add better exception handling
+logger.add(
+    sys.stderr,
+    format="{time} | {level} | {message}",
+    filter=lambda record: record["level"].name == "ERROR",
+    level="ERROR",
+    backtrace=True,
+    diagnose=True,
+)
+
+# Example logging usage
+logger.info("Bot starting up...")
+logger.debug("Processing download request: {url}", url="https://example.com")
+logger.warning("Rate limit approaching: {limit}", limit=10)
+logger.error("Download failed: {error}", error="Network timeout")
 ```
 
-2. **Error Logging (MVP)**:
-   - Log level: ERROR for system errors
-   - Log level: WARNING for user errors
-   - Basic error context (command, user, guild)
+#### Log Levels
+- DEBUG: Detailed information for debugging
+- INFO: General operational events
+- WARNING: Unexpected but handled situations
+- ERROR: Errors that need attention
+- CRITICAL: System-level failures
 
-Nice to Have (Post-MVP):
-- Error analytics and trending
-- Automatic error reporting
-- Advanced retry strategies
-- Custom error handling per guild
+#### Logging Guidelines
+1. Use structured logging with context:
+   ```python
+   logger.info("Download started", url=url, user_id=user_id)
+   ```
+
+2. Include relevant context in errors:
+   ```python
+   try:
+       await download_file(url)
+   except Exception as e:
+       logger.exception(f"Download failed: {str(e)}", url=url)
+   ```
+
+3. Use appropriate log levels:
+   - DEBUG: Detailed flow information
+   - INFO: Normal operations
+   - WARNING: Potential issues
+   - ERROR: Operation failures
+   - CRITICAL: System failures
+
+4. Log sensitive information appropriately:
+   ```python
+   logger.info(
+       "Processing user request",
+       user_id=user.id,  # OK to log
+       # Never log tokens or passwords
+   )
+   ```
 
 ### Performance Metrics (MVP)
 

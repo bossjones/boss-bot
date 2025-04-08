@@ -25,21 +25,37 @@ Please help me create a detailed PRD that emphasizes TDD principles, clean code 
 Let's create the technical architecture section of our Discord bot PRD. We need to detail:
 
 1. Core Dependencies:
-   - Python 3.12 with uv package manager
-   - discord.py for Discord integration
-   - pytest and dpytest for testing
-   - gallery-dl for Reddit downloads
-   - yt-dlp for Twitter/video downloads
-   - loguru for logging
-   - pydantic-settings for configuration
-   - aiohttp for async HTTP operations
-   - tempfile and pathlib for file management
+   - Python 3.12 | Primary development language
+   - uv | Package management and dependency resolution
+   - discord.py | Discord bot framework
+   - pytest | Testing framework with powerful fixture support and assertion introspection
+   - dpytest | Discord.py testing utilities
+   - gallery-dl | Reddit, instagram, twitter, other social media media download utility
+   - yt-dlp | youtube/video download utility
+   - httpx | Fully featured HTTP client for Python 3, with sync and async APIs, and HTTP/1.1 and HTTP/2 support
+   - pydantic | Data validation
+   - pydantic-settings | Configuration management
+   - loguru | Logging utility
+   - aiofiles | Asynchronous file I/O operations using asyncio
+   - better-exceptions | Enhanced exception handling with more informative error messages
 
-2. Future Dependencies (Post-MVP):
-   - LangChain and LangGraph for RAG
-   - Redis vector store
-   - OpenAI for embeddings and LLM
-   - Typer for CLI
+2. Testing Dependencies:
+   - pytest-mock | Thin-wrapper around the unittest.mock package for easier mock creation
+   - respx | Modern, elegant HTTP mocking for Python tests
+   - pytest-recording | Record and replay test interactions for reliable testing (especially for LLM responses)
+   - pytest-retry | Retry flaky tests to improve reliability
+   - pytest-skip-slow | Skip slow tests for faster development cycles
+   - pytest-ignore-flaky | Manage and track flaky tests separately
+   - tox-uv | Tox plugin for UV package manager integration
+   - ruff | Fast Python linter and code formatter written in Rust
+   - coverage[toml] | Code coverage measurement with TOML configuration support
+
+3. Future Dependencies (Post-MVP):
+   - LangChain | RAG framework
+   - LangGraph | RAG workflow management
+   - OpenAI | Embeddings and LLM via LangChain
+   - Redis | Vector store
+   - Typer | CLI interface
 
 3. Architecture Requirements:
    - TDD-first development approach

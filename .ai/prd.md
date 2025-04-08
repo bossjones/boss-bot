@@ -33,8 +33,20 @@ Boss-Bot is a Discord bot designed to enhance server productivity by providing r
 - Maximum module size of 120 lines
 - Type hints for all functions and classes
 - Comprehensive docstrings following Google style
-- Test coverage >90%
+- Test coverage >90% (measured with coverage[toml])
 - Adherence to DRY (Don't Repeat Yourself) and YAGNI (You Aren't Gonna Need It) principles
+- Performance testing requirements:
+  * Load testing for concurrent downloads (minimum 10 simultaneous)
+  * Memory usage monitoring (max 500MB under load)
+  * CPU usage monitoring (max 50% under load)
+  * Network bandwidth monitoring and throttling capabilities
+- Code quality requirements:
+  * All code must pass ruff linting and formatting
+  * Zero tolerance for unhandled exceptions
+  * Comprehensive error handling with better-exceptions
+  * All HTTP interactions must be tested with respx mocking
+  * Flaky tests must be identified and managed with pytest-ignore-flaky
+  * Critical tests must use pytest-retry for reliability
 
 ### User Experience Requirements
 - Clear progress indicators for downloads
@@ -77,9 +89,11 @@ Boss-Bot is a Discord bot designed to enhance server productivity by providing r
   Requirements:
   - Initialize Python project with uv
   - Set up Discord bot with basic command handling
-  - Implement logging system
-  - Create test infrastructure with pytest and dpytest
+  - Implement logging system with loguru and better-exceptions
+  - Create test infrastructure with pytest and all testing dependencies
   - Set up performance monitoring
+  - Configure ruff for linting and formatting
+  - Set up tox-uv for test automation
 
 - Story 2: Download Queue System
   Status: ''
@@ -96,19 +110,38 @@ Boss-Bot is a Discord bot designed to enhance server productivity by providing r
 | Python 3.12 | Primary development language |
 | uv | Package management and dependency resolution |
 | discord.py | Discord bot framework |
-| pytest | Testing framework |
+| pytest | Testing framework with powerful fixture support and assertion introspection |
 | dpytest | Discord.py testing utilities |
 | gallery-dl | Reddit, instagram, twitter, other social media media download utility |
 | yt-dlp | youtube/video download utility |
-| httpx | fully featured HTTP client for Python 3, which provides sync and async APIs, and support for both HTTP/1.1 and HTTP/2. |
+| httpx | Fully featured HTTP client for Python 3, with sync and async APIs, and HTTP/1.1 and HTTP/2 support |
 | pydantic | Data validation |
 | pydantic-settings | Configuration management |
 | loguru | Logging utility |
-| Future: LangChain | RAG framework |
-| Future: LangGraph | RAG workflow management |
-| Future: OpenAI | Embeddings and LLM via LangChain |
-| Future: Redis | Vector store |
-| Future: Typer | CLI interface |
+| aiofiles | Asynchronous file I/O operations using asyncio |
+| better-exceptions | Enhanced exception handling with more informative error messages |
+
+### Testing Dependencies
+| Technology | Description |
+|------------|-------------|
+| pytest-mock | Thin-wrapper around the unittest.mock package for easier mock creation |
+| respx | Modern, elegant HTTP mocking for Python tests |
+| pytest-recording | Record and replay test interactions for reliable testing |
+| pytest-retry | Retry flaky tests to improve reliability |
+| pytest-skip-slow | Skip slow tests for faster development cycles |
+| pytest-ignore-flaky | Manage and track flaky tests separately |
+| tox-uv | Tox plugin for UV package manager integration |
+| ruff | Fast Python linter and code formatter written in Rust |
+| coverage[toml] | Code coverage measurement with TOML configuration support |
+
+### Future Dependencies
+| Technology | Description |
+|------------|-------------|
+| LangChain | RAG framework |
+| LangGraph | RAG workflow management |
+| OpenAI | Embeddings and LLM via LangChain |
+| Redis | Vector store |
+| Typer | CLI interface |
 
 ## Project Structure
 

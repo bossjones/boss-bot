@@ -762,26 +762,35 @@ class ErrorHandler(commands.Cog):
 
 ### Git Workflow
 ```bash
-# Branch Naming
-feature/   # New features
-bugfix/    # Bug fixes
-hotfix/    # Critical fixes for production
+# Branching Strategy
+- Main branch: `main` (protected, represents production-ready code)
+- Development branches: Use feature branches based off `main`.
+- Branch Naming Conventions:
+  - `feature/<short-description>`: For new features
+  - `bugfix/<short-description>`: For bug fixes
+  - `hotfix/<short-description>`: For critical production fixes (branch off `main` or release tags)
+  - `chore/<short-description>`: For maintenance tasks
 
-# Commit Messages
-<type>(<scope>): <description>
-
-Types:
-- feat: New feature
-- fix: Bug fix
-- docs: Documentation changes
-- style: Code style changes
-- refactor: Code refactoring
-- test: Adding tests
-- chore: Maintenance tasks
-
-Example:
-feat(download): add Twitter video support
+# Commit Messages (Conventional Commits)
+- Use commitizen for structured commit messages: `<type>(<scope>): <description>`
+- Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
+- Example: `feat(download): add Twitter video support`
 ```
+
+### Versioning Scheme
+- Semantic Versioning (SemVer) 2.0.0 is used.
+- Version numbers are managed automatically using `commitizen` based on conventional commit messages.
+
+### Release Process
+- Releases are automated via GitHub Actions (see `.github/workflows/release.yml`).
+- `commitizen` bumps the version number and generates the changelog based on commits since the last tag.
+- GitHub CLI (`gh`) is used to create GitHub releases.
+- New versions are tagged in Git (e.g., `v1.2.3`).
+
+### Feature Flag Strategy
+- Feature flags are managed using environment variables.
+- The `pydantic-settings` library is used to load and validate these environment variables, allowing features to be toggled on or off without code changes.
+- Example: An environment variable like `BOSS_BOT_ENABLE_EXPERIMENTAL_DOWNLOADER=true` could enable a new feature.
 
 ## File Management
 

@@ -1425,6 +1425,17 @@ Monitoring and observability are crucial for maintaining the health and performa
 - **Alerts**: Real-time alerts for threshold breaches
 - **Historical Data**: Access to historical performance data
 
+## Performance & Scaling (Future Considerations)
+
+Current State: Basic queue management defined. Performance and scaling are considered nice-to-have features for future iterations.
+
+Needed Additions:
+- [ ] Define performance benchmarks for key operations (e.g., download speed, queue processing time).
+- [ ] Establish scaling thresholds based on metrics like queue length, resource utilization, or request rate.
+- [ ] Set clear resource utilization limits (CPU, memory, network) for the bot process.
+- [ ] Design and implement a caching strategy for frequently accessed data or downloaded content (potentially using Redis or local cache).
+- [ ] Develop guidelines for optimizing queue processing, potentially including priority adjustments, worker scaling, or task distribution.
+
 ## Documentation Requirements
 
 Current State: Basic structure provided

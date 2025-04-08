@@ -35,11 +35,6 @@ Boss-Bot is a Discord bot designed to enhance server productivity by providing r
 - Comprehensive docstrings following Google style
 - Test coverage >90%
 - Adherence to DRY (Don't Repeat Yourself) and YAGNI (You Aren't Gonna Need It) principles
-- Performance testing requirements:
-  * Load testing for concurrent downloads (minimum 10 simultaneous)
-  * Memory usage monitoring (max 500MB under load)
-  * CPU usage monitoring (max 50% under load)
-  * Network bandwidth monitoring and throttling capabilities
 
 ### User Experience Requirements
 - Clear progress indicators for downloads
@@ -50,8 +45,8 @@ Boss-Bot is a Discord bot designed to enhance server productivity by providing r
 
 ### Integration Requirements
 - Discord API integration
-- Twitter API integration
-- Reddit API integration
+- Twitter API integration via gallery_dl
+- Reddit API integration via gallery_dl
 - File system management
 - Future: Vector store integration
 
@@ -103,9 +98,9 @@ Boss-Bot is a Discord bot designed to enhance server productivity by providing r
 | discord.py | Discord bot framework |
 | pytest | Testing framework |
 | dpytest | Discord.py testing utilities |
-| gallery-dl | Reddit media download utility |
-| yt-dlp | Twitter/video download utility |
-| aiohttp | Async HTTP client |
+| gallery-dl | Reddit, instagram, twitter, other social media media download utility |
+| yt-dlp | youtube/video download utility |
+| httpx | fully featured HTTP client for Python 3, which provides sync and async APIs, and support for both HTTP/1.1 and HTTP/2. |
 | pydantic | Data validation |
 | pydantic-settings | Configuration management |
 | loguru | Logging utility |

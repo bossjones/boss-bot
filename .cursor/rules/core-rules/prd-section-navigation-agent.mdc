@@ -1,0 +1,159 @@
+---
+description: This rule governs how to efficiently navigate and extract sections from the PRD document. It should be applied whenever: (1) Searching for specific sections in the PRD, (2) Reading or updating PRD content, (3) Analyzing PRD sections for completeness, or (4) Referencing PRD content during development. The rule ensures efficient access to PRD information while minimizing unnecessary file reads.
+globs: .ai/prd.md
+alwaysApply: false
+---
+
+# PRD Section Navigation Rules
+
+## Critical Rules
+
+- Use grep search with XML-style tags to locate section boundaries
+- Extract line numbers for section start/end before reading file content
+- Only read the specific lines needed for the section being referenced
+- Cache frequently accessed sections to minimize file reads
+- Use the standardized section tag format: <section_name>content</section_name>
+
+## PRD Section Map
+```python
+PRD_SECTIONS = {
+    # Core Document Sections
+    "version": "<version>",
+    "requirements": "<requirements>",
+    "data_models": "<data_models>",
+    "file_management": "<file_management>",
+    "user_experience": "<user_experience>",
+    "epic_list": "<epic_list>",
+    "epic_1_stories": "<epic_1_stories>",
+    "tech_stack": "<tech_stack>",
+    "project_structure": "<project_structure>",
+    "implementation_timeline": "<implementation_timeline>",
+    "discord_integration": "<discord_integration>",
+    "test_strategy": "<test_strategy>",
+    "technical_implementation": "<technical_implementation>",
+
+    # Project Overview Tags
+    "context": "<context>",
+    "stakeholders": "<stakeholders>",
+    "metrics": "<metrics>",
+    "constraints": "<constraints>",
+    "assumptions": "<assumptions>",
+    "risks": "<risks>",
+    "dependencies": "<dependencies>",
+
+    # Technical Decision Tags
+    "tech_decisions": "<tech_decisions>",
+    "decision": "<decision>",
+    "rationale": "<rationale>",
+
+    # Project Planning Tags
+    "acceptance_criteria": "<acceptance_criteria>",
+    "future_considerations": "<future_considerations>",
+    "technical_debt": "<technical_debt>"
+}
+```
+
+## Navigation Patterns
+
+### Finding Section Boundaries
+```python
+# Grep pattern for finding section start
+f"\\<{section_name}\\>"
+
+# Grep pattern for finding section end
+f"\\</{section_name}\\>"
+
+# For nested tags (e.g., decision within tech_decisions)
+f"\\<{parent_section}\\>[\\s\\S]*\\<{child_section}\\>"
+```
+
+### Reading Section Content
+1. First find section boundaries:
+   ```bash
+   grep -n "<section_name>" .ai/prd.md  # Get start line
+   grep -n "</section_name>" .ai/prd.md  # Get end line
+   ```
+2. Then read only those lines:
+   ```python
+   read_file(
+       target_file=".ai/prd.md",
+       start_line_one_indexed=section_start,
+       end_line_one_indexed_inclusive=section_end
+   )
+   ```
+
+## Examples
+
+<example>
+# Finding and reading a nested decision section
+1. Locate section:
+   grep -n "<tech_decisions>" .ai/prd.md
+   grep -n "<decision>" .ai/prd.md
+   grep -n "</decision>" .ai/prd.md
+   grep -n "</tech_decisions>" .ai/prd.md
+
+2. Read content:
+   read_file(
+       target_file=".ai/prd.md",
+       start_line_one_indexed=decision_start,
+       end_line_one_indexed_inclusive=decision_end
+   )
+</example>
+
+<example type="invalid">
+# Reading entire file unnecessarily
+read_file(
+    target_file=".ai/prd.md",
+    should_read_entire_file=true
+)
+
+# Not using section tags for navigation
+grep -r "requirements" .ai/prd.md
+</example>
+
+## Section Tag Reference
+
+| Category | Section | Start Tag | End Tag |
+|----------|---------|-----------|----------|
+| **Core Document** |
+| | Requirements | <requirements> | </requirements> |
+| | Data Models | <data_models> | </data_models> |
+| | File Management | <file_management> | </file_management> |
+| | User Experience | <user_experience> | </user_experience> |
+| | Epic List | <epic_list> | </epic_list> |
+| | Epic 1 Stories | <epic_1_stories> | </epic_1_stories> |
+| | Tech Stack | <tech_stack> | </tech_stack> |
+| | Project Structure | <project_structure> | </project_structure> |
+| | Implementation Timeline | <implementation_timeline> | </implementation_timeline> |
+| | Discord Integration | <discord_integration> | </discord_integration> |
+| | Test Strategy | <test_strategy> | </test_strategy> |
+| | Technical Implementation | <technical_implementation> | </technical_implementation> |
+| **Project Overview** |
+| | Context | <context> | </context> |
+| | Stakeholders | <stakeholders> | </stakeholders> |
+| | Metrics | <metrics> | </metrics> |
+| | Constraints | <constraints> | </constraints> |
+| | Assumptions | <assumptions> | </assumptions> |
+| | Risks | <risks> | </risks> |
+| | Dependencies | <dependencies> | </dependencies> |
+| **Technical Decisions** |
+| | Tech Decisions | <tech_decisions> | </tech_decisions> |
+| | Decision | <decision> | </decision> |
+| | Rationale | <rationale> | </rationale> |
+| **Project Planning** |
+| | Acceptance Criteria | <acceptance_criteria> | </acceptance_criteria> |
+| | Future Considerations | <future_considerations> | </future_considerations> |
+| | Technical Debt | <technical_debt> | </technical_debt> |
+
+## Best Practices
+
+1. Always use XML-style tags for section boundaries
+2. Cache frequently accessed section line numbers
+3. Read only the lines needed for the current task
+4. Use grep with exact tag matches to avoid false positives
+5. Validate section existence before attempting to read
+6. Keep track of section dependencies for related content
+7. Handle nested tags appropriately (e.g., decisions within tech_decisions)
+8. Use category-based navigation for related sections
+9. Consider tag hierarchy when extracting nested content
+10. Cache commonly accessed sections for better performance

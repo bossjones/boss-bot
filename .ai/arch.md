@@ -320,11 +320,26 @@ COVERAGE_TARGETS = {
 ```
 
 ### Test Infrastructure
+
+The testing infrastructure is built on pytest with async support and specialized Discord testing utilities:
+
 ```python
-# conftest.py example
+# conftest.py
 import pytest
 import discord.ext.test as dpytest
 from discord.ext import commands
+from pathlib import Path
+
+def pytest_configure(config):
+    """Configure pytest with custom markers."""
+    config.addinivalue_line(
+        "markers",
+        "integration: mark test as integration test"
+    )
+    config.addinivalue_line(
+        "markers",
+        "slow: mark test as slow running"
+    )
 
 @pytest.fixture
 async def bot():
@@ -338,49 +353,257 @@ async def bot():
     await dpytest.empty_queue()
 
 @pytest.fixture
-def mock_download():
-    """Mock download functionality."""
-    with patch("boss_bot.downloaders.base.Downloader") as mock:
-        yield mock
+def mock_gallery_dl(mocker):
+    """Mock gallery-dl functionality using pytest-mock."""
+    return mocker.patch("gallery_dl.download")
+
+@pytest.fixture
+def mock_yt_dlp(mocker):
+    """Mock yt-dlp functionality using pytest-mock."""
+    return mocker.patch("yt_dlp.YoutubeDL")
+
+@pytest.fixture
+def sample_download_data():
+    """Provide sample download data for tests."""
+    return {
+        "twitter_url": "https://twitter.com/user/status/123",
+        "reddit_url": "https://reddit.com/r/sub/comments/123",
+        "expected_output": "video.mp4"
+    }
+
+@pytest.fixture
+def download_dir(tmpdir):
+    """Create a temporary download directory."""
+    downloads = tmpdir.mkdir("downloads")
+    return Path(str(downloads))
+
+@pytest.fixture
+def mock_discord_message(mocker):
+    """Create a mock Discord message."""
+    message = mocker.MagicMock()
+    message.author.id = 123456789
+    message.guild.id = 987654321
+    message.channel.id = 456789123
+    return message
+
+@pytest.fixture
+def mock_download_manager(mocker, download_dir):
+    """Create a mock download manager."""
+    manager = mocker.MagicMock()
+    manager.download_dir = download_dir
+    return manager
 ```
 
-### Integration Test Examples
+### Integration Test Strategy
+
+Integration tests focus on key user flows and system interactions:
+
 ```python
 @pytest.mark.asyncio
-class TestDownloadCommand:
-    async def test_download_flow(self, bot, mock_download):
-        """Test complete download flow."""
+class TestDownloadFlow:
+    """Test complete download flows."""
+
+    @pytest.mark.integration
+    async def test_twitter_download_flow(
+        self,
+        bot,
+        mock_gallery_dl,
+        sample_download_data,
+        download_dir,
+        mock_discord_message
+    ):
+        """Test complete Twitter download flow."""
         # Arrange
-        url = "https://twitter.com/user/status/123"
-        mock_download.download.return_value = "video.mp4"
+        url = sample_download_data["twitter_url"]
+        output_file = download_dir / sample_download_data["expected_output"]
+        mock_gallery_dl.return_value = str(output_file)
 
         # Act
         await dpytest.message(f"$dlt {url}")
 
         # Assert
         assert dpytest.verify().message().contains("Download started")
-        mock_download.download.assert_called_once_with(url)
+        mock_gallery_dl.assert_called_once_with(
+            url,
+            mocker.ANY  # Config dict
+        )
         assert dpytest.verify().message().contains("Download complete")
 
-    async def test_invalid_url(self, bot):
-        """Test error handling for invalid URLs."""
-        # Act
-        await dpytest.message("$dlt not_a_url")
-
-        # Assert
-        assert dpytest.verify().message().contains("Invalid URL")
-
-    async def test_queue_management(self, bot, mock_download):
+    @pytest.mark.integration
+    async def test_queue_management(
+        self,
+        bot,
+        mock_gallery_dl,
+        download_dir,
+        mock_discord_message
+    ):
         """Test queue handling with multiple downloads."""
         # Arrange
         urls = [f"https://twitter.com/user/status/{i}" for i in range(3)]
+        mock_gallery_dl.side_effect = [
+            str(download_dir / f"video_{i}.mp4") for i in range(3)
+        ]
+
+        # Act & Assert
+        for i, url in enumerate(urls, 1):
+            await dpytest.message(f"$dlt {url}")
+            assert dpytest.verify().message().contains(f"Position in queue: {i}")
+
+    @pytest.mark.integration
+    async def test_error_handling(
+        self,
+        bot,
+        mock_gallery_dl,
+        mock_discord_message
+    ):
+        """Test error handling in download flow."""
+        # Arrange
+        mock_gallery_dl.side_effect = Exception("Download failed")
 
         # Act
-        for url in urls:
-            await dpytest.message(f"$dlt {url}")
+        await dpytest.message("$dlt https://twitter.com/user/status/123")
 
         # Assert
-        assert dpytest.verify().message().contains("Position in queue: 3")
+        assert dpytest.verify().message().contains("Error occurred")
+
+    def test_download_retry(
+        self,
+        mocker,
+        mock_download_manager,
+        download_dir
+    ):
+        """Test download retry mechanism."""
+        # Arrange
+        url = "https://twitter.com/user/status/123"
+        mock_download_manager.download.side_effect = [
+            Exception("First attempt failed"),
+            Exception("Second attempt failed"),
+            str(download_dir / "success.mp4")
+        ]
+
+        # Act
+        result = mock_download_manager.download_with_retry(url)
+
+        # Assert
+        assert mock_download_manager.download.call_count == 3
+        assert str(result).endswith("success.mp4")
+```
+
+### External Service Mocking
+
+Guidelines for mocking external services using pytest-mock:
+
+1. **Gallery-dl Mocking**
+```python
+def test_gallery_dl_download(mocker, download_dir):
+    """Example of gallery-dl mocking."""
+    # Arrange
+    mock_gallery_dl = mocker.patch("gallery_dl.download")
+    mock_gallery_dl.return_value = {
+        "filename": str(download_dir / "video.mp4"),
+        "filesize": 1024,
+        "url": "https://example.com/video.mp4"
+    }
+
+    # Act & Assert
+    result = mock_gallery_dl("https://twitter.com/user/status/123")
+    assert Path(result["filename"]).parent == download_dir
+```
+
+2. **YT-DLP Mocking**
+```python
+def test_yt_dlp_download(mocker, download_dir):
+    """Example of yt-dlp mocking."""
+    # Arrange
+    mock_yt_dlp = mocker.patch("yt_dlp.YoutubeDL")
+    mock_instance = mocker.MagicMock()
+    mock_instance.extract_info.return_value = {
+        "title": "Test Video",
+        "duration": 60,
+        "url": str(download_dir / "video.mp4")
+    }
+    mock_yt_dlp.return_value = mock_instance
+
+    # Act & Assert
+    with mock_yt_dlp() as ydl:
+        result = ydl.extract_info("https://youtube.com/watch?v=123")
+        assert Path(result["url"]).parent == download_dir
+```
+
+### Test Data Management
+
+1. **Test Data Storage**
+```python
+@pytest.fixture
+def test_data_dir(tmpdir):
+    """Set up test data directory structure."""
+    base_dir = Path(str(tmpdir))
+
+    # Create directory structure
+    samples = base_dir / "samples"
+    samples.mkdir()
+    for platform in ["twitter", "reddit", "youtube"]:
+        (samples / platform).mkdir()
+
+    # Create mock responses directory
+    responses = base_dir / "responses"
+    responses.mkdir()
+
+    return base_dir
+
+@pytest.fixture
+def cleanup_downloads():
+    """Clean up downloads after tests."""
+    yield
+    # Cleanup happens automatically with tmpdir
+```
+
+### CI Integration
+
+GitHub Actions workflow for automated testing:
+
+```yaml
+name: Test Suite
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12"]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install uv
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+
+    - name: Install dependencies
+      run: |
+        uv pip install -r requirements.txt
+        uv pip install -r requirements-dev.txt
+
+    - name: Run tests
+      run: |
+        pytest tests/ --cov=boss_bot --cov-report=xml
+
+    - name: Upload coverage
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage.xml
+        fail_ci_if_error: true
 ```
 
 ## Error Handling and Logging

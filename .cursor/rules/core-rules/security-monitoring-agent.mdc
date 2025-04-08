@@ -1,0 +1,50 @@
+---
+description: This rule governs security and monitoring standards. It should be applied whenever: (1) Implementing security measures, (2) Setting up monitoring, (3) Handling rate limits, or (4) Implementing error handling. This rule ensures consistent security practices and monitoring approaches.
+globs:
+alwaysApply: false
+---
+
+# Security and Monitoring Standards
+
+## Critical Rules
+
+- All error messages must be shown in Discord embeds with formatted stack traces
+- Security measures for file downloads are handled by gallery-dl and yt-dlp
+- Rate limiting and API quotas are handled by discord.py
+- No additional health checks required beyond Discord connection status
+- No custom alerting thresholds needed
+- Error handling should use better-exceptions for improved stack traces
+- All errors must be logged using loguru with appropriate context
+
+## Examples
+
+<example>
+# Good Error Handling
+```python
+from loguru import logger
+import better_exceptions
+from discord.ext import commands
+
+better_exceptions.hook()
+
+async def handle_error(ctx, error):
+    # Log the error with context
+    logger.error(f"Error in {ctx.command}: {str(error)}")
+
+    # Create formatted error embed
+    embed = discord.Embed(
+        title="Error Occurred",
+        description=f"```python\n{better_exceptions.format_exception(error)}\n```",
+        color=discord.Color.red()
+    )
+    await ctx.send(embed=embed)
+```
+</example>
+
+<example type="invalid">
+# Invalid Practices
+- Implementing custom rate limiting
+- Setting up external monitoring systems
+- Creating health check endpoints
+- Using plain text for error messages
+</example>

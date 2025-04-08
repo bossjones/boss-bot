@@ -125,6 +125,105 @@ Let's specify the Discord integration and media handling requirements:
 Please help me define the integration specifications that ensure robust Discord functionality and efficient media handling.
 ```
 
+## Prompt 6: Test-Driven Development Strategy
+```
+Let's define our TDD strategy for the Discord RAG bot project, following the Red-Green-Refactor cycle:
+
+1. Testing Infrastructure:
+   - pytest as primary testing framework
+   - Directory structure:
+     * tests/unit/ - Unit tests for individual components
+     * tests/integration/ - Integration tests for component interactions
+     * tests/fixtures/ - Reusable test data and configurations
+     * tests/conftest.py - Shared pytest fixtures
+
+2. Core Testing Areas:
+   a) RAG System Testing:
+      - Mock vector store interactions
+      - Test document processing pipeline
+      - Validate embedding generation
+      - Test query/response accuracy
+      - Fixtures for sample documents
+
+   b) Discord Bot Testing:
+      - Mock Discord.py interactions
+      - Test command parsing
+      - Validate permission checks
+      - Test response formatting
+      - Fixtures for Discord events
+
+   c) Media Download Testing:
+      - Mock download operations
+      - Test file size validation
+      - Validate temporary storage
+      - Test cleanup operations
+      - Fixtures for media URLs
+
+3. TDD Implementation Flow:
+   - Write failing test first
+   - Implement minimal code to pass
+   - Refactor while maintaining test coverage
+   - Document test cases and fixtures
+   - Use parameterized tests for edge cases
+
+4. LLM-Specific Testing:
+   - Create curated test datasets
+   - Define evaluation metrics
+   - Test response consistency
+   - Validate RAG accuracy
+   - Mock LLM interactions for fast tests
+
+Please help me establish a robust TDD workflow that ensures code quality and maintainability while following pytest best practices.
+```
+
+## Prompt 7: Test Case Examples and Fixtures
+```
+Let's define example test cases and fixtures for our core components:
+
+1. RAG System Tests:
+```python
+@pytest.fixture
+def sample_documents():
+    return [
+        {"content": "Test document 1", "metadata": {"type": "text"}},
+        {"content": "Test document 2", "metadata": {"type": "pdf"}}
+    ]
+
+def test_document_ingestion(sample_documents):
+    # Red: Write failing test for document ingestion
+    result = rag_system.ingest_documents(sample_documents)
+    assert len(result.processed) == 2
+    assert result.failed == 0
+
+@pytest.mark.asyncio
+async def test_query_processing():
+    # Red: Write failing test for query processing
+    response = await rag_system.process_query("test query")
+    assert response.answer is not None
+    assert response.sources >= 1
+```
+
+2. Discord Command Tests:
+```python
+@pytest.fixture
+def mock_discord_message():
+    return {
+        "content": "!query test question",
+        "author": {"id": "123"},
+        "channel": {"id": "456"}
+    }
+
+@pytest.mark.asyncio
+async def test_query_command(mock_discord_message):
+    # Red: Write failing test for Discord command
+    response = await bot.process_command(mock_discord_message)
+    assert response.content is not None
+    assert response.error is None
+```
+
+Please help me develop comprehensive test cases that cover our core functionality while following TDD principles.
+```
+
 ## Notes for PRD Generation
 - Each prompt should be used in sequence
 - Iterate on the responses to refine the PRD
@@ -136,3 +235,11 @@ Please help me define the integration specifications that ensure robust Discord 
 - Prioritize robustness and reliability over feature completeness
 - Ensure proper error handling and logging from the start
 - Keep security in mind with proper credentials management via .env and pydantic-settings
+- Follow TDD principles strictly: Red-Green-Refactor
+- Write tests before implementing features
+- Use pytest fixtures for reusable test components
+- Implement comprehensive test coverage
+- Mock external dependencies for faster tests
+- Document test cases and their purposes
+- Use parameterized tests for edge cases
+- Include both positive and negative test scenarios

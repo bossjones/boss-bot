@@ -120,62 +120,73 @@ Boss-Bot is a Discord bot designed to enhance server productivity by providing r
 ```text
 boss-bot/
 ├── src/
-│   ├── bot/
-│   │   ├── __init__.py
-│   │   ├── client.py          # Discord client setup
-│   │   └── events.py          # Event handlers
-│   ├── commands/
-│   │   ├── __init__.py
-│   │   ├── download.py        # Download commands
-│   │   └── queue.py          # Queue management commands
-│   ├── core/
-│   │   ├── __init__.py
-│   │   ├── config.py         # Configuration management
-│   │   ├── queue.py         # Queue implementation
-│   │   └── storage.py       # File storage management
-│   └── downloaders/
-│       ├── __init__.py
-│       ├── base.py          # Base downloader class
-│       ├── twitter.py       # Twitter downloader
-│       └── reddit.py        # Reddit downloader
+│   ├── boss_bot/
+│   │   ├── bot/
+│   │   │   ├── __init__.py
+│   │   │   ├── client.py          # Discord client setup
+│   │   │   ├── events.py          # Event handlers
+│   │   │   └── cogs/             # Discord cogs directory
+│   │   │       ├── __init__.py
+│   │   │       ├── download_cog.py    # Media download commands
+│   │   │       ├── queue_cog.py       # Queue management commands
+│   │   │       ├── rag_cog.py         # RAG-related commands
+│   │   │       └── admin_cog.py       # Admin/utility commands
+│   │   ├── cli/
+│   │   │   ├── __init__.py
+│   │   │   ├── app.py            # Typer CLI application
+│   │   │   └── commands/         # CLI command modules
+│   │   ├── commands/             # Shared command logic
+│   │   │   ├── __init__.py
+│   │   │   ├── download.py       # Download command business logic
+│   │   │   ├── queue.py          # Queue management logic
+│   │   │   └── rag.py           # RAG-related logic
+│   │   ├── core/
+│   │   │   ├── __init__.py
+│   │   │   ├── config.py        # Configuration management
+│   │   │   ├── queue.py         # Queue implementation
+│   │   │   └── storage.py       # File storage management
+│   │   ├── downloaders/
+│   │   │   ├── __init__.py
+│   │   │   ├── base.py          # Base downloader class
+│   │   │   ├── twitter.py       # Twitter downloader
+│   │   │   └── reddit.py        # Reddit downloader
+│   │   ├── llm/
+│   │   │   ├── __init__.py
+│   │   │   ├── chains/         # LangChain components
+│   │   │   ├── graphs/         # LangGraph workflows
+│   │   │   ├── embeddings.py   # Embedding configurations
+│   │   │   └── models.py       # LLM configurations
+│   │   ├── rag/
+│   │   │   ├── __init__.py
+│   │   │   ├── indexer.py      # Document indexing
+│   │   │   ├── retriever.py    # Vector store retrieval
+│   │   │   └── store.py        # Redis vector store management
+│   │   ├── schemas/
+│   │   │   ├── __init__.py
+│   │   │   ├── download.py     # Download-related models
+│   │   │   ├── queue.py        # Queue-related models
+│   │   │   └── rag.py          # RAG-related models
+│   │   └── utils/
+│   │       ├── __init__.py
+│   │       ├── logging.py      # Logging configuration
+│   │       └── metrics.py      # Performance monitoring
 ├── tests/
 │   ├── __init__.py
-│   ├── conftest.py          # Test configuration
-│   ├── test_bot/           # Bot tests
-│   ├── test_commands/      # Command tests
-│   └── test_downloaders/   # Downloader tests
-├── pyproject.toml          # Project dependencies
-└── README.md              # Project documentation
+│   ├── conftest.py
+│   ├── test_bot/
+│   ├── test_cli/
+│   ├── test_commands/
+│   ├── test_downloaders/
+│   ├── test_llm/
+│   └── test_rag/
+├── docs/                       # Documentation directory
+├── scripts/                    # Utility scripts
+├── .devcontainer/             # Development container config
+├── pyproject.toml
+└── README.md
 ```
 
 ## Data Models
 
 ### Download Item Schema
-```python
-class DownloadItem(BaseModel):
-    id: str
-    url: str
-    platform: Literal["twitter", "reddit"]
-    status: Literal["pending", "downloading", "complete", "failed"]
-    progress: float
-    user_id: str
-    channel_id: str
-    created_at: datetime
-    completed_at: Optional[datetime]
-    error: Optional[str]
 ```
-
-### Queue Schema
-```python
-class DownloadQueue(BaseModel):
-    items: List[DownloadItem]
-    max_size: int = 100
-    current_size: int
-    processing: List[str]  # List of item IDs currently processing
-```
-
-## Change Log
-
-| Change | Story ID | Description |
-|--------|----------|-------------|
-| Initial draft | N/A | Initial PRD creation |

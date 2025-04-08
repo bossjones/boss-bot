@@ -1,6 +1,6 @@
 # Architecture for Boss-Bot: A Discord Media Download and RAG Assistant
 
-Status: Draft
+Status: Approved
 
 ## Technical Summary
 

@@ -53,7 +53,7 @@ actions:
       │       └── src/                 # Package source code
       │           └── cursor_rules_mcp_server/ # Package code
       ├── src/                         # Python source code
-      │   └── codegen_lab/                 # Core application modules
+      │   └── boss_bot/                 # Core application modules
       ├── tests/                       # Test suites
       │   ├── integration/             # Integration tests
       │   └── unittests/               # Unit tests
@@ -103,7 +103,7 @@ examples:
   - input: |
       # I'm new to the project, where should I put my Python code?
     output: |
-      For core application code, use the `src/codegen_lab/` directory.
+      For core application code, use the `src/boss_bot/` directory.
 
       For modular packages that might be reused or published separately, create a new package in the `packages/` directory using:
       ```bash

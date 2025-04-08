@@ -11,7 +11,7 @@ Boss-Bot is a Discord bot designed to enhance server productivity by providing r
 ## Development Environment
 
 ### Setup Requirements
-- Python 3.12 or higher
+- Python 3.11 or higher (3.12 recommended)
 - UV package manager
 - Git
 
@@ -23,6 +23,16 @@ cd boss-bot
 
 # Install dependencies
 uv sync --dev
+
+# Set up environment variables
+cp env.sample .env
+# Edit .env with your Discord credentials
+
+# Run tests
+uv run pytest
+
+# Start the bot
+uv run python -m boss_bot
 ```
 
 ### Key Configuration Files
@@ -59,6 +69,45 @@ dependencies = [
   - pytest-recording for HTTP mocking
   - pytest-cov for coverage reporting
   - pytest-retry for flaky tests
+  - pytest-skipuntil for handling flaky Discord API tests
+
+#### Test Organization
+```text
+tests/
+├── conftest.py              # Shared test configuration and fixtures
+├── fixtures/               # Test data and mock responses
+│   ├── tweet_data.py      # Twitter API mock responses
+│   ├── reddit_data.py     # Reddit API mock responses
+│   ├── discord_data.py    # Discord API mock responses
+│   └── cassettes/         # VCR cassettes for HTTP mocking
+├── unit/                  # Unit tests directory
+├── integration/          # Integration tests
+└── eval/                # Future RAG evaluation tests
+```
+
+#### Handling Flaky Tests
+- Use pytest-skipuntil for Discord API tests that may be unreliable
+- Store HTTP interactions in VCR cassettes under tests/fixtures/cassettes/
+- Use dpytest for reliable Discord command testing
+- Example:
+  ```python
+  @pytest.mark.skipuntil("2024-06-01")  # Skip until Discord API is stable
+  async def test_discord_feature():
+      # Test implementation
+  ```
+
+#### Test Fixtures
+- Add new fixtures in tests/fixtures/
+- Use VCR for HTTP mocking:
+  ```python
+  @pytest.fixture(scope="module")
+  def vcr_config():
+      """VCR configuration for HTTP mocking."""
+      return {
+          "filter_headers": ["authorization"],
+          "filter_post_data_parameters": ["token", "api_key"]
+      }
+  ```
 
 #### 4. Documentation
 - MkDocs with extensions:
@@ -97,7 +146,11 @@ DISCORD_ADMIN_USER_ID=required       # Admin user ID
 ## Goals
 
 - Create a reliable and efficient Discord bot for media downloads with >99% uptime
-- Implement comprehensive test coverage (>90%) using pytest and dpytest
+- Implement MVP test coverage targets:
+  * Core Download: 30%
+  * Command Parsing: 25%
+  * Discord Events: 20% (limited by dpytest capabilities)
+  * File Management: 20%
 - Ensure all modules follow clean code practices and stay under 120 lines
 - Build a foundation for future RAG capabilities
 - Provide clear progress tracking and queue management for downloads
@@ -195,7 +248,12 @@ async def test_bot_handles_disconnect():
 - Maximum module size of 120 lines
 - Type hints for all functions and classes
 - Comprehensive docstrings following Google style
-- Test coverage >90% (measured with coverage[toml])
+- Test coverage targets (MVP):
+  * Core Download: 30%
+  * Command Parsing: 25%
+  * Discord Events: 20% (limited by dpytest capabilities)
+  * File Management: 20%
+  * Higher coverage targets will be set post-MVP
 - Adherence to DRY (Don't Repeat Yourself) and YAGNI (You Aren't Gonna Need It) principles
 - Performance testing requirements:
   * Load testing for concurrent downloads (minimum 10 simultaneous)
@@ -994,6 +1052,8 @@ Would you like me to:
   - Bot successfully connects to Discord
   - Basic events (ready, disconnect) are handled
   - Health check command responds
+  - Bot recovers gracefully from disconnections
+  - Connection state changes are properly logged
   Dependencies: Story 1, Story 3
 
 - Story 4a: Discord Connection Setup
@@ -1004,11 +1064,15 @@ Would you like me to:
   - Set up environment configuration with pydantic-settings
   - Implement connection handling and basic event loop
   - Add health check endpoint
+  - Implement graceful disconnection recovery
+  - Add connection state logging
   Acceptance Criteria:
   - Bot successfully connects to Discord
   - Bot responds to health check command
   - Bot handles connection state changes
   - Environment variables are properly loaded
+  - Bot automatically recovers from disconnections
+  - All connection state changes are logged
   Dependencies: Story 1, Story 3
 
 - Story 4b: Command Framework Base
@@ -1018,13 +1082,14 @@ Would you like me to:
   - Implement basic error handling for commands
   - Add help command structure
   - Create command testing utilities
-  - Implement command cooldowns and rate limiting
+  - (Nice to Have) Implement command cooldowns
+  - (Nice to Have) Implement rate limiting
   Acceptance Criteria:
   - Commands can be registered and respond
   - Error handling works for basic cases
   - Help command shows available commands
-  - Command tests pass
-  - Rate limiting prevents command spam
+  - Command tests pass with dpytest
+  - (Nice to Have) Rate limiting prevents command spam
   Dependencies: Story 4a
 
 - Story 4c: Event Handler Implementation
@@ -1038,8 +1103,9 @@ Would you like me to:
   Acceptance Criteria:
   - All core events are handled and logged
   - Bot recovers from disconnections
-  - Event tests pass
+  - Event tests pass with dpytest
   - Error recovery works as expected
+  - Event handling coverage meets 20% target
   Dependencies: Story 4b
 
 - Story 5: Queue System Foundation
@@ -1447,14 +1513,10 @@ tests/
 ├── fixtures/               # Test data and mock responses
 │   ├── tweet_data.py      # Twitter API mock responses
 │   ├── reddit_data.py     # Reddit API mock responses
-│   └── discord_data.py    # Discord API mock responses
+│   ├── discord_data.py    # Discord API mock responses
+│   └── cassettes/         # VCR cassettes for HTTP mocking
 ├── unit/                  # Unit tests directory
-│   ├── test_bot/         # Bot-specific tests
-│   ├── test_commands/    # Command handler tests
-│   └── test_downloaders/ # Download functionality tests
 ├── integration/          # Integration tests
-│   ├── test_discord/    # Discord API integration tests
-│   └── test_gallery_dl/ # Gallery-dl integration tests
 └── eval/                # Future RAG evaluation tests
 ```
 

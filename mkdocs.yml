@@ -1,6 +1,6 @@
 # Basic site information
 # Sets the name of your documentation site that appears in the header
-site_name: Codegen Lab
+site_name: Boss Bot
 # Provides a meta description for SEO purposes
 site_description: AI-powered code generation tooling for efficient software development
 # Specifies the author of the site for metadata
@@ -25,7 +25,7 @@ use_directory_urls: true
 watch:
   - mkdocs_macro_plugin.py # Watches the macros plugin file
   - docs_templates # Watches template files for documentation
-  - src/codegen_lab # Watches source code for API documentation changes
+  - src/boss_bot # Watches source code for API documentation changes
   - README.md # Watches readme file
   - CHANGELOG.md # Watches changelog file
   - changes/ # Watches changes directory

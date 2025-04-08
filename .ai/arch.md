@@ -181,26 +181,29 @@ boss-bot/
 - Pre-commit hooks for code quality
 - pytest for testing infrastructure
 
-### Production Environment
+### Runtime Environment
+- Local machine (macOS) or Linux server
 - Python 3.12+ runtime
 - Persistent storage for temporary files
 - Discord API integration
 - Logging and monitoring setup
 
 ### Resource Requirements
-- CPU: 1-2 cores
-- Memory: 512MB minimum
-- Storage: 5GB minimum for temporary files
-- Network: Stable internet connection
+- Basic system requirements for local/server deployment:
+  - CPU: 1-2 cores
+  - Memory: 512MB minimum
+  - Storage: 5GB minimum for temporary files
+  - Network: Stable internet connection
 
 ## Deployment Plan
 
 ### Phase 1: MVP Setup
 1. Initialize Python project with UV
-2. Set up testing infrastructure
+2. Set up testing infrastructure with GitHub Actions CI/CD
 3. Implement basic Discord bot framework
 4. Add core download functionality
 5. Implement queue management
+6. Set up local deployment via `uv run bossbotctl`
 
 ### Phase 2: Enhanced Features
 1. Add progress tracking
@@ -208,12 +211,34 @@ boss-bot/
 3. Add error handling
 4. Set up monitoring
 5. Add user management
+6. Implement bot admin restart command
 
-### Phase 3: Future RAG Integration
+### Phase 3: Security Enhancements (Nice to Have)
+1. Implement API key rotation strategy
+2. Add detailed rate limiting per command
+3. Enhance file storage security
+4. Implement granular user permissions
+5. Set up audit logging
+6. Add security monitoring integration
+
+### Phase 4: Future RAG Integration
 1. Set up vector store
 2. Implement document processing
 3. Add RAG functionality
 4. Enhance command set
+
+### CI/CD Pipeline
+The project uses GitHub Actions for continuous integration and deployment:
+- Automated testing on pull requests
+- Code quality checks using ruff
+- Documentation generation and validation
+- Dependency management with UV
+
+### Bot Management
+- Bot runs locally via `uv run bossbotctl`
+- Admin-only bot restart command (planned feature)
+- No containerization or complex infrastructure required
+- Simple start/stop/restart procedures through command line
 
 ## Testing Strategy
 
@@ -1017,3 +1042,51 @@ async def on_app_command_error(
    - Maximum concurrent downloads: 3
    - Rate limits per platform
    - Queue size limit: 50 items
+
+## Data Management
+
+### Redis Configuration
+- Redis 6.2.10 via docker-compose
+- Port: 7600
+- Persistent storage via Docker volume: boss_redis_data
+- Health checks enabled
+- No authentication in development (controlled access)
+
+### Data Retention Policies
+
+#### Downloaded Media
+- Location: /tmp/boss-bot/downloads/{guild_id}/{yyyy-mm-dd}/
+- Retention Period: 24 hours from download completion
+- Cleanup: Automatic removal after retention period
+- Storage Strategy: Date-based organization per guild
+- Exception: Failed downloads removed after 6 hours
+
+#### Queue Data (Redis)
+- Active Queue: Real-time queue state
+- Queue History:
+  - Completed downloads: 24 hours
+  - Failed downloads: 48 hours for debugging
+  - Cancelled downloads: 12 hours
+- Queue Metrics: 7 days rolling window
+
+#### Logging
+- Primary Output: stdout via Loguru
+- Log Format: Structured JSON
+- Log Levels: INFO and above for stdout, ERROR for stderr
+- Retention: Managed by system log rotation
+- No persistent log storage needed
+
+### Data Storage Structure
+```text
+/tmp/boss-bot/
+├── downloads/                    # Temporary media storage
+│   ├── {guild_id}/              # Per-guild organization
+│   │   ├── {yyyy-mm-dd}/        # Date-based structure
+│   │   │   ├── {download_id}/   # Individual downloads
+│   │   │   │   ├── metadata.json # Download metadata
+│   │   │   │   └── content/     # Media files
+│   │   │   └── .cleanup         # Cleanup marker
+│   └── .maintenance            # Maintenance logs
+└── temp/                       # In-progress downloads
+    └── {download_id}/         # Temporary processing
+```

@@ -1,6 +1,6 @@
 ---
 description: This rule governs the usage of UV package manager in the project. It should be applied whenever: (1) Installing or managing Python packages, (2) Setting up Python environments, (3) Running Python code or tests, or (4) Modifying dependency files. This rule ensures consistent package management and environment setup across the project.
-globs: pyproject.toml, requirements*.txt, Makefile
+globs: pyproject.toml, requirements*.txt, justfile, Justfile, *.just, justfiles/*.just
 alwaysApply: false
 ---
 
@@ -13,7 +13,7 @@ alwaysApply: false
 - ALWAYS use `uv sync` for installing from pyproject.toml/lockfile
 - ALWAYS use `--frozen` flag with `uv sync` to ensure reproducible environments
 - Use `uv venv` with explicit Python version for environment creation
-- Use provided make tasks for common UV operations
+- Use provided just tasks for common UV operations
 - Run Python code and tests using `uv run`
 - Add development dependencies with `uv add --dev`
 - Add production dependencies with `uv add` (without --dev)
@@ -39,11 +39,11 @@ uv add fastapi
 uv add --dev pytest black
 
 # Sync dependencies
-make uv-sync-all
-make uv-sync-dev
+just uv-sync-all
+just uv-sync-dev
 
 # Upgrade specific package
-make uv-upgrade-package package=fastapi
+just uv-upgrade-package package=fastapi
 ```
 
 ## Running Code

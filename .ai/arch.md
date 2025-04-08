@@ -409,3 +409,465 @@ class ErrorHandler(commands.Cog):
 |---------|------|--------|----------|
 | 0.1.0 | 2024-04-17 | @bossjones | Initial architecture draft |
 | 0.1.1 | 2024-04-17 | @bossjones | Added testing strategy and error handling |
+
+## Development Guidelines
+
+### Code Style Guidelines
+```python
+# Formatting and Linting
+- All code is formatted using ruff
+- Maximum line length: 88 characters (ruff default)
+- Use type hints for all functions and variables
+- Follow Google docstring format
+- Use absolute imports (configured in VSCode settings)
+
+# VSCode Configuration
+- Format on save enabled
+- Ruff as default formatter
+- Pylance as language server
+- Semantic highlighting enabled
+- Inlay hints for:
+  * Variable types
+  * Function return types
+  * Pytest parameters
+
+# Error Checking
+- Pylint configuration:
+  * Enable: F,E,E1101 (errors and type checking)
+  * Disable: C0111,E0401,C,W,E1205 (style and import warnings)
+  * Max line length: 120
+  * Plugins: pylint_pydantic, pylint_per_file_ignores
+
+# Type Checking
+- Use Pylance/Pyright for type checking
+- Strict type checking enabled
+- Report missing imports as errors
+- Report import cycles as errors
+```
+
+### Git Workflow
+```bash
+# Branch Naming
+feature/   # New features
+bugfix/    # Bug fixes
+hotfix/    # Critical fixes for production
+
+# Commit Messages
+<type>(<scope>): <description>
+
+Types:
+- feat: New feature
+- fix: Bug fix
+- docs: Documentation changes
+- style: Code style changes
+- refactor: Code refactoring
+- test: Adding tests
+- chore: Maintenance tasks
+
+Example:
+feat(download): add Twitter video support
+```
+
+## File Management
+
+### Storage Structure
+```text
+/tmp/boss-bot/
+├── downloads/                    # Organized downloads
+│   ├── {guild_id}/              # Per-guild storage
+│   │   ├── {yyyy-mm-dd}/        # Date-based organization
+│   │   │   ├── {download_id}/   # Individual download
+│   │   │   │   ├── metadata.json # Download metadata
+│   │   │   │   └── content/     # Downloaded files
+│   │   │   └── .cleanup         # Cleanup marker
+│   │   └── .stats              # Guild statistics
+│   └── .maintenance            # Maintenance logs
+├── temp/                       # Temporary storage
+│   └── {download_id}/         # In-progress downloads
+└── .locks/                    # Lock files
+```
+
+### File Naming Conventions
+```python
+class FileNaming:
+    """File naming conventions."""
+    DOWNLOAD_FILE = "{timestamp}_{original_name}"  # e.g., 20240417_123456_video.mp4
+    TEMP_FILE = "{download_id}_{timestamp}_temp"   # e.g., abc123_20240417_123456_temp
+    LOG_FILE = "boss-bot_{date}.log"              # e.g., boss-bot_20240417.log
+    METADATA_FILE = "metadata.json"               # Standard name for all metadata files
+```
+
+### Storage Policies
+```python
+class StoragePolicy:
+    """Storage management policies."""
+    # Size Limits
+    MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB (Discord limit)
+    MAX_TEMP_STORAGE = 1024 * 1024 * 1024  # 1GB
+    MAX_GUILD_DAILY = 500 * 1024 * 1024  # 500MB per guild per day
+
+    # Retention Periods (in seconds)
+    TEMP_FILE_RETENTION = 3600  # 1 hour
+    SUCCESSFUL_DOWNLOAD = 86400  # 24 hours
+    FAILED_DOWNLOAD = 21600  # 6 hours
+
+    # Cleanup Intervals
+    TEMP_SCAN_INTERVAL = 300  # 5 minutes
+    MAIN_SCAN_INTERVAL = 3600  # 1 hour
+```
+
+### File Operations
+```python
+from pathlib import Path
+from typing import Optional
+import aiofiles
+import json
+
+async def save_download(
+    content: bytes,
+    guild_id: int,
+    download_id: str,
+    original_name: str
+) -> Path:
+    """Save downloaded content with metadata."""
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"{timestamp}_{original_name}"
+
+    # Create directory structure
+    download_dir = Path(f"/tmp/boss-bot/downloads/{guild_id}/{timestamp[:8]}/{download_id}")
+    download_dir.mkdir(parents=True, exist_ok=True)
+
+    # Save content
+    file_path = download_dir / "content" / filename
+    async with aiofiles.open(file_path, "wb") as f:
+        await f.write(content)
+
+    # Save metadata
+    metadata = {
+        "original_name": original_name,
+        "timestamp": timestamp,
+        "size": len(content),
+        "download_id": download_id
+    }
+    async with aiofiles.open(download_dir / "metadata.json", "w") as f:
+        await f.write(json.dumps(metadata))
+
+    return file_path
+```
+
+### Cleanup Strategy
+```python
+class CleanupManager:
+    """Manages file cleanup operations."""
+
+    async def cleanup_temp_files(self):
+        """Clean temporary files older than retention period."""
+        temp_dir = Path("/tmp/boss-bot/temp")
+        current_time = time.time()
+
+        async for entry in aiofiles.os.scandir(temp_dir):
+            if entry.is_file():
+                stats = await aiofiles.os.stat(entry.path)
+                age = current_time - stats.st_mtime
+                if age > StoragePolicy.TEMP_FILE_RETENTION:
+                    await aiofiles.os.remove(entry.path)
+
+    async def cleanup_downloads(self):
+        """Clean old downloads based on retention policy."""
+        downloads_dir = Path("/tmp/boss-bot/downloads")
+        # Implementation details...
+```
+
+## Command System
+
+### Command Structure
+| Command | Description | Permissions | Rate Limit | Cooldown |
+|---------|-------------|-------------|------------|----------|
+| `/download <url>` | Download media from supported platforms | `send_messages` | 5/minute | 10s |
+| `/queue list` | Show current download queue | `send_messages` | 10/minute | 5s |
+| `/queue clear` | Clear download queue | `manage_messages` | 2/minute | 30s |
+| `/settings view` | View guild settings | `send_messages` | 10/minute | 5s |
+| `/settings update` | Update guild settings | `manage_guild` | 5/minute | 15s |
+| `/stats` | View download statistics | `send_messages` | 10/minute | 5s |
+
+### Command Implementation
+```python
+from discord import app_commands
+from discord.ext import commands
+from typing import Optional
+
+class DownloadCog(commands.Cog):
+    """Download command implementation."""
+
+    def __init__(self, bot):
+        self.bot = bot
+        self._cd = commands.CooldownMapping.from_cooldown(
+            5, 60, commands.BucketType.user
+        )
+
+    @app_commands.command(name="download")
+    @app_commands.describe(url="URL to download from")
+    async def download(
+        self,
+        interaction: discord.Interaction,
+        url: str,
+        format: Optional[str] = None
+    ):
+        """Download media from supported platforms."""
+        # Check cooldown
+        bucket = self._cd.get_bucket(interaction)
+        retry_after = bucket.update_rate_limit()
+        if retry_after:
+            raise commands.CommandOnCooldown(bucket, retry_after)
+
+        # Validate URL
+        if not self.is_supported_url(url):
+            await interaction.response.send_message(
+                "❌ URL not supported",
+                ephemeral=True
+            )
+            return
+
+        # Queue download
+        download_id = await self.queue_download(interaction.guild_id, url, format)
+
+        await interaction.response.send_message(
+            f"✅ Download queued! ID: `{download_id}`"
+        )
+```
+
+### Permission System
+```python
+from enum import Enum
+from typing import Set
+
+class BotPermission(Enum):
+    """Bot-specific permissions."""
+    DOWNLOAD = "download"
+    MANAGE_QUEUE = "manage_queue"
+    MANAGE_SETTINGS = "manage_settings"
+    VIEW_STATS = "view_stats"
+
+class PermissionManager:
+    """Manages bot permissions."""
+
+    def __init__(self):
+        self.role_permissions: Dict[int, Set[BotPermission]] = {}
+
+    async def has_permission(
+        self,
+        member: discord.Member,
+        permission: BotPermission
+    ) -> bool:
+        """Check if member has required permission."""
+        # Bot owner always has permission
+        if await self.bot.is_owner(member):
+            return True
+
+        # Check Discord permissions
+        if permission == BotPermission.MANAGE_SETTINGS:
+            return member.guild_permissions.manage_guild
+
+        if permission == BotPermission.MANAGE_QUEUE:
+            return member.guild_permissions.manage_messages
+
+        # Check role-based permissions
+        for role in member.roles:
+            if permission in self.role_permissions.get(role.id, set()):
+                return True
+
+        return False
+```
+
+### Rate Limiting
+```python
+from datetime import datetime, timedelta
+from collections import defaultdict
+
+class RateLimiter:
+    """Rate limit implementation."""
+
+    def __init__(self):
+        self.limits = defaultdict(list)
+
+    async def check_rate_limit(
+        self,
+        key: str,
+        max_requests: int,
+        time_window: int
+    ) -> tuple[bool, Optional[float]]:
+        """
+        Check if request is rate limited.
+
+        Args:
+            key: Unique identifier (e.g., user_id or guild_id)
+            max_requests: Maximum requests allowed
+            time_window: Time window in seconds
+
+        Returns:
+            Tuple of (is_limited, retry_after)
+        """
+        now = datetime.utcnow()
+        window_start = now - timedelta(seconds=time_window)
+
+        # Clean old entries
+        self.limits[key] = [
+            ts for ts in self.limits[key]
+            if ts > window_start
+        ]
+
+        # Check limit
+        if len(self.limits[key]) >= max_requests:
+            retry_after = (
+                self.limits[key][0] - window_start
+            ).total_seconds()
+            return True, retry_after
+
+        # Add new timestamp
+        self.limits[key].append(now)
+        return False, None
+```
+
+## Queue Management
+
+### Queue Structure
+```python
+from dataclasses import dataclass
+from datetime import datetime
+from enum import Enum
+from typing import Optional, Dict, Any
+
+class DownloadStatus(Enum):
+    """Download status states."""
+    QUEUED = "queued"
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+@dataclass
+class QueueItem:
+    """Represents a queued download."""
+    download_id: str
+    guild_id: int
+    channel_id: int
+    user_id: int
+    url: str
+    status: DownloadStatus
+    created_at: datetime
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    error: Optional[str] = None
+    metadata: Dict[str, Any] = None
+```
+
+### Queue Manager
+```python
+from asyncio import Queue, Lock
+from collections import defaultdict
+
+class QueueManager:
+    """Manages download queues per guild."""
+
+    def __init__(self, max_concurrent_downloads: int = 3):
+        self.max_concurrent = max_concurrent_downloads
+        self.queues: Dict[int, Queue[QueueItem]] = defaultdict(Queue)
+        self.active_downloads: Dict[int, set] = defaultdict(set)
+        self.locks: Dict[int, Lock] = defaultdict(Lock)
+
+    async def add_to_queue(
+        self,
+        guild_id: int,
+        channel_id: int,
+        user_id: int,
+        url: str
+    ) -> QueueItem:
+        """Add a new download to the queue."""
+        item = QueueItem(
+            download_id=self.generate_id(),
+            guild_id=guild_id,
+            channel_id=channel_id,
+            user_id=user_id,
+            url=url,
+            status=DownloadStatus.QUEUED,
+            created_at=datetime.utcnow()
+        )
+
+        await self.queues[guild_id].put(item)
+        return item
+
+    async def process_queue(self, guild_id: int):
+        """Process queued downloads for a guild."""
+        async with self.locks[guild_id]:
+            if len(self.active_downloads[guild_id]) >= self.max_concurrent:
+                return
+
+            while not self.queues[guild_id].empty():
+                if len(self.active_downloads[guild_id]) >= self.max_concurrent:
+                    break
+
+                item = await self.queues[guild_id].get()
+                self.active_downloads[guild_id].add(item.download_id)
+
+                try:
+                    item.status = DownloadStatus.PROCESSING
+                    item.started_at = datetime.utcnow()
+
+                    # Process download
+                    await self.process_download(item)
+
+                    item.status = DownloadStatus.COMPLETED
+
+                except Exception as e:
+                    item.status = DownloadStatus.FAILED
+                    item.error = str(e)
+
+                finally:
+                    item.completed_at = datetime.utcnow()
+                    self.active_downloads[guild_id].remove(item.download_id)
+                    self.queues[guild_id].task_done()
+```
+
+### Queue Storage
+The queue state is persisted in Redis to maintain queue order and state across bot restarts:
+
+```python
+import aioredis
+from typing import List
+
+class QueueStorage:
+    """Persistent queue storage using Redis."""
+
+    def __init__(self, redis_url: str):
+        self.redis = aioredis.from_url(redis_url)
+
+    async def save_queue_item(self, item: QueueItem):
+        """Save queue item to Redis."""
+        key = f"queue:{item.guild_id}:{item.download_id}"
+        await self.redis.hmset(key, item.__dict__)
+        await self.redis.zadd(
+            f"queue:{item.guild_id}",
+            {item.download_id: item.created_at.timestamp()}
+        )
+
+    async def get_queue_items(
+        self,
+        guild_id: int,
+        status: Optional[DownloadStatus] = None
+    ) -> List[QueueItem]:
+        """Get all queue items for a guild."""
+        items = []
+        download_ids = await self.redis.zrange(f"queue:{guild_id}", 0, -1)
+
+        for download_id in download_ids:
+            key = f"queue:{guild_id}:{download_id}"
+            data = await self.redis.hgetall(key)
+
+            if not data:
+                continue
+
+            item = QueueItem(**data)
+            if status is None or item.status == status:
+                items.append(item)
+
+        return items
+```

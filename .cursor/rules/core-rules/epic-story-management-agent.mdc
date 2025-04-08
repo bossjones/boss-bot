@@ -1,0 +1,156 @@
+---
+description: This rule governs the management of epics and stories in the project. It should be applied whenever: (1) Creating or updating stories, (2) Managing epic status and progress, (3) Transitioning between stories, or (4) Validating story completeness. This rule ensures proper organization, clear tracking, and effective story management by defining standard formats and workflows.
+globs: .ai/*.{epic,story}.md
+alwaysApply: false
+---
+
+# Epic and Story Management Rules
+
+## Critical Rules
+
+- NEVER create first story without approved PRD (.ai/prd.md) AND approved Architecture (.ai/arch.md)
+- ALWAYS check for and read the corresponding epic file (.ai/epic-N.epic.md) before creating, updating, or working on any story
+- Only ONE epic can be in-progress at a time
+- Only ONE story can be in-progress at a time
+- Stories MUST be implemented in the PRD-specified order
+- Stories MUST only be created after their parent epic exists and is properly documented
+- NEVER implement code without story approval from user (story must be marked as "In Progress")
+- Story status and progress MUST be reflected in both the story file and its parent epic file
+- When transitioning between stories, verify the epic's progress tracking is up to date
+- Story files must follow the naming convention: .ai/story-N.story.md where N matches the story number in the epic
+- Epic files must follow the naming convention: .ai/epic-N.epic.md where N is the epic number
+- Stories can only be marked as complete when all tasks are done AND the epic's success criteria for that story are met
+- When updating a story's status, always update the corresponding status in the epic file
+- Before creating a new story, verify it exists in the epic's story list and is properly sequenced
+- Epic progress tracking must be updated whenever a story status changes
+
+## Status Progression
+
+### Epic Status Flow
+```
+Future -> Current -> Complete
+```
+
+### Story Status Flow
+```
+Draft -> In Progress -> Complete
+```
+
+## Examples
+
+<example>
+# Good Epic-Story Management
+
+1. Check prerequisites and epic existence:
+   ```bash
+   # First verify PRD and Architecture are approved
+   grep "Status: Approved" .ai/prd.md
+   grep "Status: Approved" .ai/arch.md
+
+   # Then verify epic exists and is current
+   ls .ai/epic-1.epic.md
+   ```
+
+2. Create/update story based on epic:
+   ```markdown
+   # Epic-1 - Story-1
+   # Project Initialization
+
+   Status: Draft  # Only change to "In Progress" with user approval
+
+   ## Context
+   # Reference to PRD and Architecture decisions
+
+   ## Implementation Notes
+   # Record of all significant decisions and commands
+   ```
+
+3. Update epic tracking:
+   ```markdown
+   ## Progress Tracking
+   - [x] Story 1: Project Initialization (Completed: 2024-04-17)
+   - [ ] Story 2: Test Infrastructure (Not Started)
+   ```
+
+4. Command History in Story:
+   ```markdown
+   ## Chat Command Log
+   - User: Approve story-1 to start implementation
+   - Agent: Starting implementation of task 1...
+   - User: Update the database schema
+   - Agent: Schema updated, running tests...
+   ```
+</example>
+
+<example type="invalid">
+# Bad Epic-Story Management
+
+1. Creating story without prerequisites:
+   ```bash
+   # Missing PRD/Architecture approval
+   touch .ai/story-1.story.md
+   ```
+
+2. Multiple active items:
+   ```markdown
+   # Having multiple stories "In Progress"
+   # story-1.story.md: Status: In Progress
+   # story-2.story.md: Status: In Progress
+   ```
+
+3. Implementing without approval:
+   ```markdown
+   # Story status is still "Draft" but implementation started
+   Status: Draft
+   ## Implementation
+   - Added new feature...  # Wrong! Need "In Progress" status first
+   ```
+
+4. Missing command history:
+   ```markdown
+   ## Implementation
+   - Feature implemented
+   # Missing chat log and commands used
+   ```
+</example>
+
+## Best Practices
+
+1. Epic Management:
+   - Keep epic status current
+   - Track all story statuses
+   - Update success criteria progress
+   - Maintain clear dependencies
+   - Only one epic active at a time
+   - Update PRD/Architecture as needed
+
+2. Story Management:
+   - Align with epic goals
+   - Follow story sequence from PRD
+   - Update status consistently
+   - Reference epic requirements
+   - Get explicit user approval before implementation
+   - Follow TDD practices
+
+3. Progress Tracking:
+   - Update both story and epic files
+   - Track completion criteria
+   - Document blockers
+   - Maintain task status
+   - Record all significant commands
+   - Keep implementation notes
+
+4. Documentation:
+   - Clear status updates
+   - Consistent formatting
+   - Complete task tracking
+   - Updated chat logs
+   - Record all decisions
+   - Maintain README files in src folders
+
+5. Context Management:
+   - Start fresh context per story
+   - Minimize context overhead
+   - Reference PRD/Architecture when needed
+   - Keep documentation current
+   - Record progress before context reset

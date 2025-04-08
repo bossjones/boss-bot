@@ -23,13 +23,13 @@
 # SOFTWARE.
 """Generate the code reference pages.
 
-This script generates API reference documentation pages for the codegen_lab project using mkdocstrings.
+This script generates API reference documentation pages for the boss_bot project using mkdocstrings.
 It recursively scans through Python modules and creates corresponding markdown files with API documentation.
 
 Based on https://mkdocstrings.github.io/recipes/#generate-pages-on-the-fly
 
 Key features:
-- Generates markdown files for each Python module in codegen_lab
+- Generates markdown files for each Python module in boss_bot
 - Creates a navigation structure for documentation
 - Handles special cases for __init__.py files
 - Ignores internal and private modules
@@ -43,7 +43,7 @@ Example:
 
 Note:
     This script assumes it's run from the project root directory and expects
-    the 'codegen_lab' package in the src directory.
+    the 'boss_bot' package in the src directory.
 """
 
 from __future__ import annotations
@@ -58,7 +58,7 @@ from mkdocs_gen_files.nav import Nav  # type: ignore # Nav is actually exported
 nav: Nav = mkdocs_gen_files.Nav()
 
 # Define key paths
-PACKAGE_PATH = pathlib.Path("src/codegen_lab")
+PACKAGE_PATH = pathlib.Path("src/boss_bot")
 DOCS_OUTPUT_PATH = pathlib.Path("docs/api-reference")
 
 def process_module_path(path: pathlib.Path) -> tuple[pathlib.Path, pathlib.Path, pathlib.Path, tuple[str, ...], bool]:
@@ -138,7 +138,7 @@ def main() -> None:
     """Main function to generate API reference documentation."""
     ensure_output_directory()
 
-    # Process all Python files in the codegen_lab package
+    # Process all Python files in the boss_bot package
     for path in sorted(PACKAGE_PATH.rglob("*.py")):
         # Skip internal modules
         if "internal" in path.parts:

@@ -20,6 +20,7 @@ import "justfiles/validate.just"
 import "justfiles/security.just"
 import "justfiles/convert.just"
 import "justfiles/taplo.just"
+import "justfiles/firecrawl.just"
 
 # display help information
 default:

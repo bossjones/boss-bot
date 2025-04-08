@@ -1,0 +1,50 @@
+---
+description: This rule governs development environment standards and questions. It should be applied whenever: (1) Setting up development environments, (2) Discussing IDE configurations, (3) Handling environment variables, or (4) Discussing deployment environments. This rule ensures consistent development practices and prevents repeated questions about environment setup.
+globs:
+alwaysApply: false
+---
+
+# Development Environment Standards
+
+## Critical Rules
+
+- NEVER suggest or ask about dev container configurations
+- NEVER ask about creating troubleshooting guides
+- Use pydantic-settings for all environment variable management
+- Reference boss-bot.code-workspace.json for IDE settings/extensions
+- All environment variables must be loaded through pydantic-settings
+- All sensitive information (tokens, keys, passwords) MUST use SecretStr type from pydantic
+- Development is local-only, no cloud deployment requirements
+- No container orchestration required
+- No backup/disaster recovery plans required
+
+## Examples
+
+<example>
+# Good Environment Configuration
+```python
+from pydantic_settings import BaseSettings
+from pydantic import SecretStr
+
+class Settings(BaseSettings):
+    discord_token: SecretStr  # Sensitive token uses SecretStr
+    database_password: SecretStr  # Sensitive password uses SecretStr
+    command_prefix: str = "$"  # Non-sensitive config uses regular str
+
+    class Config:
+        env_prefix = "BOSS_BOT_"
+
+# Accessing secret values safely
+settings = Settings()
+token = settings.discord_token.get_secret_value()  # Only get secret when needed
+```
+</example>
+
+<example type="invalid">
+# Invalid Questions/Suggestions
+- "Should we set up Docker containers?"
+- "What cloud provider should we use?"
+- "Should we create a troubleshooting guide?"
+- "How should we handle environment variables?"
+- "Let's store the API token as a plain string"
+</example>

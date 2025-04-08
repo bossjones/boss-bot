@@ -1003,14 +1003,14 @@ examples:
 
       ```bash
       # Create the directory structure
-      mkdir -p src/codegen_lab/promptlib || true
+      mkdir -p src/boss_bot/promptlib || true
 
       # Initialize files
-      touch src/codegen_lab/__init__.py
-      touch src/codegen_lab/promptlib/__init__.py
-      touch src/codegen_lab/promptlib/models.py
-      touch src/codegen_lab/promptlib/services.py
-      touch src/codegen_lab/promptlib/resources.py
+      touch src/boss_bot/__init__.py
+      touch src/boss_bot/promptlib/__init__.py
+      touch src/boss_bot/promptlib/models.py
+      touch src/boss_bot/promptlib/services.py
+      touch src/boss_bot/promptlib/resources.py
       ```
 
       Update the PLAN.md to reflect progress:
@@ -1031,7 +1031,7 @@ examples:
       ### Step 3: Set up files with pseudocode and docstrings
 
       ```python
-      # src/codegen_lab/promptlib/models.py
+      # src/boss_bot/promptlib/models.py
       """Models for the promptlib module.
 
       This module contains:
@@ -1048,14 +1048,14 @@ examples:
       ```
 
       ```python
-      # src/codegen_lab/promptlib/services.py
+      # src/boss_bot/promptlib/services.py
       """Services for the promptlib module.
 
       This module contains:
       - [ ] process_user function
       """
       from typing import Dict, Any
-      from codegen_lab.promptlib.models import UserModel
+      from boss_bot.promptlib.models import UserModel
 
       def process_user(user: UserModel) -> Dict[str, Any]:
           """Process the user data.
@@ -1066,15 +1066,15 @@ examples:
       ```
 
       ```python
-      # src/codegen_lab/promptlib/resources.py
+      # src/boss_bot/promptlib/resources.py
       """Resources for the promptlib module.
 
       This module contains:
       - [ ] api_endpoint function
       """
       from typing import Dict, Any
-      from codegen_lab.promptlib.models import UserModel
-      from codegen_lab.promptlib.services import process_user
+      from boss_bot.promptlib.models import UserModel
+      from boss_bot.promptlib.services import process_user
 
       def api_endpoint() -> Dict[str, Any]:
           """API endpoint handler.
@@ -1104,7 +1104,7 @@ examples:
       ### Step 4: Set up the package exports
 
       ```python
-      # src/codegen_lab/promptlib/__init__.py
+      # src/boss_bot/promptlib/__init__.py
       """Promptlib module exports.
 
       This module exports:
@@ -1112,9 +1112,9 @@ examples:
       - [ ] process_user from services
       - [ ] api_endpoint from resources
       """
-      from codegen_lab.promptlib.models import UserModel
-      from codegen_lab.promptlib.services import process_user
-      from codegen_lab.promptlib.resources import api_endpoint
+      from boss_bot.promptlib.models import UserModel
+      from boss_bot.promptlib.services import process_user
+      from boss_bot.promptlib.resources import api_endpoint
 
       __all__ = ['UserModel', 'process_user', 'api_endpoint']
       ```
@@ -1122,7 +1122,7 @@ examples:
       ### Step 5: Update the original module
 
       ```python
-      # src/codegen_lab/big_module.py
+      # src/boss_bot/big_module.py
       """Original module now re-exporting from submodules.
 
       This module re-exports:
@@ -1130,7 +1130,7 @@ examples:
       - [x] process_user from promptlib.services
       - [x] api_endpoint from promptlib.resources
       """
-      from codegen_lab.promptlib import UserModel, process_user, api_endpoint
+      from boss_bot.promptlib import UserModel, process_user, api_endpoint
 
       # Re-export for backward compatibility
       __all__ = ['UserModel', 'process_user', 'api_endpoint']
@@ -1179,7 +1179,7 @@ examples:
       The refactored directory structure will look like:
 
       ```
-      src/codegen_lab/
+      src/boss_bot/
       ├── __init__.py
       ├── promptlib/
       │   ├── __init__.py

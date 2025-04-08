@@ -82,7 +82,7 @@ This error occurs when imports are not properly sorted according to the project'
 import os
 from typing import List, Optional
 import pytest
-from codegen_lab.utils import helper
+from boss_bot.utils import helper
 import json
 from pathlib import Path
 
@@ -96,7 +96,7 @@ from typing import List, Optional
 
 import pytest
 
-from codegen_lab.utils import helper
+from boss_bot.utils import helper
 ```
 
 **Auto-fix command**: `uv run ruff check --fix --select I001 path/to/file_or_dir`
@@ -342,7 +342,7 @@ runtime-evaluated-decorators = [
 case-sensitive = true
 force-single-line = false
 force-sort-within-sections = true
-known-first-party = ["codegen_lab"]
+known-first-party = ["boss_bot"]
 required-imports = ["from __future__ import annotations"]
 combine-as-imports = true
 split-on-trailing-comma = false
@@ -396,7 +396,7 @@ The project uses the following isort configuration via Ruff:
 case-sensitive = true
 force-single-line = false
 force-sort-within-sections = true
-known-first-party = ["codegen_lab"]
+known-first-party = ["boss_bot"]
 required-imports = ["from __future__ import annotations"]
 combine-as-imports = true
 split-on-trailing-comma = false

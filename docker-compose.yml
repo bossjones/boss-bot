@@ -1,0 +1,33 @@
+---
+x-default-logging:
+  driver: "json-file"
+  options:
+    max-size: "5m"
+    max-file: "2"
+    tag: "{{.Name}}"
+
+networks:
+  net:
+    driver: bridge
+services:
+  redis:
+    image: bitnami/redis:6.2.10
+    hostname: "boss-redis"
+    restart: always
+    environment:
+      ALLOW_EMPTY_PASSWORD: "yes"
+      REDIS_PORT_NUMBER: 7600
+    healthcheck:
+      test: redis-cli ping
+      interval: 1s
+      timeout: 3s
+      retries: 50
+    ports:
+      - "7600:7600"
+    volumes:
+      - 'boss_redis_data:/bitnami/redis/data'
+
+volumes:
+  boss_redis_data:
+    driver: local
+  db:

@@ -1,0 +1,169 @@
+---
+# SOURCE: https://github.com/openai/openai-python/blob/aed1e43745cd6358b4bafd3a39b3dfeee5e31a03/.github/workflows/ci.yml
+name: CI
+
+# SOURCE: https://github.com/tornadoweb/tornado/blob/f399f40fde0ae1b130646db783a6f79cc59231b2/.github/workflows/build.yml#L37
+on: # yamllint disable-line rule:truthy
+  # https://docs.github.com/en/webhooks-and-events/webhooks/webhook-events-and-payloads#push
+  push:
+    branches:
+      # Run on release branches. This gives us a chance to detect rot in this
+      # configuration before pushing a tag (which we'd rather not have to undo).
+      - main
+      - feature/**
+      - '[0-9].*.x'       # e.g., 4.14.x
+      - '[0-9][0-9].*.x'       # e.g., 23.3.x
+    tags:
+      # The main purpose of this workflow is to build wheels for release tags.
+      # It runs automatically on tags matching this pattern and pushes to pypi.
+      - "v*"
+  # https://docs.github.com/en/webhooks-and-events/webhooks/webhook-events-and-payloads#pull_request
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+  # # https://docs.github.com/en/webhooks-and-events/webhooks/webhook-events-and-payloads#workflow_dispatch
+  # workflow_dispatch:
+  #   # Allow this workflow to be run manually (pushing to testpypi instead of pypi)
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
+        required: false
+        default: "false"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+env:
+  COLUMNS: 150
+  UV_FROZEN: true
+  FORCE_COLOR: 1
+  LANGCHAIN_ENDPOINT: "https://api.smith.langchain.com"
+  LANGCHAIN_TRACING_V2: true
+  LANGCHAIN_HUB_API_URL: "https://api.hub.langchain.com"
+  LANGCHAIN_PROJECT: "goob-ci"
+
+jobs:
+  test:
+    name: Test ${{ matrix.os }} / Python ${{ matrix.python-version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.12"]
+
+    runs-on: ${{ matrix.os }}
+
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      LANGCHAIN_API_KEY: ${{ secrets.LANGCHAIN_API_KEY }}
+      LANGCHAIN_HUB_API_KEY: ${{ secrets.LANGCHAIN_API_KEY }}
+      BOSS_BOT_CONFIG_DISCORD_TOKEN: "foo"
+      BOSS_BOT_CONFIG_OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+    steps:
+      - name: Set up Git repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up UV and Python ${{ matrix.python-version }}
+        id: setup-uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          enable-cache: true
+          cache-dependency-glob: |
+            **/requirements*.txt
+            **/pyproject.toml
+            **/uv.lock
+
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Start Redis
+        id: redis-docker-compose-up
+        run: |
+          curl -SL https://github.com/docker/compose/releases/download/v2.29.1/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+          docker compose up -d
+          docker ps -a
+        continue-on-error: true
+
+      - name: Start Chroma
+        id: chroma-docker-compose-up
+        run: |
+          mkdir -p ./src/boss_bot/data/chroma/vectorstorage || true
+          docker compose up -d
+          docker ps -a
+        continue-on-error: true
+
+      - name: Install system dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y tesseract-ocr tesseract-ocr-por libyaml-dev poppler-utils ffmpeg
+          sudo apt-get install -y build-essential libssl-dev zlib1g-dev libbz2-dev \
+          libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev \
+          xz-utils tk-dev libffi-dev liblzma-dev python3-openssl git autoconf automake \
+          build-essential libtool python3-dev libsqlite3-dev
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled == 'true' }}
+        with:
+          limit-access-to-actor: true
+
+      - name: Install dependencies
+        run: |
+          cp -f env.sample .env
+          ./scripts/retry -t 4 -- uv sync --dev
+
+      - name: Display UV and Python versions
+        run: |
+          echo "UV version: $(uv --version)"
+          echo "Python version: $(uv run python --version)"
+          echo "Cache hit: ${{ steps.setup-uv.outputs.cache-hit }}"
+
+      - name: Run tests and collect coverage
+        run: |
+          ./scripts/retry -t 2 -- uv run goobctl chroma generate
+          uv run lint
+          uv run python -c 'import boss_bot'
+          ./scripts/retry -t 2 -- uv run pytest --diff-width=60 --diff-symbols --cov-append --cov-report=term-missing --cov-report=xml:cov.xml --cov-report=html:htmlcov --junitxml=junit/test-results.xml --cov=.
+
+      - name: tmate session if tests fail
+        if: failure() && github.event_name == 'workflow_dispatch'
+        uses: mxschmitt/action-tmate@v3
+        with:
+          limit-access-to-actor: true
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          flags: "${{ runner.os }},${{ runner.arch }},${{ matrix.python-version }}"
+          verbose: true
+          fail_ci_if_error: true
+          files: ./cov.xml
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.os }}-${{ matrix.python-version }}
+          path: |
+            junit/
+            cov.xml
+            htmlcov/

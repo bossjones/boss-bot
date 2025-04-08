@@ -1,0 +1,41 @@
+---
+description: This rule governs how to handle any questions or queries related to LangGraph documentation. It should be applied whenever: (1) A user asks about LangGraph functionality, (2) Questions arise about LangGraph implementation details, (3) Clarification is needed about LangGraph features or usage. The rule ensures consistent and thorough responses by leveraging the langgraph-docs-mcp server to access the most relevant documentation. It's particularly crucial for providing accurate, documentation-backed answers about LangGraph capabilities and best practices.
+globs:
+alwaysApply: false
+---
+
+# LangGraph Documentation Query Handler
+
+## Critical Rules
+
+- For ANY question about LangGraph, use the langgraph-docs-mcp server to help answer
+- ALWAYS start by calling list_doc_sources tool to get the available llms.txt file
+- MUST call fetch_docs tool to read the llms.txt content
+- Carefully reflect on the URLs contained in llms.txt
+- Analyze the input question to determine which URLs are most relevant
+- Call fetch_docs on the relevant URLs to gather specific documentation
+- Use the gathered documentation to provide accurate, source-backed answers
+- Include citations to specific documentation sections when answering
+
+## Examples
+
+<example>
+  User: "How do I implement a simple LangGraph chain?"
+
+  Assistant's process:
+  1. Called list_doc_sources to get llms.txt
+  2. Read llms.txt with fetch_docs
+  3. Found URL about LangGraph chains basics
+  4. Called fetch_docs on that specific URL
+  5. Provided answer with implementation steps, citing the documentation
+</example>
+
+<example type="invalid">
+  User: "Can you explain LangGraph's StateGraph?"
+
+  Assistant's process:
+  1. Immediately started explaining without checking documentation
+  2. Skipped using langgraph-docs-mcp server
+  3. Provided general information without specific citations
+  4. Failed to verify information against current documentation
+</example>

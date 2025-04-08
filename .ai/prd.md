@@ -64,6 +64,614 @@ Boss-Bot is a Discord bot designed to enhance server productivity by providing r
 - Future: Vector store integration
 </requirements>
 
+<data_models>
+## Data Models
+
+All data models will be implemented using Pydantic for validation and serialization. Models are organized by domain and include comprehensive type hints and validation rules.
+
+### Core Models
+
+#### BotConfig
+```python
+class BotConfig(BaseSettings):
+    """Bot configuration settings."""
+    token: SecretStr
+    command_prefix: str = "$"
+    max_concurrent_downloads: int = 5
+    max_queue_size: int = 50
+    temp_file_retention_hours: int = 24
+    max_file_size_mb: int = 50
+    log_level: str = "INFO"
+
+    class Config:
+        env_prefix = "BOSS_BOT_"
+```
+
+#### DownloadItem
+```python
+class DownloadStatus(str, Enum):
+    """Status of a download item."""
+    QUEUED = "queued"
+    DOWNLOADING = "downloading"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+class DownloadPriority(int, Enum):
+    """Priority levels for downloads."""
+    LOW = 0
+    NORMAL = 1
+    HIGH = 2
+
+class DownloadItem(BaseModel):
+    """Represents a single download request."""
+    id: UUID
+    url: HttpUrl
+    status: DownloadStatus
+    priority: DownloadPriority = DownloadPriority.NORMAL
+    user_id: int
+    guild_id: int
+    channel_id: int
+    created_at: datetime
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    progress: float = 0.0
+    total_size: Optional[int] = None
+    current_size: Optional[int] = None
+    attempt_count: int = 0
+    max_attempts: int = 3
+    error_message: Optional[str] = None
+
+    class Config:
+        json_encoders = {
+            datetime: lambda v: v.isoformat(),
+            UUID: lambda v: str(v)
+        }
+```
+
+#### QueueState
+```python
+class QueueState(BaseModel):
+    """Represents the current state of the download queue."""
+    items: List[DownloadItem]
+    active_downloads: int
+    total_items: int
+    queue_size: int
+
+    @property
+    def is_full(self) -> bool:
+        return self.total_items >= self.queue_size
+```
+
+#### DownloadProgress
+```python
+class ProgressUpdate(BaseModel):
+    """Progress update for a download."""
+    item_id: UUID
+    bytes_downloaded: int
+    total_bytes: Optional[int]
+    speed_bps: float
+    eta_seconds: Optional[float]
+    status_message: str
+```
+
+### User Management Models
+
+#### UserPermissions
+```python
+class PermissionLevel(str, Enum):
+    """User permission levels."""
+    NORMAL = "normal"
+    PREMIUM = "premium"
+    ADMIN = "admin"
+
+class UserSettings(BaseModel):
+    """User-specific settings and permissions."""
+    user_id: int
+    permission_level: PermissionLevel = PermissionLevel.NORMAL
+    max_concurrent_downloads: int = 2
+    max_file_size_mb: int = 50
+    total_downloads: int = 0
+    created_at: datetime
+    last_download: Optional[datetime] = None
+```
+
+### File Management Models
+
+#### DownloadedFile
+```python
+class DownloadedFile(BaseModel):
+    """Represents a downloaded file in temporary storage."""
+    id: UUID
+    download_item_id: UUID
+    filename: str
+    file_path: Path
+    size_bytes: int
+    mime_type: str
+    created_at: datetime
+    expires_at: datetime
+    checksum: str
+
+    @property
+    def is_expired(self) -> bool:
+        return datetime.now() > self.expires_at
+```
+
+### Error Models
+
+#### DownloadError
+```python
+class ErrorType(str, Enum):
+    """Types of download errors."""
+    NETWORK = "network"
+    RATE_LIMIT = "rate_limit"
+    FILE_TOO_LARGE = "file_too_large"
+    INVALID_URL = "invalid_url"
+    PERMISSION_DENIED = "permission_denied"
+    UNKNOWN = "unknown"
+
+class DownloadError(BaseModel):
+    """Detailed error information for failed downloads."""
+    item_id: UUID
+    error_type: ErrorType
+    message: str
+    timestamp: datetime
+    retry_after: Optional[float] = None
+    is_permanent: bool = False
+```
+
+### Metrics Models
+
+#### DownloadMetrics
+```python
+class DownloadMetrics(BaseModel):
+    """Metrics for download performance monitoring."""
+    total_downloads: int = 0
+    failed_downloads: int = 0
+    average_speed_bps: float = 0.0
+    total_bytes_downloaded: int = 0
+    queue_wait_time_seconds: float = 0.0
+    active_downloads: int = 0
+    success_rate: float = 100.0
+```
+
+These models provide a strong foundation for type safety and data validation throughout the application. Each model includes:
+- Comprehensive type hints
+- Default values where appropriate
+- Validation rules
+- JSON serialization support
+- Clear documentation
+- Enum-based status and type fields
+
+The models are designed to be:
+- Immutable where possible
+- Self-validating
+- Easy to serialize/deserialize
+- Well-documented
+- Extensible for future features
+</data_models>
+
+<file_management>
+## File Management Specifications
+
+### Storage Architecture
+
+#### Directory Structure
+```text
+/tmp/boss-bot/
+├── downloads/
+│   ├── {guild_id}/
+│   │   ├── {yyyy-mm-dd}/
+│   │   │   ├── {download_id}/
+│   │   │   │   ├── metadata.json
+│   │   │   │   └── content/
+│   │   │   │       └── {filename}
+│   │   │   └── .cleanup
+│   │   └── .stats
+│   └── .maintenance
+├── temp/
+│   └── {download_id}/
+└── .locks/
+```
+
+### Storage Policies
+
+#### Temporary Storage
+- **Location**: All downloads initially go to `/tmp/boss-bot/temp/{download_id}/`
+- **Retention**: Files in temp are deleted after:
+  * Successful upload to Discord (immediate)
+  * Failed download (30 minutes)
+  * Abandoned download (1 hour)
+- **Size Limits**:
+  * Individual file: 50MB (Discord limit)
+  * Total temp storage: 1GB
+  * Per guild daily quota: 500MB
+
+#### Organized Storage
+- **Structure**: Downloads are organized by guild and date
+- **Metadata**: Each download includes a metadata.json file containing:
+  * Original URL
+  * Download timestamp
+  * User information
+  * File checksums
+  * Processing history
+- **Retention Periods**:
+  * Successful downloads: 24 hours
+  * Failed downloads with retry potential: 6 hours
+  * Premium guild downloads: 72 hours
+
+### Cleanup Mechanisms
+
+#### Scheduled Cleanup
+```python
+class CleanupSchedule:
+    """Cleanup schedule configuration."""
+    TEMP_SCAN_INTERVAL: int = 300  # 5 minutes
+    MAIN_SCAN_INTERVAL: int = 3600  # 1 hour
+    DEEP_SCAN_INTERVAL: int = 86400  # 24 hours
+```
+
+#### Cleanup Rules
+1. **Temporary Files**:
+   - Run every 5 minutes
+   - Remove files older than their retention period
+   - Remove files from completed/failed downloads
+   - Clean partial downloads older than 1 hour
+
+2. **Main Storage**:
+   - Run every hour
+   - Remove expired files based on retention policy
+   - Clean empty directories
+   - Update storage statistics
+
+3. **Deep Cleanup**:
+   - Run daily during low-usage hours
+   - Perform integrity checks
+   - Remove orphaned files
+   - Compress and archive logs
+   - Generate storage reports
+
+### File Operations
+
+#### Download Process
+1. **Initial Download**:
+   ```python
+   async def download_flow(url: str, guild_id: int) -> Path:
+       temp_path = get_temp_path(download_id)
+       try:
+           await download_to_temp(url, temp_path)
+           await validate_download(temp_path)
+           final_path = organize_download(temp_path, guild_id)
+           return final_path
+       except Exception as e:
+           await cleanup_failed_download(temp_path)
+           raise
+   ```
+
+2. **Validation Checks**:
+   - File size limits
+   - MIME type verification
+   - Malware scanning
+   - File integrity checks
+
+3. **Organization Process**:
+   - Create guild/date directories
+   - Generate metadata
+   - Move from temp to organized storage
+   - Update storage statistics
+
+### Error Handling
+
+#### Storage Errors
+```python
+class StorageError(Enum):
+    DISK_FULL = "Insufficient disk space"
+    QUOTA_EXCEEDED = "Guild quota exceeded"
+    INVALID_FILE = "File validation failed"
+    CLEANUP_ERROR = "Cleanup process failed"
+```
+
+#### Recovery Procedures
+1. **Disk Space Issues**:
+   - Trigger emergency cleanup
+   - Notify administrators
+   - Temporarily reject new downloads
+
+2. **Quota Exceeded**:
+   - Notify guild administrators
+   - Provide cleanup recommendations
+   - Offer premium upgrade options
+
+3. **Validation Failures**:
+   - Log detailed error information
+   - Notify user with specific reason
+   - Clean up invalid files immediately
+
+### Monitoring and Metrics
+
+#### Storage Metrics
+```python
+class StorageMetrics(BaseModel):
+    """Storage monitoring metrics."""
+    total_space_used: int
+    temp_space_used: int
+    downloads_per_guild: Dict[int, int]
+    cleanup_stats: CleanupStats
+    error_counts: Dict[StorageError, int]
+```
+
+#### Alerts
+- Disk space usage > 80%
+- Cleanup job failures
+- High error rates
+- Quota approaching limits
+- Suspicious file patterns
+
+### File Types and Processing
+
+#### Supported File Types
+```python
+class SupportedTypes(BaseModel):
+    """Supported file types and their processors."""
+    IMAGES: List[str] = ["jpg", "png", "gif", "webp"]
+    VIDEOS: List[str] = ["mp4", "webm", "mov"]
+    AUDIO: List[str] = ["mp3", "wav", "ogg"]
+    MAX_SIZES: Dict[str, int] = {
+        "image": 5_242_880,  # 5MB
+        "video": 52_428_800,  # 50MB
+        "audio": 10_485_760  # 10MB
+    }
+```
+
+#### Processing Rules
+1. **Images**:
+   - Convert to Discord-optimal formats
+   - Resize if exceeding limits
+   - Strip metadata
+
+2. **Videos**:
+   - Transcode to Discord-compatible format
+   - Adjust bitrate if needed
+   - Generate thumbnail
+
+3. **Audio**:
+   - Convert to Discord-supported format
+   - Adjust quality if size exceeds limits
+
+This comprehensive file management system ensures:
+- Efficient use of storage space
+- Reliable cleanup of temporary files
+- Clear organization of downloads
+- Robust error handling
+- Detailed monitoring and metrics
+- Type-safe file processing
+</file_management>
+
+<user_experience>
+## User Experience Specifications
+
+### Command Interface
+
+#### Command Structure
+```python
+class CommandFormat:
+    """Standard command format specifications."""
+    PREFIX: str = "$"
+    COMMANDS: Dict[str, str] = {
+        "dlt": "Download from Twitter",
+        "dlr": "Download from Reddit",
+        "dlq": "Show queue status",
+        "dlc": "Cancel download",
+        "dls": "Show settings",
+        "dlh": "Show help"
+    }
+```
+
+#### Progress Updates
+```python
+class ProgressFormat:
+    """Progress message formatting."""
+    TEMPLATE: str = """
+    Downloading: {filename}
+    Progress: {bar} {percentage}%
+    Speed: {speed}/s
+    ETA: {eta}
+    Status: {status}
+    """
+    UPDATE_INTERVAL: int = 5  # seconds
+    BAR_LENGTH: int = 20
+```
+
+Example Progress Message:
+```
+Downloading: funny_cat_video.mp4
+Progress: [====================] 100%
+Speed: 1.2 MB/s
+ETA: Complete
+Status: Processing for Discord upload
+```
+
+### User Interactions
+
+#### Command Flow
+1. **Download Initiation**:
+   ```
+   User: $dlt https://twitter.com/user/status/123
+   Bot: Starting download...
+        Queue position: 2
+        Estimated start: 2 minutes
+   ```
+
+2. **Progress Updates**:
+   ```
+   Bot: [Progress message updates every 5 seconds]
+        Updates merge into single message
+        Uses reactions for user controls
+   ```
+
+3. **Completion/Error**:
+   ```
+   Bot: ✅ Download complete!
+        File: funny_cat_video.mp4
+        Size: 2.3MB
+        Time: 45s
+   ```
+
+#### Interactive Elements
+1. **Progress Control Reactions**:
+   - ⏸️ Pause download
+   - ▶️ Resume download
+   - ⏹️ Cancel download
+   - ℹ️ Show details
+   - 🔄 Retry failed download
+
+2. **Queue Management**:
+   ```
+   User: $dlq
+   Bot: Current Queue Status:
+        1. video1.mp4 [===>    ] 35%
+        2. image.jpg [WAITING]
+        3. video2.mp4 [WAITING]
+
+        Your position: 2
+        Estimated wait: 3 minutes
+   ```
+
+3. **Settings Management**:
+   ```
+   User: $dls
+   Bot: Your Settings:
+        Max concurrent downloads: 2
+        Notification preference: Mentions
+        Default priority: Normal
+        Total downloads today: 5/10
+   ```
+
+### Notification System
+
+#### Update Types
+```python
+class NotificationPreference(Enum):
+    """User notification preferences."""
+    NONE = "none"  # No updates
+    MINIMAL = "minimal"  # Start/finish only
+    NORMAL = "normal"  # Regular progress
+    VERBOSE = "verbose"  # Detailed updates
+```
+
+#### Notification Rules
+1. **Queue Position Updates**:
+   - When moving up in queue
+   - When about to start
+   - On significant delays
+
+2. **Download Progress**:
+   - Start of download
+   - Regular progress updates
+   - Completion/failure
+   - Processing status
+
+3. **Error Notifications**:
+   - Clear error description
+   - Recommended actions
+   - Retry instructions
+   - Support information
+
+### User Settings
+
+#### Configurable Options
+```python
+class UserPreferences(BaseModel):
+    """User-configurable settings."""
+    notification_level: NotificationPreference
+    progress_bar_style: str
+    default_priority: DownloadPriority
+    mention_on_complete: bool
+    auto_retry: bool
+    max_retries: int = 3
+```
+
+#### Default Values
+```python
+DEFAULT_PREFERENCES = UserPreferences(
+    notification_level=NotificationPreference.NORMAL,
+    progress_bar_style="standard",
+    default_priority=DownloadPriority.NORMAL,
+    mention_on_complete=True,
+    auto_retry=True
+)
+```
+
+### Help System
+
+#### Command Help
+```python
+class HelpFormat:
+    """Help message formatting."""
+    TEMPLATE: str = """
+    {command}: {description}
+    Usage: {usage}
+    Examples:
+    {examples}
+    Notes:
+    {notes}
+    """
+```
+
+Example Help Message:
+```
+$dlt: Download from Twitter
+Usage: $dlt <url> [priority]
+
+Examples:
+  $dlt https://twitter.com/user/status/123
+  $dlt https://twitter.com/user/status/123 high
+
+Notes:
+- Supports single tweets and threads
+- Max file size: 50MB
+- Supported formats: Images, Videos
+```
+
+### Error Messages
+
+#### User-Friendly Errors
+```python
+class ErrorMessages:
+    """User-friendly error messages."""
+    TEMPLATES = {
+        ErrorType.NETWORK: (
+            "🔌 Connection issue! I couldn't reach {platform}.\n"
+            "I'll retry {retry_count} more times.\n"
+            "Try again in {retry_after} seconds."
+        ),
+        ErrorType.RATE_LIMIT: (
+            "⏳ We're being rate limited by {platform}.\n"
+            "Please wait {retry_after} seconds."
+        ),
+        ErrorType.FILE_TOO_LARGE: (
+            "📦 File is too large ({size}MB)!\n"
+            "Maximum size: {max_size}MB\n"
+            "Try requesting a smaller version."
+        )
+    }
+```
+
+The user experience design focuses on:
+- Clear and intuitive commands
+- Real-time progress feedback
+- Interactive controls
+- Customizable notifications
+- Helpful error messages
+- Comprehensive help system
+
+Would you like me to:
+1. Add more command examples?
+2. Expand the notification system?
+3. Add more interactive features?
+4. Detail the help system further?
+</user_experience>
+
 <epic_list>
 ## Epic List
 

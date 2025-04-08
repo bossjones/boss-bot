@@ -273,4 +273,201 @@ Each task must pass these gates before being considered complete:
 6. All error handling scenarios tested
 7. Clean code principles verified
 8. Type hints and docstrings complete
-</rewritten_file>
+
+## Discord Integration and Download System
+
+### 1. Discord Bot Configuration
+
+#### Required Intents
+- message_content
+- guilds
+- members
+- messages
+- reactions
+
+#### Command Structure
+| Command | Description |
+|---------|-------------|
+| $dlt <url> | Twitter/video downloads |
+| $dlr <url> | Reddit downloads |
+| $dlq | Show queue status |
+| $dlc | Cancel download |
+
+#### Permission Model
+- Role-based access control
+- Download size limits per role
+- Queue priority handling
+
+### 2. Download System Architecture
+
+#### Download Manager
+- Async download queue implementation
+- Real-time progress tracking
+- Rate limiting and throttling
+- Concurrent download limits (max 5)
+
+#### File Management
+- Temporary storage handling with cleanup
+- Automatic file cleanup after successful upload
+- File size validation (max 50MB - Discord limit)
+- Format verification and validation
+
+### 3. Error Handling and Recovery
+- Network failure recovery with automatic retries
+- Invalid URL handling with user feedback
+- File system error management
+- Rate limit handling with exponential backoff
+- Queue overflow management with priority system
+
+### 4. Performance Requirements
+- Download initiation response: < 1 second
+- Queue status updates: Every 5 seconds
+- Maximum queue size: 50 items
+- Concurrent downloads: 5 max
+- File size limits: 50MB (Discord limit)
+- Memory usage: < 500MB under load
+- CPU usage: < 50% under load
+
+### 5. Integration Points
+- Discord.py event system
+- Gallery-dl integration for media downloads
+- File system for temporary storage
+- Discord CDN for file uploads
+- Rate limiting systems
+
+## Test-Driven Development Strategy
+
+### 1. Core Test Infrastructure
+
+#### Test Fixtures
+```python
+@pytest.fixture
+async def test_bot():
+    """Core bot fixture for Discord command testing."""
+    intents = discord.Intents.default()
+    intents.message_content = True
+    bot = commands.Bot(command_prefix="$", intents=intents)
+    await bot._async_setup_hook()
+    dpytest.configure(bot)
+    yield bot
+    await dpytest.empty_queue()
+
+@pytest.fixture
+def mock_downloader():
+    """Mock downloader for testing download functionality."""
+    with patch('bot.download.Downloader') as mock:
+        yield mock
+```
+
+### 2. Command Testing Strategy
+
+#### Download Command Tests
+```python
+@pytest.mark.asyncio
+class TestDownloadCommands:
+    async def test_valid_twitter_url(self, test_bot, mock_downloader):
+        url = "https://twitter.com/user/status/123"
+        await dpytest.message(f"$dlt {url}")
+        assert dpytest.verify().message().contains()
+        mock_downloader.download.assert_called_once_with(url)
+
+    async def test_invalid_url(self, test_bot):
+        url = "not_a_url"
+        await dpytest.message(f"$dlt {url}")
+        assert dpytest.verify().message().contains("Invalid URL")
+
+    async def test_queue_full(self, test_bot, mock_downloader):
+        mock_downloader.queue_size.return_value = 50
+        url = "https://twitter.com/user/status/123"
+        await dpytest.message(f"$dlt {url}")
+        assert dpytest.verify().message().contains("Queue full")
+```
+
+### 3. Integration Testing
+
+```python
+@pytest.mark.integration
+class TestDownloadFlow:
+    async def test_download_to_completion(self, test_bot, mock_downloader):
+        # Given
+        url = "https://twitter.com/user/status/123"
+        mock_downloader.download.return_value = "file.mp4"
+
+        # When
+        await dpytest.message(f"$dlt {url}")
+
+        # Then
+        assert dpytest.verify().message().contains("Started")
+        await asyncio.sleep(1)
+        assert dpytest.verify().message().contains("Complete")
+        assert os.path.exists("file.mp4")
+```
+
+### 4. Error Case Testing
+
+```python
+@pytest.mark.asyncio
+class TestErrorHandling:
+    async def test_network_failure(self, test_bot, mock_downloader):
+        mock_downloader.download.side_effect = NetworkError
+        url = "https://twitter.com/user/status/123"
+        await dpytest.message(f"$dlt {url}")
+        assert dpytest.verify().message().contains("Network error")
+
+    async def test_rate_limit(self, test_bot, mock_downloader):
+        mock_downloader.download.side_effect = RateLimitError
+        url = "https://twitter.com/user/status/123"
+        await dpytest.message(f"$dlt {url}")
+        assert dpytest.verify().message().contains("Rate limited")
+```
+
+### 5. Performance Testing
+
+```python
+@pytest.mark.performance
+class TestPerformance:
+    async def test_response_time(self, test_bot):
+        start = time.time()
+        await dpytest.message("$dlt url")
+        response_time = time.time() - start
+        assert response_time < 1.0
+
+    async def test_concurrent_downloads(self, test_bot):
+        urls = [f"url{i}" for i in range(10)]
+        tasks = [dpytest.message(f"$dlt {url}") for url in urls]
+        await asyncio.gather(*tasks)
+        assert mock_downloader.active_downloads <= 5
+```
+
+### 6. Test Coverage Requirements
+
+- Unit Tests:
+  * All command handlers
+  * Queue management
+  * File operations
+  * Error handlers
+  * Permission checks
+
+- Integration Tests:
+  * End-to-end download flows
+  * Discord message handling
+  * File upload process
+  * Queue management system
+
+- Performance Tests:
+  * Response times
+  * Concurrent operations
+  * Memory usage
+  * CPU utilization
+  * Network bandwidth
+
+### 7. Testing Best Practices
+
+- Use pytest markers for test categorization
+- Implement proper cleanup in fixtures
+- Mock external dependencies
+- Use parameterized tests for edge cases
+- Maintain test isolation
+- Follow AAA pattern (Arrange-Act-Assert)
+- Document test purposes and scenarios
+- Regular test execution in CI/CD pipeline

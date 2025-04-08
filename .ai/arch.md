@@ -227,6 +227,73 @@ boss-bot/
 3. Add RAG functionality
 4. Enhance command set
 
+### Error Handling & Resilience
+
+The system leverages built-in error handling and resilience features from gallery-dl and yt-dlp, complemented by our own error management:
+
+#### Platform-Specific Rate Limiting
+- Utilizes gallery-dl and yt-dlp's built-in rate limit handling
+- Automatic backoff and retry mechanisms per platform
+- Configurable delay between requests
+- Platform-specific quota management
+
+#### Download Retry Strategy
+- Leverages gallery-dl and yt-dlp's retry mechanisms
+- Automatic retry on transient failures
+- Exponential backoff for repeated failures
+- Maximum retry attempts configurable per platform
+
+#### Network Resilience
+- Timeout handling through gallery-dl and yt-dlp
+- Automatic connection recovery
+- Partial download resume capability
+- Bandwidth throttling support
+
+#### Failure Recovery
+- Automatic cleanup of failed downloads
+- Session recovery after bot restart
+- Queue state preservation
+- Incomplete download handling
+
+```python
+class DownloadRetryConfig:
+    """Configuration for download retry behavior."""
+    MAX_RETRIES = 3
+    INITIAL_DELAY = 1.0  # seconds
+    MAX_DELAY = 30.0  # seconds
+    BACKOFF_FACTOR = 2.0
+
+    @classmethod
+    def get_retry_delay(cls, attempt: int) -> float:
+        """Calculate delay for retry attempt."""
+        delay = cls.INITIAL_DELAY * (cls.BACKOFF_FACTOR ** (attempt - 1))
+        return min(delay, cls.MAX_DELAY)
+
+class DownloadManager:
+    """Manages download operations with resilience."""
+
+    async def download_with_retry(
+        self,
+        url: str,
+        download_id: str
+    ) -> Path:
+        """Attempt download with retry logic."""
+        for attempt in range(1, DownloadRetryConfig.MAX_RETRIES + 1):
+            try:
+                return await self._perform_download(url, download_id)
+            except Exception as e:
+                if attempt == DownloadRetryConfig.MAX_RETRIES:
+                    raise DownloadError(f"Max retries exceeded: {str(e)}")
+
+                delay = DownloadRetryConfig.get_retry_delay(attempt)
+                logger.warning(
+                    f"Download attempt {attempt} failed, retrying in {delay}s",
+                    error=str(e),
+                    download_id=download_id
+                )
+                await asyncio.sleep(delay)
+```
+
 ### CI/CD Pipeline
 The project uses GitHub Actions for continuous integration and deployment:
 - Automated testing on pull requests

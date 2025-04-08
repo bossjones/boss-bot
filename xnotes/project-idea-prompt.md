@@ -31,6 +31,9 @@ Let's create the technical architecture section of our Discord RAG bot PRD. We n
    - OpenAI for embeddings and LLM
    - discord.py for Discord integration
    - Typer for CLI
+   - loguru for logging
+   - pydantic-settings for configuration
+   - pytest for testing
 
 2. Architecture Requirements:
    - Modular design with clear boundaries
@@ -72,6 +75,56 @@ For each phase, we need to:
 Please help me create a detailed implementation plan that follows our modular architecture (120 lines per module max) and emphasizes maintainable, well-tested code.
 ```
 
+## Prompt 4: RAG System and Document Processing
+```
+Let's detail the RAG system specifications for our Discord bot PRD:
+
+Document Processing Requirements:
+1. Supported Formats:
+   - Initial: text files, PDFs, markdown, code snippets, images
+   - Future: audio and video support
+
+2. Processing Modes:
+   - Real-time processing for online users
+   - Batch processing capability for offline processing
+   - Stateless conversation model (with future provision for history)
+
+3. Vector Store Configuration:
+   - Redis as primary vector store
+   - OpenAI embeddings integration
+   - Efficient document chunking and storage strategies
+
+Please help me define the detailed specifications for the RAG system that ensures efficient document processing while maintaining modularity.
+```
+
+## Prompt 5: Discord Integration and Media Management
+```
+Let's specify the Discord integration and media handling requirements:
+
+1. Discord Bot Configuration:
+   - Required Intents:
+     * message_content, guilds, members, bans
+     * emojis, voice_states, messages, reactions
+   - Support for both channel and DM interactions
+   - Simple permission model (expandable)
+
+2. Media Download Features:
+   - Supported Platforms:
+     * YouTube (via yt-dlp)
+     * Reddit, Twitter, Instagram, TikTok (via gallery_dl)
+   - Download Constraints:
+     * Max file size: 50MB (Discord limit)
+     * Temporary storage in temp directory
+   - Single download processing (future queue system)
+
+3. Error Handling and Logging:
+   - Async-safe logging with loguru
+   - Stdout logging configuration
+   - Comprehensive error handling
+
+Please help me define the integration specifications that ensure robust Discord functionality and efficient media handling.
+```
+
 ## Notes for PRD Generation
 - Each prompt should be used in sequence
 - Iterate on the responses to refine the PRD
@@ -79,3 +132,7 @@ Please help me create a detailed implementation plan that follows our modular ar
 - Focus on maintainability and scalability
 - Consider junior developer understanding
 - Document all assumptions and constraints
+- Start with minimal viable features, with clear paths for future enhancements
+- Prioritize robustness and reliability over feature completeness
+- Ensure proper error handling and logging from the start
+- Keep security in mind with proper credentials management via .env and pydantic-settings

@@ -1,6 +1,6 @@
 ---
-description: "This rule governs project status tracking and reporting. It should be applied whenever: (1) A status check is requested, (2) Progress needs to be evaluated against story files, (3) New implementation tasks are being planned, or (4) Project structure needs verification. This rule ensures efficient progress tracking by first inspecting the actual repository state before making recommendations."
-globs: .ai/*.{epic,story}.md
+description: "This rule governs project status tracking and reporting, with special focus on .ai directory content. It should be applied whenever: (1) A status check is requested for any content in .ai directory, (2) Progress needs to be evaluated against story/epic files in .ai directory, (3) Checklist generation or updates are needed for .ai content, or (4) Project structure verification involves .ai directory. This rule ensures efficient progress tracking by first inspecting the actual repository state before making recommendations."
+globs: .ai/**/*.md
 alwaysApply: false
 ---
 
@@ -12,6 +12,11 @@ alwaysApply: false
   * Use `tree -L 7 -I "*.pyc|__pycache__|.git|.pytest_cache|.ruff_cache|.mypy_cache|.coverage|htmlcov|.venv|.env|*.egg-info|build|dist|node_modules|.DS_Store|images"` to get current structure
   * Parse tree output to identify existing files and directories
   * Compare against story requirements to identify gaps
+  * For .ai directory content:
+    * Check story files in .ai/stories/
+    * Check epic files in .ai/epics/
+    * Verify task status against actual implementation
+    * Track phased development compliance
 
 - For each story task verification:
   1. First check if required files/directories exist
@@ -21,6 +26,11 @@ alwaysApply: false
   5. Track story progress in a .cursor/story-progress.json file
   6. Verify task is not marked as deferred before tracking
   7. Check task belongs to current phase before tracking
+  8. For .ai directory stories:
+     * Check task dependencies in story files
+     * Verify phase alignment with PRD
+     * Track implementation evidence
+     * Update related epic files
 
 - When generating status reports:
   * Use ✅ for completed items
@@ -33,6 +43,11 @@ alwaysApply: false
   * Include phase information for each task
   * Mark deferred tasks with strikethrough ~~
   * Follow story status progression: Draft -> In Progress -> Complete
+  * For .ai directory content:
+    * Link to relevant PRD sections
+    * Track phase compliance
+    * Note dependencies between stories
+    * Include implementation evidence
 
 - For each major component, verify:
   1. Directory structure exists
@@ -42,6 +57,11 @@ alwaysApply: false
   5. Documentation is present
   6. Phase compliance is maintained
   7. No deferred features are implemented
+  8. For .ai directory:
+     * Story file format compliance
+     * Epic linkage accuracy
+     * Phase markers presence
+     * Task organization
 
 - Status report must include:
   * Story ID and name
@@ -55,6 +75,11 @@ alwaysApply: false
   * Story completion percentage
   * Command history
   * Phase compliance status
+  * For .ai content:
+    * PRD alignment status
+    * Epic progression
+    * Phase tracking
+    * Implementation evidence
 
 - Story progress tracking:
   1. After status check, update files:
@@ -82,6 +107,11 @@ alwaysApply: false
   * Story requirements
   * Phase status
   * Deferred status
+  * For .ai content:
+    * Story file status
+    * Epic dependencies
+    * Phase markers
+    * Implementation state
 
 ## Examples
 

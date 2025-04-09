@@ -60,26 +60,28 @@ Governs security and monitoring standards. Apply this rule when:
 - Handling rate limits
 - Implementing error handling
 
-### [Markdown XML Tagging](./../.cursor/rules/core-rules/markdown-xml-tagging-manual.mdc)
-Manual rule for markdown and XML tagging standards. Apply this rule when:
-- Working with markdown documentation
-- Adding XML tags to documentation
-- Structuring documentation content
-- Ensuring consistent documentation format
+### [Secure Environment Testing](./../.cursor/rules/testing-rules/secure-environment-testing-agent.mdc)
+Governs secure environment variable handling in tests. Apply this rule when:
+- Writing tests that involve environment variables
+- Handling sensitive data in tests
+- Implementing settings validation tests
+- Working with secret management
 
-### [Rule Update Cursor Modes](./../.cursor/rules/core-rules/rule-update-cursor-modes-manual.mdc)
-Manual rule for updating Cursor modes. Apply this rule when:
-- Modifying Cursor mode behavior
-- Updating Cursor mode settings
-- Creating new Cursor modes
-- Managing Cursor mode configurations
+## Testing Rules
 
-### [Workflow Agile](./../.cursor/rules/core-rules/workflow-agile-manual.mdc)
-Manual rule for agile workflow practices. Apply this rule when:
-- Following agile methodologies
-- Managing sprints and iterations
-- Conducting agile ceremonies
-- Tracking agile metrics
+### [Pytest Mock Auto](./../.cursor/rules/py-rules/pytest-mock-auto.mdc)
+Automatically enforces pytest-mock standards in test files. This rule:
+- Prevents usage of unittest.mock
+- Enforces pytest-mock's mocker fixture
+- Ensures proper mock cleanup
+- Maintains consistent mocking patterns
+
+### [Pytest Mock Agent](./../.cursor/rules/py-rules/pytest-mock-agent.mdc)
+Governs the use of mocking in Python tests. Apply this rule when:
+- Writing new test files
+- Modifying existing tests with mocks
+- Reviewing test code with mocks
+- Converting tests to use pytest-mock
 
 ## Global Rules
 
@@ -98,13 +100,6 @@ Governs Test-Driven Development workflow. Apply this rule when:
 - Fixing bugs
 - Refactoring code
 - Working on story implementations
-
-### [Pytest Mock](./../.cursor/rules/py-rules/pytest-mock-agent.mdc)
-Governs the use of mocking in Python tests. Apply this rule when:
-- Writing new test files
-- Modifying existing tests with mocks
-- Reviewing test code with mocks
-- Converting tests to use pytest-mock
 
 ## Tool Rules
 
@@ -139,6 +134,15 @@ Governs TypeScript development practices. Apply this rule when:
 - Making architectural decisions
 - Creating/refactoring TypeScript files
 
+## UI Rules
+
+### [UI Best Practices](./../.cursor/rules/ui-rules/ui-best-practices-agent.mdc)
+Governs UI development practices. Apply this rule when:
+- Implementing user interfaces
+- Designing UI components
+- Ensuring accessibility standards
+- Managing UI state
+
 ## Workflow Rules
 
 ### [Architecture Workflow](./../.cursor/rules/workflows/arch.mdc)
@@ -161,3 +165,11 @@ Governs project management practices. Apply this rule when:
 - Coordinating team efforts
 - Tracking project progress
 - Planning project milestones
+
+## Rule Types
+
+The project uses several types of rules:
+- **Agent Rules** (`*-agent.mdc`): Rules that are applied by the AI when specific conditions are met
+- **Auto Rules** (`*-auto.mdc`): Rules that automatically apply to files matching specific patterns
+- **Manual Rules** (`*-manual.mdc`): Rules that must be explicitly invoked
+- **Always Rules** (`*-always.mdc`): Rules that are always applied in every conversation

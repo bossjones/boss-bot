@@ -1,87 +1,71 @@
-"""Storage quota management for the boss-bot application."""
+"""Storage quota management system for Boss-Bot."""
 
-import os
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Tuple
-
-from pydantic import BaseModel
+from typing import Dict
 
 
-class QuotaConfig(BaseModel):
-    """Quota configuration."""
+class QuotaExceededError(Exception):
+    """Raised when a file operation would exceed the storage quota."""
 
-    max_total_size: int = 10 * 1024 * 1024 * 1024  # 10GB
-    max_user_size: int = 1 * 1024 * 1024 * 1024  # 1GB
-    max_files_per_user: int = 1000
+    pass
+
+
+@dataclass
+class QuotaConfig:
+    """Configuration for storage quotas."""
+
+    max_total_size_mb: int = 50  # From story constraints
+    max_concurrent_downloads: int = 5  # From story constraints
 
 
 class QuotaManager:
-    """Storage quota management."""
+    """Manages storage quotas for downloaded files."""
 
-    def __init__(self, storage_root: Path, config: QuotaConfig | None = None) -> None:
-        """Initialize quota manager."""
+    def __init__(self, storage_root: Path):
+        """Initialize the quota manager.
+
+        Args:
+            storage_root: Path to the storage directory
+        """
         self.storage_root = storage_root
-        self.config = config or QuotaConfig()
-        self.user_quotas: dict[str, dict[str, int]] = {}
+        self.config = QuotaConfig()
+        self._files: dict[str, float] = {}  # filename -> size in MB
 
-    def get_directory_size(self, directory: Path) -> int:
-        """Get total size of a directory in bytes."""
-        total = 0
-        try:
-            for entry in directory.rglob("*"):
-                if entry.is_file():
-                    total += entry.stat().st_size
-        except Exception:
-            pass
-        return total
+    @property
+    def current_usage_mb(self) -> float:
+        """Get the current storage usage in megabytes."""
+        return sum(self._files.values())
 
-    def get_user_storage_info(self, user_id: str) -> dict[str, int | float]:
-        """Get storage information for a user."""
-        user_dir = self.storage_root / user_id
+    def check_quota(self, size_mb: float) -> bool:
+        """Check if adding a file of given size would exceed quota.
 
-        if not user_dir.exists():
-            return {"total_size": 0, "file_count": 0, "quota_used": 0.0}
+        Args:
+            size_mb: Size of the file in megabytes
 
-        total_size = self.get_directory_size(user_dir)
-        file_count = sum(1 for _ in user_dir.rglob("*") if _.is_file())
+        Returns:
+            True if file can be added, False if it would exceed quota
+        """
+        return (
+            size_mb <= self.config.max_total_size_mb
+            and (self.current_usage_mb + size_mb) <= self.config.max_total_size_mb
+        )
 
-        return {
-            "total_size": total_size,
-            "file_count": file_count,
-            "quota_used": total_size / self.config.max_user_size,
-        }
+    def add_file(self, filename: str, size_mb: float) -> None:
+        """Record a new file in the quota tracking system.
 
-    def check_user_quota(self, user_id: str, file_size: int) -> tuple[bool, str]:
-        """Check if a file can be stored within user's quota."""
-        info = self.get_user_storage_info(user_id)
+        Args:
+            filename: Name of the file
+            size_mb: Size of the file in megabytes
 
-        if info["file_count"] >= self.config.max_files_per_user:
-            return False, f"User has reached maximum file count of {self.config.max_files_per_user}"
+        Raises:
+            QuotaExceededError: If adding the file would exceed quota
+        """
+        if not self.check_quota(size_mb):
+            raise QuotaExceededError(
+                f"Adding file {filename} ({size_mb}MB) would exceed "
+                f"quota of {self.config.max_total_size_mb}MB "
+                f"(current usage: {self.current_usage_mb}MB)"
+            )
 
-        if info["total_size"] + file_size > self.config.max_user_size:
-            return False, "User quota would be exceeded"
-
-        return True, ""
-
-    def check_total_quota(self, file_size: int) -> tuple[bool, str]:
-        """Check if a file can be stored within total quota."""
-        total_size = self.get_directory_size(self.storage_root)
-
-        if total_size + file_size > self.config.max_total_size:
-            return False, "Total storage quota would be exceeded"
-
-        return True, ""
-
-    def get_quota_status(self) -> dict[str, int | float]:
-        """Get overall quota status."""
-        total_size = self.get_directory_size(self.storage_root)
-
-        return {
-            "total_size": total_size,
-            "max_size": self.config.max_total_size,
-            "usage_percent": (total_size / self.config.max_total_size) * 100,
-        }
-
-
-# Create global quota manager
-quota_manager = QuotaManager(Path("storage"))
+        self._files[filename] = size_mb

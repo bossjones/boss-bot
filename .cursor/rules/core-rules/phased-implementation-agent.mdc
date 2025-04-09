@@ -1,0 +1,62 @@
+---
+description: "This rule governs the implementation of features based on their phase status in story files. It should be applied whenever: (1) Implementing new features from stories, (2) Modifying existing features, (3) Adding new functionality to existing components, or (4) Reviewing implementation tasks. This ensures we don't accidentally implement deferred features and maintain proper phasing of development."
+globs:
+alwaysApply: false
+---
+
+# Phased Implementation Control
+
+## Critical Rules
+
+- NEVER implement any feature marked as "Deferred" or with strikethrough (~~) in story files
+- ALWAYS check story files for deferred status before implementing new functionality
+- If a feature is marked with "~~" or "(Deferred to future story)", treat it as explicitly forbidden
+- When implementing a component that has deferred features:
+  - Only implement the minimum required for current phase features
+  - Do not add hooks or placeholders for deferred features
+  - Keep interfaces simple and focused on current requirements
+- If unsure about feature status, explicitly ask the user for clarification
+- When modifying existing code, do not add functionality that enables deferred features
+- Document any technical decisions that might impact deferred features with "DEFERRED:" prefix
+
+## Examples
+
+<example>
+# Good - Respecting Deferred Status
+```markdown
+# Story Tasks
+1. [ ] Storage System
+   - [x] Basic quota checks
+   - [ ] File validation
+   - [ ] ~~Advanced cleanup~~ (Deferred to future story)
+
+# Implementation
+class StorageManager:
+    def __init__(self):
+        self.quota = QuotaManager()  # Only basic quota functionality
+
+    def validate_file(self, file):
+        # Only implements current phase validation
+        return self.quota.check_size(file)
+```
+</example>
+
+<example type="invalid">
+# Bad - Implementing Deferred Features
+```markdown
+# Story Tasks
+1. [ ] Storage System
+   - [x] Basic quota checks
+   - [ ] File validation
+   - [ ] ~~Advanced cleanup~~ (Deferred to future story)
+
+# Implementation
+class StorageManager:
+    def __init__(self):
+        self.quota = QuotaManager()
+        self.cleanup_scheduler = CleanupScheduler()  # WRONG: Implementing deferred feature
+
+    def setup_cleanup(self):  # WRONG: Adding deferred functionality
+        self.cleanup_scheduler.start()
+```
+</example>

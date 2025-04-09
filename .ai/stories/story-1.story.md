@@ -109,12 +109,15 @@ Increased from 3 to 5 points due to additional security, monitoring, and CI/CD r
 
 7. - [ ] Initialize Storage Structure
    1. - [ ] Set up temporary storage directory structure
-   2. - [ ] Configure cleanup policies
-   3. - [ ] Set up storage quota management
-   4. - [ ] Configure backup locations
-   5. - [ ] Set up storage monitoring
-   6. - [ ] Implement file validation checks
-   7. - [ ] Configure storage security
+   2. - [ ] Add file validation checks to QuotaManager
+      * File type validation
+      * File name sanitization
+      * Basic security checks
+   3. - [ ] ~~Configure cleanup policies~~ (Deferred to future story)
+   4. - [ ] ~~Set up storage quota management~~ (Deferred to future story)
+   5. - [ ] ~~Configure backup locations~~ (Deferred to future story)
+   6. - [ ] ~~Set up storage monitoring~~ (Deferred to future story)
+   7. - [ ] ~~Configure storage security~~ (Deferred to future story)
 
 ## Constraints
 

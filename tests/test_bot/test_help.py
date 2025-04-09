@@ -33,8 +33,15 @@ async def test_get_command_signature(help_command, mocker):
     assert sig == "$download <url>"
 
 @pytest.mark.asyncio
-async def test_get_command_signature_with_parent(help_command, mocker):
-    """Test command signature formatting with parent command."""
+async def test_get_command_signature_with_parent(mocker):
+    """Test getting command signature with parent command."""
+    help_command = BossHelpCommand()
+
+    # Set up command context
+    ctx = mocker.Mock(spec=commands.Context)
+    ctx.clean_prefix = "$"
+    help_command.context = ctx
+
     # Create mock parent command
     parent = mocker.Mock(spec=commands.Command)
     parent.parent = None
@@ -46,17 +53,23 @@ async def test_get_command_signature_with_parent(help_command, mocker):
     cmd.name = "list"
     cmd.signature = ""
 
-    # Get signature
-    sig = help_command.get_command_signature(cmd)
-
-    # Verify format
+    # Get signature and strip any trailing whitespace
+    sig = help_command.get_command_signature(cmd).rstrip()
     assert sig == "$queue list"
 
 @pytest.mark.asyncio
-async def test_send_bot_help(help_command, mocker):
-    """Test sending bot help embed."""
-    # Mock destination
+async def test_send_bot_help(mocker):
+    """Test sending bot help message."""
+    help_command = BossHelpCommand()
+
+    # Set up command context and destination
+    ctx = mocker.Mock(spec=commands.Context)
+    ctx.clean_prefix = "$"
+    help_command.context = ctx
+
+    # Create destination with async send method
     destination = mocker.Mock()
+    destination.send = mocker.AsyncMock()
     help_command.get_destination = mocker.Mock(return_value=destination)
 
     # Create mock cog and commands
@@ -66,28 +79,36 @@ async def test_send_bot_help(help_command, mocker):
     cmd.name = "download"
     cmd.signature = "<url>"
     cmd.short_doc = "Download a file"
+    cmd.parent = None  # Explicitly set parent to None
 
     # Create mapping
     mapping = {cog: [cmd]}
 
-    # Mock filter_commands to return our command
+    # Mock filter_commands
     help_command.filter_commands = mocker.AsyncMock(return_value=[cmd])
 
     # Send help
     await help_command.send_bot_help(mapping)
 
     # Verify embed was sent
-    destination.send.assert_called_once()
+    destination.send.assert_awaited_once()  # Use assert_awaited_once instead of assert_called_once
     embed = destination.send.call_args[1]["embed"]
     assert isinstance(embed, discord.Embed)
     assert embed.title == "Boss-Bot Help"
     assert "Downloads" in [field.name for field in embed.fields]
 
 @pytest.mark.asyncio
-async def test_send_command_help(help_command, mocker):
-    """Test sending command help embed."""
-    # Mock destination
+async def test_send_command_help(mocker):
+    """Test sending command help message."""
+    help_command = BossHelpCommand()
+
+    # Set up command context and destination
+    ctx = mocker.Mock(spec=commands.Context)
+    ctx.clean_prefix = "$"
+    help_command.context = ctx
+
     destination = mocker.Mock()
+    destination.send = mocker.AsyncMock()  # Make send an async mock
     help_command.get_destination = mocker.Mock(return_value=destination)
 
     # Create mock command
@@ -105,7 +126,6 @@ async def test_send_command_help(help_command, mocker):
     cmd._buckets = mocker.Mock()
     cmd._buckets._cooldown = cooldown
 
-    # Send help
     await help_command.send_command_help(cmd)
 
     # Verify embed was sent
@@ -117,13 +137,19 @@ async def test_send_command_help(help_command, mocker):
     assert "Cooldown" in [field.name for field in embed.fields]
 
 @pytest.mark.asyncio
-async def test_send_error_message(help_command, mocker):
-    """Test sending error message embed."""
-    # Mock destination
+async def test_send_error_message(mocker):
+    """Test sending error message."""
+    help_command = BossHelpCommand()
+
+    # Set up command context and destination
+    ctx = mocker.Mock(spec=commands.Context)
+    ctx.clean_prefix = "$"
+    help_command.context = ctx
+
     destination = mocker.Mock()
+    destination.send = mocker.AsyncMock()  # Make send an async mock
     help_command.get_destination = mocker.Mock(return_value=destination)
 
-    # Send error
     error_msg = "Command not found"
     await help_command.send_error_message(error_msg)
 

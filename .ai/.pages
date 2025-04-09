@@ -1,0 +1,10 @@
+nav:
+  - diagrams
+  - architecture
+  - stories
+  - prd
+  - ...
+
+title: AI Documentation
+order: asc
+sort_type: natural

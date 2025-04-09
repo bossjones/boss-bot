@@ -38,8 +38,8 @@ theme:
     code: JetBrains Mono # Sets JetBrains Mono as the monospace font for code blocks
 
   # Theme assets
-  logo: img/logo2.png # Sets the logo image for the site header
-  favicon: img/logo2.png # Sets the browser favicon
+  logo: images/logo3.png # Sets the logo image for the site header
+  favicon: images/logo3.png # Sets the browser favicon
 
   # Icon configurations for various UI elements
   icon:
@@ -219,3 +219,11 @@ copyright: Copyright &copy; 2023 - 2025 Malcolm Jones # Copyright notice in foot
 # Additional CSS files to include
 extra_css:
   - css/neoteroi.cards.css
+
+# # Navigation structure
+# nav:
+#   - Home: index.md
+#   - AI Documentation:
+#       - .ai:
+#           - ... | *.md
+#   - ...

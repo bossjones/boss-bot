@@ -1,82 +1,141 @@
 ---
-description: ""
-globs: "*.py"
-alwaysApply: false
+description: "This rule governs the Test-Driven Development (TDD) workflow. It should be applied automatically whenever: (1) Implementing new features, (2) Fixing bugs, (3) Refactoring code, or (4) Working on story implementations. This ensures we follow proper TDD practices with continuous test feedback."
+globs: src/**/*.py, tests/**/*.py
+alwaysApply: true
 ---
 
-# Python Test-Driven Development
+# Python TDD Development Loop Standards
 
 ## Critical Rules
 
-- NEVER create implementation files without corresponding test files first
-- All test files must be created in the tests/ directory mirroring the src/ structure
-- Test files must be named test_*.py matching their implementation file names
-- Tests must be written before implementation code
-- Each public function/method must have at least one test case
-- Use pytest fixtures for common test setup
-- Mock external dependencies using pytest-mock
-- Use pytest.mark decorators to categorize tests
-- Follow Arrange-Act-Assert pattern in test methods
-- Test both success and error cases
-- Include docstrings explaining test scenarios
-- Maintain minimum coverage requirements from PRD:
-  * Core Download: 30%
-  * Command Parsing: 25%
-  * Discord Events: 20%
-  * File Management: 20%
+- ALWAYS follow the Red-Green-Refactor cycle:
+  1. Write failing test(s) first (Red)
+  2. Implement minimal code to make tests pass (Green)
+  3. Refactor while keeping tests green
+  4. Repeat until feature is complete
+
+- ALWAYS run tests in continuous feedback loop:
+  ```bash
+  uv run pytest -s --verbose --showlocals --tb=short {test_path}
+  ```
+
+- Test command MUST include:
+  * `-s`: Show print statements
+  * `--verbose`: Detailed test information
+  * `--showlocals`: Show local variables on failure
+  * `--tb=short`: Concise tracebacks
+
+- Development Loop Steps:
+  1. Start with failing test
+  2. Run test command and observe failure
+  3. Implement/fix code
+  4. Run test command again
+  5. If tests fail, go to step 3
+  6. If tests pass, either:
+     * Add next test if feature incomplete
+     * Refactor if needed
+     * Move to next feature if complete
+
+- When implementing stories:
+  * Break story into testable units
+  * Write tests for each unit
+  * Follow dev loop for each unit
+  * Integration tests after units complete
+
+- Test Organization:
+  * Unit tests in `tests/test_*/test_*.py`
+  * Integration tests in `tests/integration/test_*.py`
+  * Each test file matches source file structure
+
+- Test Isolation:
+  * Each test must be independent
+  * Use fixtures for setup/teardown
+  * Mock external dependencies
+  * Reset state between tests
 
 ## Examples
 
 <example>
-# Good TDD Practice - test_logging.py created first
+# Good - Following TDD Loop
 ```python
-import pytest
-from pathlib import Path
-from pydantic import BaseModel
-
-def test_log_config_initialization():
-    """Test that LogConfig initializes with correct defaults."""
-    from boss_bot.monitoring.logging import LogConfig
-
-    config = LogConfig()
-    assert config.LOGGER_NAME == "boss_bot"
-    assert config.LOG_LEVEL == "INFO"
-    assert isinstance(config.LOG_FILE_PATH, Path)
-
-@pytest.mark.asyncio
-async def test_log_config_setup(tmp_path):
-    """Test that logging setup creates required directories and configures handlers."""
-    from boss_bot.monitoring.logging import LogConfig
-
+# Step 1: Write failing test
+def test_quota_check():
+    """Test that quota check works correctly."""
     # Arrange
-    config = LogConfig()
-    config.LOG_FILE_PATH = tmp_path / "logs/test.log"
+    quota = QuotaManager(max_size=100)
 
-    # Act
-    config.setup_logging()
+    # Act & Assert
+    assert quota.check_quota(50) is True
+    assert quota.check_quota(150) is False
 
-    # Assert
-    assert config.LOG_FILE_PATH.parent.exists()
-    assert len(logger.handlers) > 0
+# Step 2: Run test (it fails)
+# $ uv run pytest -s --verbose --showlocals --tb=short tests/test_storage/test_quotas.py::test_quota_check
+
+# Step 3: Implement minimal code
+class QuotaManager:
+    def __init__(self, max_size: int):
+        self.max_size = max_size
+
+    def check_quota(self, size: int) -> bool:
+        return size <= self.max_size
+
+# Step 4: Run test again (it passes)
+# Step 5: Add next test or refactor
+```
+
+# Good - Story Implementation Loop
+```python
+# 1. Break story into units
+# - Quota initialization
+# - Basic quota checks
+# - User quota tracking
+# - Total quota management
+
+# 2. Start with first unit
+def test_quota_initialization():
+    """Test quota manager initialization."""
+    quota = QuotaManager(Path("/tmp/storage"))
+    assert quota.storage_root == Path("/tmp/storage")
+    assert isinstance(quota.config, QuotaConfig)
+
+# 3. Run test, implement, repeat
+# $ uv run pytest -s --verbose --showlocals --tb=short tests/test_storage/test_quotas.py::test_quota_initialization
+
+# 4. Move to next unit after passing
+def test_basic_quota_check():
+    """Test basic quota checking."""
+    # ... next test
 ```
 </example>
 
 <example type="invalid">
-# Bad Practice - Implementation without tests
+# Bad - Not Following TDD Loop
 ```python
-# Creating implementation without tests first
-class LogConfig(BaseModel):
-    LOGGER_NAME: str = "boss_bot"
-    LOG_LEVEL: str = "INFO"
+# BAD: Writing implementation before tests
+class QuotaManager:
+    def __init__(self, storage_root: Path):
+        self.storage_root = storage_root
+        self.config = QuotaConfig()
 
-    def setup_logging(self):
-        # Implementation without corresponding tests
-        pass
+    def check_quota(self, size: int) -> bool:
+        return self.get_total_size() + size <= self.config.max_size
 
-# Missing test cases for error scenarios
-def test_only_happy_path():
-    config = LogConfig()
-    assert config.LOGGER_NAME == "boss_bot"
-    # Missing error cases and edge cases
+# BAD: Writing tests after implementation
+def test_quota_manager():
+    """Test quota manager after the fact."""
+    quota = QuotaManager(Path("/tmp"))
+    assert quota.check_quota(100)
+```
+
+# Bad - Skipping Dev Loop Steps
+```python
+# BAD: Multiple tests without running loop
+def test_quota_feature():
+    """Test entire quota feature at once."""
+    quota = QuotaManager()
+    assert quota.check_user_quota(user_id, size)
+    assert quota.check_total_quota(size)
+    assert quota.get_quota_status()
+    # ... many more assertions without running tests
 ```
 </example>

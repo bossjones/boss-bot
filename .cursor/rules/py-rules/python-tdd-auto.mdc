@@ -1,0 +1,82 @@
+---
+description: ""
+globs: "*.py"
+alwaysApply: false
+---
+
+# Python Test-Driven Development
+
+## Critical Rules
+
+- NEVER create implementation files without corresponding test files first
+- All test files must be created in the tests/ directory mirroring the src/ structure
+- Test files must be named test_*.py matching their implementation file names
+- Tests must be written before implementation code
+- Each public function/method must have at least one test case
+- Use pytest fixtures for common test setup
+- Mock external dependencies using pytest-mock
+- Use pytest.mark decorators to categorize tests
+- Follow Arrange-Act-Assert pattern in test methods
+- Test both success and error cases
+- Include docstrings explaining test scenarios
+- Maintain minimum coverage requirements from PRD:
+  * Core Download: 30%
+  * Command Parsing: 25%
+  * Discord Events: 20%
+  * File Management: 20%
+
+## Examples
+
+<example>
+# Good TDD Practice - test_logging.py created first
+```python
+import pytest
+from pathlib import Path
+from pydantic import BaseModel
+
+def test_log_config_initialization():
+    """Test that LogConfig initializes with correct defaults."""
+    from boss_bot.monitoring.logging import LogConfig
+
+    config = LogConfig()
+    assert config.LOGGER_NAME == "boss_bot"
+    assert config.LOG_LEVEL == "INFO"
+    assert isinstance(config.LOG_FILE_PATH, Path)
+
+@pytest.mark.asyncio
+async def test_log_config_setup(tmp_path):
+    """Test that logging setup creates required directories and configures handlers."""
+    from boss_bot.monitoring.logging import LogConfig
+
+    # Arrange
+    config = LogConfig()
+    config.LOG_FILE_PATH = tmp_path / "logs/test.log"
+
+    # Act
+    config.setup_logging()
+
+    # Assert
+    assert config.LOG_FILE_PATH.parent.exists()
+    assert len(logger.handlers) > 0
+```
+</example>
+
+<example type="invalid">
+# Bad Practice - Implementation without tests
+```python
+# Creating implementation without tests first
+class LogConfig(BaseModel):
+    LOGGER_NAME: str = "boss_bot"
+    LOG_LEVEL: str = "INFO"
+
+    def setup_logging(self):
+        # Implementation without corresponding tests
+        pass
+
+# Missing test cases for error scenarios
+def test_only_happy_path():
+    config = LogConfig()
+    assert config.LOGGER_NAME == "boss_bot"
+    # Missing error cases and edge cases
+```
+</example>

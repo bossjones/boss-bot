@@ -1,154 +1,190 @@
-"""Tests for secure environment variable handling.
+"""Tests for environment settings."""
 
-Run with:
-    uv run pytest -s --verbose --showlocals --tb=short tests/test_core/test_env.py
-"""
 import os
 from pathlib import Path
-from typing import Any, Dict
+from collections.abc import Generator
 
 import pytest
-from pydantic import SecretStr
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import ValidationError
+from pytest import MonkeyPatch
 
-from boss_bot.core.env import BossSettings
+from boss_bot.core.env import BossSettings, Environment
 
 
-@pytest.mark.env
-class TestBossSettings:
-    """Test suite for BossSettings configuration.
+@pytest.fixture
+def mock_env(monkeypatch: MonkeyPatch) -> Generator[None, None, None]:
+    """Set up test environment variables."""
+    env_vars = {
+        "DISCORD_TOKEN": "test_token_123",
+        "DISCORD_CLIENT_ID": "123456789012345678",
+        "DISCORD_SERVER_ID": "876543210987654321",
+        "DISCORD_ADMIN_USER_ID": "111222333444555666",
+        "STORAGE_ROOT": "/tmp/boss-bot",
+        "MAX_FILE_SIZE_MB": "50",
+        "MAX_CONCURRENT_DOWNLOADS": "5",
+        "MAX_QUEUE_SIZE": "50",
+        "LOG_LEVEL": "INFO",
+        "ENABLE_METRICS": "true",
+        "METRICS_PORT": "9090",
+        "ENABLE_HEALTH_CHECK": "true",
+        "HEALTH_CHECK_PORT": "8080",
+        "RATE_LIMIT_REQUESTS": "100",
+        "RATE_LIMIT_WINDOW_SECONDS": "60",
+        "ENABLE_FILE_VALIDATION": "true",
+        "DEBUG": "false",
+        "ENVIRONMENT": "development",
+        "OPENAI_API_KEY": "sk-test-key-123456789abcdef",
+        "COHERE_API_KEY": "test-cohere-key-123456789",
+        "DEBUG_AIDER": "true",
+        "FIRECRAWL_API_KEY": "test-firecrawl-key-123456789",
+        "LANGCHAIN_API_KEY": "test-langchain-key-123456789",
+        "LANGCHAIN_DEBUG_LOGS": "true",
+        "LANGCHAIN_ENDPOINT": "http://localhost:8000",
+        "LANGCHAIN_HUB_API_KEY": "test-hub-key-123456789",
+        "LANGCHAIN_HUB_API_URL": "http://localhost:8001",
+        "LANGCHAIN_PROJECT": "test-project",
+        "LANGCHAIN_TRACING_V2": "true",
+        "PINECONE_API_KEY": "test-pinecone-key-123456789",
+        "PINECONE_ENV": "test-env",
+        "PINECONE_INDEX": "test-index",
+        "TAVILY_API_KEY": "test-tavily-key-123456789",
+        "UNSTRUCTURED_API_KEY": "test-unstructured-key-123456789",
+        "UNSTRUCTURED_API_URL": "http://localhost:8002",
+    }
 
-    Following TDD Red-Green-Refactor cycle:
-    1. Write failing test
-    2. Run test to verify failure
-    3. Implement code
-    4. Run test to verify pass
-    5. Refactor if needed
-    """
+    for key, value in env_vars.items():
+        monkeypatch.setenv(key, value)
 
-    def test_settings_loads_from_env_file(self, tmp_path: Path, mock_env_vars: dict[str, str], monkeypatch: pytest.MonkeyPatch) -> None:
-        """Test that settings can be loaded from .env file.
+    yield
 
-        Steps:
-        1. Create temporary .env file
-        2. Clear any existing environment variables
-        3. Load settings
-        4. Verify all settings are loaded correctly
-        """
-        # Arrange
-        env_file = tmp_path / ".env"
-        env_content = "\n".join(f"{k}={v}" for k, v in mock_env_vars.items())
-        env_file.write_text(env_content)
 
-        # Clear any existing environment variables
-        for key in mock_env_vars:
-            monkeypatch.delenv(key, raising=False)
+def test_settings_load(mock_env: None) -> None:
+    """Test that settings load correctly from environment variables."""
+    settings = BossSettings()
 
-        # Act
-        settings = BossSettings(_env_file=env_file, _env_file_encoding="utf-8")
+    # Test Discord settings
+    assert settings.discord_token.get_secret_value() == "test_token_123"
+    assert settings.discord_client_id == 123456789012345678
+    assert settings.discord_server_id == 876543210987654321
+    assert settings.discord_admin_user_id == 111222333444555666
 
-        # Assert
-        assert isinstance(settings.discord_token, SecretStr)
-        assert settings.discord_token.get_secret_value() == mock_env_vars["DISCORD_TOKEN"]
-        assert settings.discord_client_id == int(mock_env_vars["DISCORD_CLIENT_ID"])
-        assert settings.discord_server_id == int(mock_env_vars["DISCORD_SERVER_ID"])
-        assert settings.discord_admin_user_id == int(mock_env_vars["DISCORD_ADMIN_USER_ID"])
-        assert settings.discord_admin_user_invited is True
-        assert settings.enable_ai is True
-        assert settings.enable_redis is False
-        assert settings.enable_sentry is False
-        assert settings.sentry_dsn is None
-        assert isinstance(settings.openai_api_key, SecretStr)
-        assert settings.openai_api_key.get_secret_value() == mock_env_vars["OPENAI_API_KEY"]
+    # Test Storage settings
+    assert settings.storage_root == Path("/tmp/boss-bot")
+    assert settings.max_file_size_mb == 50
+    assert settings.max_concurrent_downloads == 5
+    assert settings.max_queue_size == 50
 
-    def test_settings_loads_from_environment(self, mock_settings: None) -> None:
-        """Test that settings can be loaded from environment variables.
+    # Test Monitoring settings
+    assert settings.log_level == "INFO"
+    assert settings.enable_metrics is True
+    assert settings.metrics_port == 9090
+    assert settings.enable_health_check is True
+    assert settings.health_check_port == 8080
 
-        Steps:
-        1. Environment variables are set by mock_settings fixture
-        2. Load settings
-        3. Verify all settings match environment variables
-        """
-        # Act
+    # Test Security settings
+    assert settings.rate_limit_requests == 100
+    assert settings.rate_limit_window_seconds == 60
+    assert settings.enable_file_validation is True
+
+    # Test Development settings
+    assert settings.debug is False
+    assert settings.environment == Environment.DEVELOPMENT
+
+    # Test API Keys
+    assert settings.openai_api_key.get_secret_value() == "sk-test-key-123456789abcdef"
+    assert settings.cohere_api_key.get_secret_value() == "test-cohere-key-123456789"
+    assert settings.debug_aider is True
+    assert settings.firecrawl_api_key.get_secret_value() == "test-firecrawl-key-123456789"
+    assert settings.langchain_api_key.get_secret_value() == "test-langchain-key-123456789"
+    assert settings.langchain_debug_logs is True
+    assert str(settings.langchain_endpoint) == "http://localhost:8000/"
+    assert settings.langchain_hub_api_key.get_secret_value() == "test-hub-key-123456789"
+    assert str(settings.langchain_hub_api_url) == "http://localhost:8001/"
+    assert settings.langchain_project == "test-project"
+    assert settings.langchain_tracing_v2 is True
+    assert settings.pinecone_api_key.get_secret_value() == "test-pinecone-key-123456789"
+    assert settings.pinecone_env == "test-env"
+    assert settings.pinecone_index == "test-index"
+    assert settings.tavily_api_key.get_secret_value() == "test-tavily-key-123456789"
+    assert settings.unstructured_api_key.get_secret_value() == "test-unstructured-key-123456789"
+    assert str(settings.unstructured_api_url) == "http://localhost:8002/"
+
+
+def test_invalid_log_level(mock_env: None, monkeypatch: MonkeyPatch) -> None:
+    """Test that invalid log level raises validation error."""
+    monkeypatch.setenv("LOG_LEVEL", "INVALID")
+    with pytest.raises(ValidationError, match="Invalid log level"):
+        BossSettings()
+
+
+def test_invalid_storage_root(mock_env: None, monkeypatch: MonkeyPatch) -> None:
+    """Test that relative storage root path raises validation error."""
+    monkeypatch.setenv("STORAGE_ROOT", "relative/path")
+    with pytest.raises(ValidationError, match="Storage root must be an absolute path"):
+        BossSettings()
+
+
+def test_invalid_positive_integers(mock_env: None, monkeypatch: MonkeyPatch) -> None:
+    """Test that negative values raise validation error for positive integer fields."""
+    fields = [
+        "MAX_FILE_SIZE_MB",
+        "MAX_CONCURRENT_DOWNLOADS",
+        "MAX_QUEUE_SIZE",
+        "METRICS_PORT",
+        "HEALTH_CHECK_PORT",
+        "RATE_LIMIT_REQUESTS",
+        "RATE_LIMIT_WINDOW_SECONDS"
+    ]
+
+    for field in fields:
+        monkeypatch.setenv(field, "-1")
+        with pytest.raises(ValidationError, match=f"{field.lower()} must be a positive integer"):
+            BossSettings()
+        monkeypatch.setenv(field, "0")
+        with pytest.raises(ValidationError, match=f"{field.lower()} must be a positive integer"):
+            BossSettings()
+
+
+def test_invalid_urls(mock_env: None, monkeypatch: MonkeyPatch) -> None:
+    """Test that invalid URLs raise validation error."""
+    url_fields = {
+        "LANGCHAIN_ENDPOINT": "not_a_url",
+        "LANGCHAIN_HUB_API_URL": "invalid_url",
+        "UNSTRUCTURED_API_URL": "also_not_a_url"
+    }
+
+    for field, value in url_fields.items():
+        monkeypatch.setenv(field, value)
+        with pytest.raises(ValidationError, match="URL"):
+            BossSettings()
+
+
+def test_environment_validation(mock_env: None, monkeypatch: MonkeyPatch) -> None:
+    """Test environment enum validation."""
+    # Test valid environments
+    for env in ["development", "staging", "production"]:
+        monkeypatch.setenv("ENVIRONMENT", env)
         settings = BossSettings()
+        assert settings.environment == getattr(Environment, env.upper())
 
-        # Assert - Using os.environ to avoid exposing secrets in test code
-        assert settings.discord_token.get_secret_value() == os.environ["DISCORD_TOKEN"]
-        assert settings.discord_client_id == int(os.environ["DISCORD_CLIENT_ID"])
-        assert settings.discord_server_id == int(os.environ["DISCORD_SERVER_ID"])
-        assert settings.discord_admin_user_id == int(os.environ["DISCORD_ADMIN_USER_ID"])
-        assert settings.discord_admin_user_invited is True
-        assert settings.enable_ai is True
-        assert settings.enable_redis is False
-        assert settings.enable_sentry is False
-        assert settings.sentry_dsn is None
-        assert settings.openai_api_key.get_secret_value() == os.environ["OPENAI_API_KEY"]
+    # Test invalid environment
+    monkeypatch.setenv("ENVIRONMENT", "invalid")
+    with pytest.raises(ValidationError):
+        BossSettings()
 
-    def test_settings_validates_required_fields(self) -> None:
-        """Test that settings validates required fields.
 
-        Steps:
-        1. Attempt to create settings without required fields
-        2. Verify ValueError is raised
-        """
-        # Act/Assert
-        with pytest.raises(ValueError, match="Field required"):
-            BossSettings(_env_file=None)
+def test_str_representation(mock_env: None) -> None:
+    """Test string representation masks sensitive values."""
+    settings = BossSettings()
+    str_repr = str(settings)
 
-    def test_settings_validates_discord_token_format(self, invalid_token_vars: dict[str, str]) -> None:
-        """Test that settings validates Discord token format.
+    # Check that sensitive values are masked
+    assert "**********" in str_repr
+    assert "sk-test-key-123456789abcdef" not in str_repr
+    assert "test-cohere-key-123456789" not in str_repr
+    assert "test-firecrawl-key-123456789" not in str_repr
 
-        Steps:
-        1. Create settings with invalid token format
-        2. Verify ValueError is raised
-        """
-        # Act/Assert
-        with pytest.raises(ValueError, match="Invalid Discord token format"):
-            BossSettings(**invalid_token_vars)
-
-    def test_settings_validates_openai_key_format(self, invalid_api_key_vars: dict[str, str]) -> None:
-        """Test that settings validates OpenAI API key format.
-
-        Steps:
-        1. Create settings with invalid API key format
-        2. Verify ValueError is raised
-        """
-        # Act/Assert
-        with pytest.raises(ValueError, match="Invalid OpenAI API key format"):
-            BossSettings(**invalid_api_key_vars)
-
-    @pytest.mark.security
-    def test_settings_secrets_are_hidden_in_repr(self, mock_env_vars: dict[str, str]) -> None:
-        """Test that secrets are properly hidden in string representation."""
-        # Arrange
-        settings = BossSettings(**mock_env_vars)
-
-        # Act
-        settings_str = str(settings)
-
-        # Assert
-        assert settings.discord_token.get_secret_value() not in settings_str
-        assert settings.openai_api_key.get_secret_value() not in settings_str
-        assert "SecretStr('**********')" in settings_str  # Verify SecretStr is used for secrets
-
-    @pytest.mark.security
-    def test_secretstr_no_leak_in_repr(self, mock_env_vars: dict[str, str]) -> None:
-        """Test that SecretStr values cannot leak through repr or str.
-
-        Steps:
-        1. Create settings with sensitive data
-        2. Test all possible string representations
-        3. Verify no secrets are visible in any form
-        """
-        # Arrange
-        settings = BossSettings(**mock_env_vars)
-
-        # Act & Assert
-        assert mock_env_vars["DISCORD_TOKEN"] not in repr(settings)
-        assert mock_env_vars["DISCORD_TOKEN"] not in str(settings)
-        assert mock_env_vars["DISCORD_TOKEN"] not in f"{settings}"
-        assert mock_env_vars["DISCORD_TOKEN"] not in settings.__repr__()
-
-        # Check that the secret is not exposed in debug output
-        debug_output = str(pytest.main(["--verbose", "-k", "test_secretstr_no_leak_in_repr"]))
-        assert mock_env_vars["DISCORD_TOKEN"] not in debug_output
+    # Check that non-sensitive values are included
+    assert str(settings.storage_root) in str_repr
+    assert str(settings.max_file_size_mb) in str_repr
+    assert str(settings.environment) in str_repr

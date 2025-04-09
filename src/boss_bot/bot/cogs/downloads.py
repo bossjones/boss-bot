@@ -6,7 +6,7 @@ from datetime import datetime
 import discord
 from discord.ext import commands
 
-from boss_bot.core.queue import QueueItem, QueueStatus
+from boss_bot.core.core_queue import QueueItem, QueueStatus
 
 
 class DownloadCog(commands.Cog):

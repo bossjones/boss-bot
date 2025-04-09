@@ -3,7 +3,7 @@
 import pytest
 from datetime import datetime, timedelta
 
-from boss_bot.core.queue import QueueManager, QueueStatus, QueueItem
+from boss_bot.core.core_queue import QueueManager, QueueStatus, QueueItem
 
 @pytest.fixture
 def queue_manager():

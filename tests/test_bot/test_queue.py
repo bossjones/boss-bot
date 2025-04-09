@@ -5,8 +5,8 @@ import discord
 from datetime import datetime
 from uuid import UUID
 
-from boss_bot.cogs.queue import QueueCog
-from boss_bot.core.queue import QueueItem, QueueStatus
+from boss_bot.bot.cogs.task_queue import QueueCog
+from boss_bot.core.core_queue import QueueItem, QueueStatus
 
 @pytest.mark.asyncio
 async def test_show_queue_empty(bot, ctx, mocker):

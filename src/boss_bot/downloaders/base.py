@@ -7,7 +7,7 @@ from uuid import UUID
 
 from boss_bot.core.env import BossSettings
 from boss_bot.storage.quotas import QuotaManager
-from boss_bot.storage.validation import FileValidator
+from boss_bot.storage.validation_manager import FileValidator
 
 logger = logging.getLogger(__name__)
 

@@ -2,7 +2,7 @@
 import pytest
 from pathlib import Path
 
-from boss_bot.storage.validation import FileValidator, FileValidationError
+from boss_bot.storage.validation_manager import FileValidator, FileValidationError
 
 def test_file_type_validation_allowed():
     """Test that allowed file types pass validation."""

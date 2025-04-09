@@ -6,9 +6,9 @@ from typing import Optional
 import discord
 from discord.ext import commands
 
-from boss_bot.bot.help import BossHelpCommand
+from boss_bot.bot.bot_help import BossHelpCommand
+from boss_bot.core.core_queue import QueueManager
 from boss_bot.core.env import BossSettings
-from boss_bot.core.queue import QueueManager
 from boss_bot.downloaders.base import DownloadManager
 
 logger = logging.getLogger(__name__)

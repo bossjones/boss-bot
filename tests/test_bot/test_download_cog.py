@@ -4,6 +4,7 @@ from discord.ext import commands
 import discord.ext.test as dpytest
 from boss_bot.bot.client import BossBot
 from boss_bot.bot.cogs.downloads import DownloadCog
+from boss_bot.core.core_queue import QueueItem, QueueStatus
 
 @pytest.fixture
 async def bot():

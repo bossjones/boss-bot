@@ -7,7 +7,7 @@ from unittest.mock import Mock, PropertyMock
 
 from boss_bot.bot.client import BossBot
 from boss_bot.core.env import BossSettings
-from boss_bot.core.queue import QueueManager
+from boss_bot.core.core_queue import QueueManager
 from boss_bot.downloaders.base import DownloadManager
 
 @pytest.fixture

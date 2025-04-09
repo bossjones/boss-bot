@@ -6,6 +6,7 @@ from discord.ext import commands
 
 from boss_bot.bot.cogs.downloads import DownloadCog
 from boss_bot.bot.client import BossBot
+from boss_bot.core.core_queue import QueueItem, QueueStatus
 
 @pytest.fixture
 def mock_bot(mocker):

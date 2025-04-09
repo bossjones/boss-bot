@@ -4,7 +4,7 @@ import pytest
 import discord
 from discord.ext import commands
 
-from boss_bot.bot.help import BossHelpCommand
+from boss_bot.bot.bot_help import BossHelpCommand
 
 
 @pytest.fixture

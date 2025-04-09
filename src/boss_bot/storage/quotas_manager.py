@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Optional, Set, Union
 
-from boss_bot.storage.validation import FileValidator
+from boss_bot.storage.validation_manager import FileValidator
 
 
 class QuotaExceededError(Exception):

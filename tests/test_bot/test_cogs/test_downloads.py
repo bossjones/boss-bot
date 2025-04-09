@@ -4,7 +4,7 @@ import pytest
 import discord
 from discord.ext import commands
 
-from boss_bot.bot.cogs.downloads import DownloadsCog
+from boss_bot.bot.cogs.downloads import DownloadCog
 from boss_bot.bot.client import BossBot
 
 @pytest.fixture
@@ -18,7 +18,7 @@ def mock_bot(mocker):
 @pytest.fixture
 def cog(mock_bot):
     """Create a downloads cog instance for testing."""
-    return DownloadsCog(mock_bot)
+    return DownloadCog(mock_bot)
 
 @pytest.mark.asyncio
 async def test_download_command(mocker, mock_bot, cog):

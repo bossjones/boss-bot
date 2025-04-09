@@ -8,8 +8,27 @@ alwaysApply: false
 
 ## Critical Rules
 
+- ALWAYS check the current story file FIRST before implementing any feature
+  * Story files contain the authoritative task list for the current phase
+  * Only implement tasks explicitly listed in the story
+  * Check task status (completed, in progress, deferred)
+  * Verify task belongs to current phase
+  * If a task is marked as deferred, DO NOT implement it
+
 - ALWAYS check the architecture document's phase plan before implementing any feature
+  * Use this as secondary validation after checking story file
+  * Ensure feature aligns with both story and phase plan
+  * If conflict exists between story and phase plan, ask user for clarification
+
+- During MVP/Phase 1:
+  * ONLY implement tasks explicitly listed in the current story
+  * DO NOT add "nice to have" features even if they seem useful
+  * DO NOT implement enhanced versions of MVP features
+  * Keep implementations minimal and focused
+  * If unsure if a feature is too complex for MVP, ask the user
+
 - NEVER implement features from a future phase unless explicitly requested
+
 - Phase 1 (MVP) focuses ONLY on:
   * Basic project structure and environment
   * Core download functionality
@@ -17,6 +36,7 @@ alwaysApply: false
   * Essential error handling
   * Basic metrics/monitoring
   * Basic storage with quotas
+
 - Phase 2 features are OFF LIMITS unless requested:
   * Progress tracking
   * File management and cleanup
@@ -24,6 +44,7 @@ alwaysApply: false
   * Monitoring dashboards
   * User management
   * Bot admin features
+
 - Phase 3 features are OFF LIMITS unless requested:
   * API key rotation
   * Rate limiting
@@ -31,11 +52,13 @@ alwaysApply: false
   * Granular permissions
   * Audit logging
   * Security monitoring
+
 - Phase 4 features are OFF LIMITS unless requested:
   * Vector store
   * Document processing
   * RAG functionality
   * Enhanced commands
+
 - When in doubt about which phase a feature belongs to, ASK the user
 - Document any deviations from the phased approach in comments
 

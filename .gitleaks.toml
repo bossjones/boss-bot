@@ -9,6 +9,7 @@
     # Tests for `crypto.py` contain public and private GPG keypair. They were
     # generated specifically for this usecase. The owner of the key is:
     # insights-core (Signing key for unit testing) <insights-core@example.org>
+    '''.env.sample''',
     '''hack/drafts/cursor_rules/python_rules.mdc.md''',
     '''insights/tests/client/test_crypto.py''',
     '''sample.env''',

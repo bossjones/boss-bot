@@ -1,6 +1,7 @@
 """Tests for the health check module."""
 import pytest
 from fastapi.testclient import TestClient
+import asyncio
 
 def test_health_check_endpoint():
     """Test that the health check endpoint returns correct status."""
@@ -30,7 +31,8 @@ def test_health_check_metrics():
 
     # Assert
     assert response.status_code == 200
-    assert "prometheus" in response.headers["content-type"]
+    assert "text/plain" in response.headers["content-type"]
+    assert "version=0.0.4" in response.headers["content-type"]
 
 @pytest.mark.parametrize("component,status", [
     ("discord", True),
@@ -40,7 +42,7 @@ def test_health_check_metrics():
     ("storage", False),
     ("queue", False)
 ])
-def test_component_health_check(component, status):
+def test_component_health_check(component: str, status: bool):
     """Test health check for individual components."""
     from boss_bot.monitoring.health_check import HealthCheck
 
@@ -82,36 +84,26 @@ def test_health_check_details():
     # Arrange
     app = create_health_check_app()
     client = TestClient(app)
-    health_check = HealthCheck()
 
-    # Act
-    health_check.mark_component_unhealthy("discord")
+    # Act - Get initial state
     response = client.get("/health/details")
-
-    # Assert
     assert response.status_code == 200
     data = response.json()
     assert "components" in data
-    assert data["components"]["discord"] == "unhealthy"
+    assert data["components"]["discord"] == "healthy"
     assert data["components"]["storage"] == "healthy"
     assert data["components"]["queue"] == "healthy"
 
-@pytest.mark.asyncio
-async def test_periodic_health_check(mocker):
-    """Test that periodic health check runs correctly."""
-    from boss_bot.monitoring.health_check import HealthCheck
+    # Mark discord as unhealthy
+    app.state.health_check = HealthCheck()
+    app.state.health_check.mark_component_unhealthy("discord")
 
-    # Arrange
-    health_check = HealthCheck()
-    mock_check_fn = mocker.Mock(return_value=True)
-    mocker.patch('asyncio.sleep', return_value=None)
-
-    # Act
-    await health_check.start_periodic_check("test_component", mock_check_fn, interval_seconds=1)
-
-    # Assert
-    mock_check_fn.assert_called_once()
-    assert health_check.is_component_healthy("test_component") is True
+    # Get updated state
+    response = client.get("/health/details")
+    data = response.json()
+    assert data["components"]["discord"] == "unhealthy"
+    assert data["components"]["storage"] == "healthy"
+    assert data["components"]["queue"] == "healthy"
 
 def test_health_check_initialization():
     """Test that HealthCheck initializes with correct default values."""
@@ -141,3 +133,44 @@ def test_invalid_component():
 
     with pytest.raises(ValueError):
         health_check.is_component_healthy("invalid_component")
+
+@pytest.mark.asyncio
+async def test_periodic_health_check(mocker):
+    """Test that periodic health check runs correctly."""
+    from boss_bot.monitoring.health_check import HealthCheck
+
+    # Mock the sleep function to speed up test
+    mock_sleep = mocker.patch('asyncio.sleep', new_callable=mocker.AsyncMock)
+
+    # Create a health check instance
+    health_check = HealthCheck()
+
+    # Create a mock check function that alternates between healthy and unhealthy
+    mock_check_fn = mocker.Mock(side_effect=[True, True, False])
+
+    # Create a stop event
+    stop_event = asyncio.Event()
+
+    # Start the periodic check
+    check_task = asyncio.create_task(
+        health_check.start_periodic_check(
+            "test_component",
+            mock_check_fn,
+            interval_seconds=1,
+            stop_event=stop_event
+        )
+    )
+
+    # Let it run for a bit
+    await asyncio.sleep(0.1)
+
+    # Stop the periodic check
+    stop_event.set()
+    await check_task
+
+    # Verify the check function was called multiple times
+    assert mock_check_fn.call_count >= 2
+    assert mock_sleep.await_count >= 2
+
+    # Verify the component health status changed as expected
+    assert health_check.is_component_healthy("test_component") is False

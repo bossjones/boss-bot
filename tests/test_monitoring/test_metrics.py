@@ -29,14 +29,44 @@ def test_downloads_total_labels(registry):
 def test_download_duration_buckets(registry):
     """Test that download_duration histogram has expected buckets."""
     metric = registry.download_duration
+    # Test by observing values and checking bucket counts
     expected_buckets = (1, 5, 10, 30, 60, 120, 300, 600)
-    assert metric._buckets == expected_buckets
+
+    # Observe values just below and above each bucket boundary
+    for bucket in expected_buckets:
+        metric.observe(bucket - 0.1)
+        metric.observe(bucket + 0.1)
+
+    # Get the current value
+    samples = metric.collect()[0].samples
+    bucket_values = {s.name: s.value for s in samples if s.name.endswith('_bucket')}
+
+    # Verify bucket behavior
+    for i, bucket in enumerate(expected_buckets):
+        bucket_name = f'boss_bot_download_duration_seconds_bucket_le_{bucket}'
+        assert bucket_name in bucket_values
+        assert bucket_values[bucket_name] >= i + 1  # At least i+1 values should be in this bucket
 
 def test_download_size_buckets(registry):
     """Test that download_size histogram has expected buckets."""
     metric = registry.download_size
+    # Test by observing values and checking bucket counts
     expected_buckets = (1024*1024, 5*1024*1024, 10*1024*1024, 25*1024*1024, 50*1024*1024)
-    assert metric._buckets == expected_buckets
+
+    # Observe values just below and above each bucket boundary
+    for bucket in expected_buckets:
+        metric.observe(bucket - 1024)
+        metric.observe(bucket + 1024)
+
+    # Get the current value
+    samples = metric.collect()[0].samples
+    bucket_values = {s.name: s.value for s in samples if s.name.endswith('_bucket')}
+
+    # Verify bucket behavior
+    for i, bucket in enumerate(expected_buckets):
+        bucket_name = f'boss_bot_download_size_bytes_bucket_le_{bucket}'
+        assert bucket_name in bucket_values
+        assert bucket_values[bucket_name] >= i + 1  # At least i+1 values should be in this bucket
 
 def test_queue_size_labels(registry):
     """Test that queue_size gauge has correct labels."""

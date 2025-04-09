@@ -68,6 +68,7 @@
         "pytest-skip-slow>=0.0.5",
         "pytest-skipuntil>=0.2.0",
         "pytest-sugar>=1.0.0",
+        "pytest-timeout>=2.2.0",
         "pytest>=8.3.4",
         "pyupgrade>=3.19.1",
         "requests-mock>=1.12.1",
@@ -364,9 +365,13 @@
             # Print runtimes of the slowest tests.
             '--durations=10',
             '--junitxml=junit/test-results.xml',
+            # Timeout settings
+            '--timeout=30',
+            '--timeout_method=thread',
         ]
         asyncio_default_fixture_loop_scope = "function"
         asyncio_mode = "auto"
+        # Test timeouts
         filterwarnings = [
             "default::DeprecationWarning:democracy_exe.*:",
             "default::pydantic.warnings.PydanticDeprecatedSince20:democracy_exe.*:",
@@ -386,6 +391,8 @@
         ]
         log_cli = false
         log_cli_date_format = "%Y-%m-%d %H:%M:%S"
+        timeout = 30 # Default timeout in seconds for all tests
+        timeout_method = "thread" # Use thread-based timeout (more reliable than signal-based)
         # log_cli_format = "%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)"
         # log_cli_format = "%(asctime)s [%(levelname)8s] %(module)s.%(funcName)s:%(lineno)d - %(message)s"
         log_cli_format = "%(asctime)s [%(levelname)8s] [%(threadName)s] %(name)s - %(module)s.%(funcName)s (%(filename)s:%(lineno)d) - %(message)s"
@@ -625,6 +632,10 @@
 
         [tool.ruff.lint.pydocstyle]
             convention = "google"
+
+        # Add banned-imports rule
+        [tool.ruff.lint.flake8-import-conventions]
+            banned-from = ["unittest.mock"]
 
 [tool.tomlsort]
     all = true

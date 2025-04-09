@@ -29,6 +29,8 @@ class BossSettings(BaseSettings):
         case_sensitive=False,  # Allow case-insensitive env vars
         secrets_dir="/run/secrets",
         extra="ignore",  # Ignore extra env vars
+        env_prefix="",  # No prefix for env vars
+        env_nested_delimiter="__",  # Use __ for nested settings
     )
 
     # Discord settings

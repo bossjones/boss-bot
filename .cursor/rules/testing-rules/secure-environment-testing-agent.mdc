@@ -1,0 +1,124 @@
+---
+description: "This rule governs secure environment variable handling in tests. It should be applied whenever: (1) Writing tests that involve environment variables, (2) Handling sensitive data in tests, (3) Implementing settings validation tests, or (4) Working with secret management. This ensures proper isolation of test environments and secure handling of sensitive data."
+globs: blank
+alwaysApply: false
+---
+
+# Secure Environment Testing Standards
+
+## Critical Rules
+
+- ALWAYS isolate environment variables in tests:
+  * Use `monkeypatch` to clear environment variables before test
+  * Restore environment after test completion
+  * Never rely on existing environment state
+
+- NEVER expose secrets in test output:
+  * Use `SecretStr` for all sensitive data
+  * Override `__str__` and `__repr__` methods to hide secrets
+  * Test all possible string representation methods
+  * Add `@pytest.mark.security` to security-sensitive tests
+
+- ALWAYS validate sensitive data formats:
+  * Implement format validation for API keys
+  * Test both valid and invalid formats
+  * Use descriptive error messages for validation failures
+
+- ALWAYS use proper test fixtures:
+  * Create mock environment variables in fixtures
+  * Use temporary files for `.env` file tests
+  * Clean up test artifacts after use
+
+- NEVER use real credentials in tests:
+  * Use mock values that match required formats
+  * Document safe test values in comments
+  * Use clearly fake values (e.g., "test_token", "sk-test")
+
+## Examples
+
+<example>
+# Good - Proper Environment Isolation
+```python
+def test_settings_loads_from_env_file(
+    self, tmp_path: Path, mock_env_vars: dict[str, str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that settings can be loaded from .env file."""
+    # Arrange
+    env_file = tmp_path / ".env"
+    env_content = "\n".join(f"{k}={v}" for k, v in mock_env_vars.items())
+    env_file.write_text(env_content)
+
+    # Clear any existing environment variables
+    for key in mock_env_vars:
+        monkeypatch.delenv(key, raising=False)
+
+    # Act
+    settings = BossSettings(_env_file=env_file)
+
+    # Assert
+    assert isinstance(settings.discord_token, SecretStr)
+    assert "SecretStr('**********')" in str(settings)
+```
+
+# Good - Secure Secret Handling
+```python
+class BossSettings(BaseSettings):
+    discord_token: SecretStr
+    openai_api_key: SecretStr
+
+    def __str__(self) -> str:
+        """Return string representation with hidden secrets."""
+        return (
+            f"BossSettings("
+            f"discord_token=SecretStr('**********'), "
+            f"openai_api_key=SecretStr('**********'))"
+        )
+
+@pytest.mark.security
+def test_secretstr_no_leak_in_repr(self, mock_env_vars: dict[str, str]) -> None:
+    """Test that SecretStr values cannot leak through repr or str."""
+    settings = BossSettings(**mock_env_vars)
+    assert mock_env_vars["DISCORD_TOKEN"] not in repr(settings)
+    assert mock_env_vars["DISCORD_TOKEN"] not in str(settings)
+    assert mock_env_vars["DISCORD_TOKEN"] not in f"{settings}"
+```
+</example>
+
+<example type="invalid">
+# Bad - No Environment Isolation
+```python
+def test_settings_bad(self):
+    """Test without proper isolation."""
+    # BAD: Using os.environ directly without isolation
+    settings = BossSettings()
+    assert settings.discord_token == os.environ["DISCORD_TOKEN"]
+```
+
+# Bad - Exposing Secrets in Tests
+```python
+def test_settings_insecure(self, mock_env_vars):
+    """Insecure test implementation."""
+    settings = BossSettings(**mock_env_vars)
+
+    # BAD: Exposing secrets in string representation
+    def __str__(self):
+        return f"Settings(token={self.discord_token.get_secret_value()})"
+
+    # BAD: Not using SecretStr
+    print(f"Token: {settings.discord_token}")
+```
+
+# Bad - Insufficient Secret Testing
+```python
+def test_incomplete_secret_check(self):
+    """Incomplete secret validation."""
+    settings = BossSettings(
+        # BAD: Using actual-looking test values
+        discord_token="1234.actual.looking.token",
+        openai_api_key="sk-actual-looking-key"
+    )
+    # BAD: Only checking str() representation
+    assert settings.discord_token not in str(settings)
+    # BAD: Missing repr(), f-string, and other checks
+```
+</example>

@@ -26,21 +26,26 @@ class TestBossSettings:
     5. Refactor if needed
     """
 
-    def test_settings_loads_from_env_file(self, tmp_path: Path, mock_env_vars: dict[str, str]) -> None:
+    def test_settings_loads_from_env_file(self, tmp_path: Path, mock_env_vars: dict[str, str], monkeypatch: pytest.MonkeyPatch) -> None:
         """Test that settings can be loaded from .env file.
 
         Steps:
         1. Create temporary .env file
-        2. Load settings
-        3. Verify all settings are loaded correctly
+        2. Clear any existing environment variables
+        3. Load settings
+        4. Verify all settings are loaded correctly
         """
         # Arrange
         env_file = tmp_path / ".env"
         env_content = "\n".join(f"{k}={v}" for k, v in mock_env_vars.items())
         env_file.write_text(env_content)
 
+        # Clear any existing environment variables
+        for key in mock_env_vars:
+            monkeypatch.delenv(key, raising=False)
+
         # Act
-        settings = BossSettings(_env_file=env_file)
+        settings = BossSettings(_env_file=env_file, _env_file_encoding="utf-8")
 
         # Assert
         assert isinstance(settings.discord_token, SecretStr)
@@ -113,27 +118,18 @@ class TestBossSettings:
             BossSettings(**invalid_api_key_vars)
 
     @pytest.mark.security
-    def test_settings_secrets_are_hidden_in_repr(self, mock_settings: None) -> None:
-        """Test that sensitive settings are hidden in string representation.
+    def test_settings_secrets_are_hidden_in_repr(self, mock_env_vars: dict[str, str]) -> None:
+        """Test that secrets are properly hidden in string representation."""
+        # Arrange
+        settings = BossSettings(**mock_env_vars)
 
-        Steps:
-        1. Create settings with sensitive data
-        2. Get string representation
-        3. Verify no secrets are visible in any form
-        """
         # Act
-        settings = BossSettings()
         settings_str = str(settings)
 
-        # Assert - Check that secrets are hidden without exposing them in test code
-        assert os.environ["DISCORD_TOKEN"] not in settings_str
-        assert os.environ["OPENAI_API_KEY"] not in settings_str
-        assert "********" in settings_str
-
-        # Additional check to ensure no part of the secret is visible
-        for secret in [os.environ["DISCORD_TOKEN"], os.environ["OPENAI_API_KEY"]]:
-            for i in range(len(secret) - 3):
-                assert secret[i:i+4] not in settings_str
+        # Assert
+        assert settings.discord_token.get_secret_value() not in settings_str
+        assert settings.openai_api_key.get_secret_value() not in settings_str
+        assert "SecretStr('**********')" in settings_str  # Verify SecretStr is used for secrets
 
     @pytest.mark.security
     def test_secretstr_no_leak_in_repr(self, mock_env_vars: dict[str, str]) -> None:

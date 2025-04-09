@@ -13,6 +13,7 @@
     '''hack/drafts/cursor_rules/python_rules.mdc.md''',
     '''insights/tests/client/test_crypto.py''',
     '''sample.env''',
+    '''tests/conftest.py''',
     '''tests/test_core/test_env.py''',
   ]
 

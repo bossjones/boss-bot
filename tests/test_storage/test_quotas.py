@@ -147,3 +147,52 @@ def test_get_quota_status():
     assert status["usage_percentage"] == 70
     assert status["active_downloads"] == 2
     assert status["max_concurrent_downloads"] == quota_manager.config.max_concurrent_downloads
+
+def test_storage_directory_structure(tmp_path):
+    """Test that storage directory structure is created correctly."""
+    # Arrange
+    storage_root = tmp_path / "storage"
+    expected_dirs = [
+        "downloads",  # Main downloads directory
+        "downloads/temp",  # Temporary storage during downloads
+        "downloads/completed",  # Successfully downloaded files
+        "downloads/failed"  # Failed download attempts for debugging
+    ]
+
+    # Act
+    quota_manager = QuotaManager(storage_root)
+
+    # Assert
+    for dir_path in expected_dirs:
+        assert (storage_root / dir_path).exists(), f"Directory {dir_path} not found"
+        assert (storage_root / dir_path).is_dir(), f"{dir_path} is not a directory"
+
+def test_storage_directory_structure_idempotent(tmp_path):
+    """Test that creating storage structure multiple times is safe."""
+    # Arrange
+    storage_root = tmp_path / "storage"
+
+    # Act
+    quota_manager1 = QuotaManager(storage_root)
+    quota_manager2 = QuotaManager(storage_root)  # Should not raise errors
+
+    # Assert
+    assert quota_manager1.storage_root == quota_manager2.storage_root
+    assert (storage_root / "downloads").exists()
+
+def test_storage_directory_structure_with_existing_files(tmp_path):
+    """Test that storage structure creation preserves existing files."""
+    # Arrange
+    storage_root = tmp_path / "storage"
+    storage_root.mkdir(parents=True)
+    downloads_dir = storage_root / "downloads"
+    downloads_dir.mkdir()
+    test_file = downloads_dir / "test.txt"
+    test_file.write_text("test content")
+
+    # Act
+    quota_manager = QuotaManager(storage_root)
+
+    # Assert
+    assert test_file.exists(), "Existing file was removed"
+    assert test_file.read_text() == "test content", "File content was modified"

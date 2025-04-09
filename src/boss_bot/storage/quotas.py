@@ -1,12 +1,15 @@
 """Storage quota management system for Boss-Bot."""
 
+import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Optional, Set
+from typing import Dict, Optional, Set, Union
+
+from boss_bot.storage.validation import FileValidator
 
 
 class QuotaExceededError(Exception):
-    """Raised when a file operation would exceed the storage quota."""
+    """Raised when a quota limit is exceeded."""
 
     pass
 
@@ -20,20 +23,38 @@ class QuotaConfig:
 
 
 class QuotaManager:
-    """Manages storage quotas for downloaded files."""
+    """Manages storage quotas and concurrent downloads."""
 
     def __init__(self, storage_root: Path):
-        """Initialize the quota manager.
+        """Initialize the QuotaManager.
 
         Args:
-            storage_root: Path to the storage directory
+            storage_root: Root directory for file storage
         """
         self.storage_root = storage_root
         self.config = QuotaConfig()
+        self._active_downloads: set[str] = set()
         self._files: dict[str, float] = {}  # filename -> size in MB
-        self._active_downloads: set[str] = set()  # Set of active download IDs
-        self._max_storage_bytes = self.config.max_total_size_mb * 1024 * 1024  # Convert MB to bytes
         self._current_usage_bytes = 0
+        self.validator = FileValidator()
+
+        # Create storage directory structure
+        self._create_directory_structure()
+
+    def _create_directory_structure(self) -> None:
+        """Create the required directory structure for file storage.
+
+        Creates:
+            - downloads/: Main downloads directory
+            - downloads/temp/: Temporary storage during downloads
+            - downloads/completed/: Successfully downloaded files
+            - downloads/failed/: Failed download attempts for debugging
+        """
+        dirs = ["downloads", "downloads/temp", "downloads/completed", "downloads/failed"]
+
+        for dir_path in dirs:
+            full_path = self.storage_root / dir_path
+            full_path.mkdir(parents=True, exist_ok=True)
 
     @property
     def current_usage_mb(self) -> float:
@@ -64,8 +85,7 @@ class QuotaManager:
         """
         if not self.can_start_download():
             raise QuotaExceededError(
-                f"Cannot start download {download_id}: Maximum concurrent downloads "
-                f"({self.config.max_concurrent_downloads}) reached"
+                f"Cannot start download: Maximum concurrent downloads ({self.config.max_concurrent_downloads}) reached"
             )
         self._active_downloads.add(download_id)
 
@@ -82,50 +102,52 @@ class QuotaManager:
             raise ValueError(f"Download {download_id} is not being tracked")
         self._active_downloads.remove(download_id)
 
-    def check_quota(self, file_size: int) -> bool:
+    def check_quota(self, size_mb: int) -> bool:
         """Check if adding a file of given size would exceed quota.
 
         Args:
-            file_size: Size of the file in bytes
+            size_mb: Size of the file in megabytes
 
         Returns:
-            True if file can be added, False if it would exceed quota
+            bool: True if file can be added, False if it would exceed quota
         """
-        return self._current_usage_bytes + file_size <= self._max_storage_bytes
+        current_mb = self._current_usage_bytes / (1024 * 1024)
+        return current_mb + size_mb <= self.config.max_total_size_mb
 
-    def add_file(self, filename: str, size_mb: float) -> None:
-        """Record a new file in the quota tracking system.
+    def add_file(self, file_path: str | Path, size_mb: int) -> None:
+        """Add a file to the quota tracking.
 
         Args:
-            filename: Name of the file
+            file_path: Path to the file (can be string or Path object)
             size_mb: Size of the file in megabytes
 
         Raises:
             QuotaExceededError: If adding the file would exceed quota
         """
-        if not self.check_quota(size_mb * 1024 * 1024):
-            raise QuotaExceededError(
-                f"Adding file {filename} ({size_mb}MB) would exceed "
-                f"quota of {self.config.max_total_size_mb}MB "
-                f"(current usage: {self.current_usage_mb}MB)"
-            )
+        if not self.check_quota(size_mb):
+            raise QuotaExceededError(f"Adding file would exceed quota of {self.config.max_total_size_mb}MB")
 
-        self._files[filename] = size_mb
+        # Convert string to Path if needed
+        if isinstance(file_path, str):
+            file_path = Path(file_path)
+
+        self._files[file_path.name] = float(size_mb)
         self._current_usage_bytes += size_mb * 1024 * 1024
 
     def remove_file(self, filename: str) -> None:
-        """Remove a file from the quota tracking system.
+        """Remove a file from quota tracking.
 
         Args:
-            filename: Name of the file
+            filename: Name of the file to remove
 
         Raises:
-            KeyError: If the file is not found in the quota tracking system
+            KeyError: If file is not found in quota tracking
         """
         if filename not in self._files:
             raise KeyError(f"File {filename} not found in quota tracking")
-        size_bytes = self._files[filename] * 1024 * 1024
-        self._current_usage_bytes -= size_bytes
+
+        size_mb = self._files[filename]
+        self._current_usage_bytes -= int(size_mb * 1024 * 1024)
         del self._files[filename]
 
     def get_quota_status(self) -> dict:

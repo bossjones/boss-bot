@@ -1,81 +1,83 @@
 ---
-description: This rule governs the usage of UV package manager in the project. It should be applied whenever: (1) Installing or managing Python packages, (2) Setting up Python environments, (3) Running Python code or tests, or (4) Modifying dependency files. This rule ensures consistent package management and environment setup across the project.
-globs: pyproject.toml, requirements*.txt, justfile, Justfile, *.just, justfiles/*.just
-alwaysApply: false
+description: "This rule governs the usage of UV package manager in the project. It should be applied whenever: (1) Installing or managing Python packages, (2) Setting up Python environments, (3) Running Python code or tests, or (4) Modifying dependency files. This rule ensures consistent package management and environment setup across the project."
+globs:
+alwaysApply: true
 ---
 
 # UV Package Manager Standards
 
 ## Critical Rules
 
-- NEVER use `uv pip install` for package installation
-- ALWAYS use `uv add` for individual package installation
-- ALWAYS use `uv sync` for installing from pyproject.toml/lockfile
-- ALWAYS use `--frozen` flag with `uv sync` to ensure reproducible environments
-- Use `uv venv` with explicit Python version for environment creation
-- Use provided just tasks for common UV operations
-- Run Python code and tests using `uv run`
-- Add development dependencies with `uv add --dev`
-- Add production dependencies with `uv add` (without --dev)
+- NEVER use pip or pip-related commands (pip install, pip list, etc.)
+- NEVER use `uv pip` commands - this is incorrect usage
+- ALWAYS use proper UV commands:
+  * `uv install` for installing packages
+  * `uv pip compile` for requirements.txt generation
+  * `uv pip sync` for syncing environments
+- For running Python scripts/tests:
+  * Use `uv run python` instead of just `python`
+  * Use `uv run pytest` instead of just `pytest`
+  * Use `uv run` for any other Python-based commands
+- When installing packages:
+  * ALWAYS use `uv install {package}` for single package
+  * ALWAYS use `uv pip sync requirements.txt` for bulk installs
+  * NEVER install packages without version pins in production
+- For development workflows:
+  * Use `uv pip compile pyproject.toml -o requirements.txt` to generate requirements
+  * Use `uv pip sync requirements-dev.txt` for dev dependencies
+- ALWAYS specify package versions in pyproject.toml
+- NEVER mix different package managers in the same project
 
 ## Examples
 
 <example>
-# Valid UV Usage
-
-## Environment Setup
+# Good - Proper UV Usage
 ```bash
-# Create new environment
-uv venv --python 3.12.0
+# Installing packages
+uv install pytest==8.0.0
+uv pip sync requirements.txt
 
-# Install dependencies
-uv sync --frozen
-```
-
-## Package Management
-```bash
-# Add dependencies
-uv add fastapi
-uv add --dev pytest black
-
-# Sync dependencies
-just uv-sync-all
-just uv-sync-dev
-
-# Upgrade specific package
-just uv-upgrade-package package=fastapi
-```
-
-## Running Code
-```bash
-# Run Python scripts
-uv run python script.py
-
-# Run modules
-uv run python -m my_module
-
-# Run tests
+# Running tests
 uv run pytest tests/
+uv run python -m pytest
+
+# Generating requirements
+uv pip compile pyproject.toml -o requirements.txt
+```
+
+# Good - Package Version Management
+```toml
+# pyproject.toml
+[project]
+dependencies = [
+    "pytest==8.0.0",
+    "discord.py==2.3.2",
+    "loguru==0.7.2"
+]
 ```
 </example>
 
 <example type="invalid">
-# Invalid UV Usage
-
+# Bad - Incorrect UV Usage
 ```bash
-# DON'T use pip install
-uv pip install package_name
+# NEVER do these
+pip install pytest
+uv pip install pytest
+python -m pytest
+pip freeze > requirements.txt
 
-# DON'T install without lockfile
-uv sync
-
-# DON'T create venv without specific Python version
-uv venv
-
-# DON'T run Python directly without uv run
-python script.py
-
-# DON'T use pip for any package management
+# NEVER mix package managers
+poetry install
 pip install -r requirements.txt
+```
+
+# Bad - Unversioned Dependencies
+```toml
+# pyproject.toml
+[project]
+dependencies = [
+    "pytest",  # BAD: No version specified
+    "discord.py",  # BAD: No version specified
+]
 ```
 </example>

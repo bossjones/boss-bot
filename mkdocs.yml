@@ -7,13 +7,13 @@ site_description: AI-powered code generation tooling for efficient software deve
 site_author: Malcolm Jones
 # For GitHub Pages deployment
 # Defines the canonical URL of your documentation site
-site_url: https://bossjones.github.io/codegen-lab/docs
+site_url: https://bossjones.github.io/boss-bot/docs
 
 # Repository information
 # Sets the display name for the repository link in the theme
-repo_name: bossjones/codegen-lab
+repo_name: bossjones/boss-bot
 # URL to your GitHub repository, enabling the "Edit this page" feature
-repo_url: https://github.com/bossjones/codegen-lab
+repo_url: https://github.com/bossjones/boss-bot
 # Path to edit pages on GitHub, appended to repo_url
 edit_uri: edit/main/docs/
 
@@ -38,8 +38,8 @@ theme:
     code: JetBrains Mono # Sets JetBrains Mono as the monospace font for code blocks
 
   # Theme assets
-  logo: images/logo2.png # Sets the logo image for the site header
-  favicon: images/logo2.png # Sets the browser favicon
+  logo: img/logo2.png # Sets the logo image for the site header
+  favicon: img/logo2.png # Sets the browser favicon
 
   # Icon configurations for various UI elements
   icon:
@@ -211,7 +211,7 @@ markdown_extensions:
 extra: # Extra customization
   social: # Social media links
     - icon: fontawesome/brands/github # GitHub icon
-      link: https://github.com/bossjones/codegen-lab # Link to GitHub profile/repo
+      link: https://github.com/bossjones/boss-bot # Link to GitHub profile/repo
 
 # Footer configuration
 copyright: Copyright &copy; 2023 - 2025 Malcolm Jones # Copyright notice in footer

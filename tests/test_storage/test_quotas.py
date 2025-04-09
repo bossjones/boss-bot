@@ -57,3 +57,93 @@ def test_quota_add_file_over_limit():
     # Trying to add a file that would exceed quota should raise an error
     with pytest.raises(QuotaExceededError):
         quota_manager.add_file("test2.mp4", size_mb=15)  # Would total 55MB > 50MB limit
+
+def test_concurrent_downloads_under_limit():
+    """Test that concurrent downloads are allowed when under the limit."""
+    quota_manager = QuotaManager(Path("/tmp/storage"))
+
+    # Start multiple downloads
+    for i in range(3):  # Well under the limit of 5
+        assert quota_manager.can_start_download() is True
+        quota_manager.start_download(f"download_{i}")
+
+def test_concurrent_downloads_at_limit():
+    """Test that concurrent downloads are blocked at the limit."""
+    quota_manager = QuotaManager(Path("/tmp/storage"))
+
+    # Start downloads up to the limit
+    for i in range(5):  # At the limit
+        assert quota_manager.can_start_download() is True
+        quota_manager.start_download(f"download_{i}")
+
+    # Try to start one more
+    assert quota_manager.can_start_download() is False
+
+def test_concurrent_downloads_complete():
+    """Test that completing downloads frees up slots."""
+    quota_manager = QuotaManager(Path("/tmp/storage"))
+
+    # Fill all slots
+    for i in range(5):
+        quota_manager.start_download(f"download_{i}")
+
+    # Complete some downloads
+    quota_manager.complete_download("download_0")
+    quota_manager.complete_download("download_1")
+
+    # Should be able to start new downloads
+    assert quota_manager.can_start_download() is True
+    quota_manager.start_download("new_download")
+
+def test_concurrent_downloads_invalid_complete():
+    """Test that completing non-existent download raises error."""
+    quota_manager = QuotaManager(Path("/tmp/storage"))
+
+    with pytest.raises(ValueError):
+        quota_manager.complete_download("non_existent")
+
+def test_remove_file():
+    """Test that removing a file updates the quota correctly."""
+    quota_manager = QuotaManager(Path("/tmp/storage"))
+
+    # Add some files
+    quota_manager.add_file("test1.mp4", size_mb=20)
+    quota_manager.add_file("test2.mp4", size_mb=15)
+
+    # Initial usage should be 35MB
+    assert quota_manager.current_usage_mb == 35
+
+    # Remove a file
+    quota_manager.remove_file("test1.mp4")
+
+    # Usage should be reduced by 20MB
+    assert quota_manager.current_usage_mb == 15
+
+    # File should no longer be tracked
+    with pytest.raises(KeyError):
+        quota_manager.remove_file("test1.mp4")
+
+def test_remove_nonexistent_file():
+    """Test that removing a non-existent file raises an error."""
+    quota_manager = QuotaManager(Path("/tmp/storage"))
+
+    with pytest.raises(KeyError):
+        quota_manager.remove_file("nonexistent.mp4")
+
+def test_get_quota_status():
+    """Test that quota status reporting works correctly."""
+    quota_manager = QuotaManager(Path("/tmp/storage"))
+
+    # Add some files and downloads
+    quota_manager.add_file("test1.mp4", size_mb=20)
+    quota_manager.add_file("test2.mp4", size_mb=15)
+    quota_manager.start_download("download1")
+    quota_manager.start_download("download2")
+
+    status = quota_manager.get_quota_status()
+    assert status["total_size_mb"] == quota_manager.config.max_total_size_mb
+    assert status["used_size_mb"] == 35
+    assert status["available_size_mb"] == 15
+    assert status["usage_percentage"] == 70
+    assert status["active_downloads"] == 2
+    assert status["max_concurrent_downloads"] == quota_manager.config.max_concurrent_downloads

@@ -4,14 +4,8 @@ from discord.ext import commands
 import discord.ext.test as dpytest
 from boss_bot.bot.client import BossBot
 from boss_bot.bot.cogs.task_queue import QueueCog
-
-@pytest.fixture
-async def bot():
-    """Create a bot instance for testing."""
-    bot = BossBot()
-    await bot._async_setup_hook()
-    dpytest.configure(bot)
-    return bot
+from pathlib import Path
+from boss_bot.core.env import BossSettings
 
 @pytest.mark.asyncio
 async def test_clear_queue_command(bot):

@@ -1,0 +1,216 @@
+---
+description: This rule governs the generation and management of Mermaid diagrams from stories and tests. It should be applied whenever: (1) Analyzing story files in .ai/stories/, (2) Analyzing Python test files, (3) Generating or updating diagrams in .ai/diagrams/, or (4) Reviewing relationships between business logic and code dependencies. This ensures consistent diagram generation, clear documentation of relationships, and maintainable diagram organization.
+globs:
+alwaysApply: false
+---
+
+# Diagram Generation Standards
+
+## Critical Rules
+
+- ALWAYS follow the diagram naming convention:
+  * For story-based diagrams: `.ai/diagrams/story-{story-id}-{diagram-type}.md`
+  * For test-based diagrams: `.ai/diagrams/module-{module-name}-{diagram-type}.md`
+  * Where {diagram-type} is one of:
+    - erd (Entity Relationship Diagram)
+    - flow (Flow Chart)
+    - seq (Sequence Diagram)
+    - class (Class Diagram)
+    - dep (Dependency Graph)
+
+- ALWAYS include these sections in diagram files:
+  ```markdown
+  # {Module/Story Name} - {Diagram Type}
+
+  ## Overview
+  Brief description of what this diagram represents
+
+  ## Source
+  Link to source story or test file(s)
+
+  ## Diagram
+  ```mermaid
+  {diagram content}
+  ```
+
+  ## Notes
+  Any additional context or explanations
+  ```
+
+- For ERD diagrams:
+  * Use clear entity names matching class/model names
+  * Show all critical relationships and cardinality
+  * Include only essential attributes
+  * Group related entities visually
+
+- For Flow Charts:
+  * Start with trigger/entry point
+  * Use consistent node shapes for actions/decisions
+  * Keep flows left-to-right or top-to-bottom
+  * Include error/exception paths
+
+- For Sequence Diagrams:
+  * Label all participants clearly
+  * Show critical method calls and data flow
+  * Include error handling sequences
+  * Group related interactions in boxes
+
+- For Class Diagrams:
+  * Show inheritance and composition
+  * Include critical methods and attributes
+  * Group related classes together
+  * Use appropriate relationship arrows
+
+- For Dependency Graphs:
+  * Show direct and indirect dependencies
+  * Use color coding for different types of dependencies
+  * Group by module/package
+  * Indicate circular dependencies if they exist
+
+- ALWAYS maintain diagram hygiene:
+  * Update diagrams when source code/stories change
+  * Remove obsolete diagrams
+  * Keep diagrams focused and not overcrowded
+  * Use consistent styling across all diagrams
+
+## Examples
+
+<example>
+# Good - Story-based Flow Chart
+```markdown
+# User Authentication Flow - Flow Chart
+
+## Overview
+Represents the authentication flow from story-123, including login, 2FA, and error paths.
+
+## Source
+.ai/stories/story-123-user-auth.md
+
+## Diagram
+```mermaid
+flowchart TD
+    A[Start] --> B{Has Account?}
+    B -->|Yes| C[Login Form]
+    B -->|No| D[Registration]
+    C --> E{Valid Credentials?}
+    E -->|Yes| F[2FA Check]
+    E -->|No| G[Error Message]
+    F -->|Valid| H[Dashboard]
+    F -->|Invalid| G
+```
+
+## Notes
+- Includes new 2FA requirement from AC-2
+- Error paths show all validation steps
+```
+
+# Good - Test-based Class Diagram
+```markdown
+# Authentication Module - Class Diagram
+
+## Overview
+Shows relationships between authentication classes based on test coverage.
+
+## Source
+tests/auth/test_authentication.py
+tests/auth/test_user_manager.py
+
+## Diagram
+```mermaid
+classDiagram
+    class AuthManager {
+        +authenticate(credentials)
+        +validate_token(token)
+        -check_2fa(user)
+    }
+    class UserManager {
+        +create_user(data)
+        +get_user(id)
+    }
+    AuthManager --> UserManager
+```
+
+## Notes
+- Derived from test coverage analysis
+- Shows only public interfaces used in tests
+```
+</example>
+
+<example type="invalid">
+# Bad - Overcrowded Diagram
+```markdown
+# Entire System - Flow Chart
+
+## Overview
+Shows everything in the system
+
+## Source
+All files
+
+## Diagram
+```mermaid
+flowchart TD
+    A --> B --> C --> D --> E --> F --> G
+    A --> H --> I --> J --> K --> L --> M
+    N --> O --> P --> Q --> R --> S --> T
+    [Too many nodes and connections making it unreadable]
+```
+```
+
+# Bad - Missing Context
+```markdown
+# Auth - ERD
+
+## Diagram
+```mermaid
+erDiagram
+    USER ||--o{ TOKENS : has
+```
+
+## Notes
+None
+```
+
+# Bad - Inconsistent Naming
+```markdown
+# auth_stuff-diagram4.md
+[No sections or structure]
+```
+</example>
+
+## Implementation Guide
+
+1. Story Analysis:
+   ```bash
+   # 1. Read story file
+   cat .ai/stories/story-123.md
+
+   # 2. Identify key flows and entities
+
+   # 3. Generate appropriate diagrams
+   mkdir -p .ai/diagrams
+   touch .ai/diagrams/story-123-flow.md
+   touch .ai/diagrams/story-123-erd.md
+   ```
+
+2. Test Analysis:
+   ```bash
+   # 1. Analyze test files
+   find tests/ -name "test_*.py"
+
+   # 2. Extract class relationships
+
+   # 3. Generate module diagrams
+   touch .ai/diagrams/module-auth-class.md
+   touch .ai/diagrams/module-auth-dep.md
+   ```
+
+3. Diagram Updates:
+   ```bash
+   # 1. Check for affected diagrams
+   find .ai/diagrams/ -name "*-{type}.md"
+
+   # 2. Update relevant diagrams
+
+   # 3. Remove obsolete diagrams
+   ```

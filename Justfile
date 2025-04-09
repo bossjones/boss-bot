@@ -21,6 +21,7 @@ import "justfiles/security.just"
 import "justfiles/convert.just"
 import "justfiles/taplo.just"
 import "justfiles/firecrawl.just"
+import "justfiles/audit.just"
 
 # display help information
 default:

@@ -11,103 +11,56 @@ from pytest import MonkeyPatch
 from boss_bot.core.env import BossSettings, Environment
 
 
-@pytest.fixture
-def mock_env(monkeypatch: MonkeyPatch) -> Generator[None, None, None]:
-    """Set up test environment variables."""
-    env_vars = {
-        "DISCORD_TOKEN": "test_token_123",
-        "DISCORD_CLIENT_ID": "123456789012345678",
-        "DISCORD_SERVER_ID": "876543210987654321",
-        "DISCORD_ADMIN_USER_ID": "111222333444555666",
-        "STORAGE_ROOT": "/tmp/boss-bot",
-        "MAX_FILE_SIZE_MB": "50",
-        "MAX_CONCURRENT_DOWNLOADS": "5",
-        "MAX_QUEUE_SIZE": "50",
-        "LOG_LEVEL": "INFO",
-        "ENABLE_METRICS": "true",
-        "METRICS_PORT": "9090",
-        "ENABLE_HEALTH_CHECK": "true",
-        "HEALTH_CHECK_PORT": "8080",
-        "RATE_LIMIT_REQUESTS": "100",
-        "RATE_LIMIT_WINDOW_SECONDS": "60",
-        "ENABLE_FILE_VALIDATION": "true",
-        "DEBUG": "false",
-        "ENVIRONMENT": "development",
-        "OPENAI_API_KEY": "sk-test-key-123456789abcdef",
-        "COHERE_API_KEY": "test-cohere-key-123456789",
-        "DEBUG_AIDER": "true",
-        "FIRECRAWL_API_KEY": "test-firecrawl-key-123456789",
-        "LANGCHAIN_API_KEY": "test-langchain-key-123456789",
-        "LANGCHAIN_DEBUG_LOGS": "true",
-        "LANGCHAIN_ENDPOINT": "http://localhost:8000",
-        "LANGCHAIN_HUB_API_KEY": "test-hub-key-123456789",
-        "LANGCHAIN_HUB_API_URL": "http://localhost:8001",
-        "LANGCHAIN_PROJECT": "test-project",
-        "LANGCHAIN_TRACING_V2": "true",
-        "PINECONE_API_KEY": "test-pinecone-key-123456789",
-        "PINECONE_ENV": "test-env",
-        "PINECONE_INDEX": "test-index",
-        "TAVILY_API_KEY": "test-tavily-key-123456789",
-        "UNSTRUCTURED_API_KEY": "test-unstructured-key-123456789",
-        "UNSTRUCTURED_API_URL": "http://localhost:8002",
-    }
-
-    for key, value in env_vars.items():
-        monkeypatch.setenv(key, value)
-
-    yield
-
-
-def test_settings_load(mock_env: None) -> None:
+def test_settings_load(mock_env_vars_unit: None) -> None:
     """Test that settings load correctly from environment variables."""
-    settings = BossSettings()
+    test_settings = BossSettings()
 
     # Test Discord settings
-    assert settings.discord_token.get_secret_value() == "test_token_123"
-    assert settings.discord_client_id == 123456789012345678
-    assert settings.discord_server_id == 876543210987654321
-    assert settings.discord_admin_user_id == 111222333444555666
+    assert test_settings.discord_token.get_secret_value() == "test_token_123"
+    assert test_settings.discord_client_id == 123456789012345678
+    assert test_settings.discord_server_id == 876543210987654321
+    assert test_settings.discord_admin_user_id == 111222333444555666
 
     # Test Storage settings
-    assert settings.storage_root == Path("/tmp/boss-bot")
-    assert settings.max_file_size_mb == 50
-    assert settings.max_concurrent_downloads == 5
-    assert settings.max_queue_size == 50
+    assert test_settings.storage_root == Path("/tmp/boss-bot")
+    assert test_settings.max_file_size_mb == 50
+    assert test_settings.max_concurrent_downloads == 5
+    assert test_settings.max_queue_size == 50
 
     # Test Monitoring settings
-    assert settings.log_level == "INFO"
-    assert settings.enable_metrics is True
-    assert settings.metrics_port == 9090
-    assert settings.enable_health_check is True
-    assert settings.health_check_port == 8080
+    assert test_settings.log_level == "INFO"
+    assert test_settings.enable_metrics is True
+    assert test_settings.metrics_port == 9090
+    assert test_settings.enable_health_check is True
+    assert test_settings.health_check_port == 8080
 
     # Test Security settings
-    assert settings.rate_limit_requests == 100
-    assert settings.rate_limit_window_seconds == 60
-    assert settings.enable_file_validation is True
+    assert test_settings.rate_limit_requests == 100
+    assert test_settings.rate_limit_window_seconds == 60
+    assert test_settings.enable_file_validation is True
 
     # Test Development settings
-    assert settings.debug is False
-    assert settings.environment == Environment.DEVELOPMENT
+    assert test_settings.debug is False
+    assert test_settings.environment == Environment.DEVELOPMENT
 
     # Test API Keys
-    assert settings.openai_api_key.get_secret_value() == "sk-test-key-123456789abcdef"
-    assert settings.cohere_api_key.get_secret_value() == "test-cohere-key-123456789"
-    assert settings.debug_aider is True
-    assert settings.firecrawl_api_key.get_secret_value() == "test-firecrawl-key-123456789"
-    assert settings.langchain_api_key.get_secret_value() == "test-langchain-key-123456789"
-    assert settings.langchain_debug_logs is True
-    assert str(settings.langchain_endpoint) == "http://localhost:8000/"
-    assert settings.langchain_hub_api_key.get_secret_value() == "test-hub-key-123456789"
-    assert str(settings.langchain_hub_api_url) == "http://localhost:8001/"
-    assert settings.langchain_project == "test-project"
-    assert settings.langchain_tracing_v2 is True
-    assert settings.pinecone_api_key.get_secret_value() == "test-pinecone-key-123456789"
-    assert settings.pinecone_env == "test-env"
-    assert settings.pinecone_index == "test-index"
-    assert settings.tavily_api_key.get_secret_value() == "test-tavily-key-123456789"
-    assert settings.unstructured_api_key.get_secret_value() == "test-unstructured-key-123456789"
-    assert str(settings.unstructured_api_url) == "http://localhost:8002/"
+    assert test_settings.openai_api_key.get_secret_value() == "sk-test-key-123456789abcdef"
+    assert test_settings.cohere_api_key.get_secret_value() == "test-cohere-key-123456789"
+    assert test_settings.debug_aider is True
+    assert test_settings.firecrawl_api_key.get_secret_value() == "test-firecrawl-key-123456789"
+    assert test_settings.langchain_api_key.get_secret_value() == "test-langchain-key-123456789"
+    assert test_settings.langchain_debug_logs is True
+    assert str(test_settings.langchain_endpoint) == "http://localhost:8000/"
+    assert test_settings.langchain_hub_api_key.get_secret_value() == "test-hub-key-123456789"
+    assert str(test_settings.langchain_hub_api_url) == "http://localhost:8001/"
+    assert test_settings.langchain_project == "test-project"
+    assert test_settings.langchain_tracing_v2 is True
+    assert test_settings.pinecone_api_key.get_secret_value() == "test-pinecone-key-123456789"
+    assert test_settings.pinecone_env == "test-env"
+    assert test_settings.pinecone_index == "test-index"
+    assert test_settings.tavily_api_key.get_secret_value() == "test-tavily-key-123456789"
+    assert test_settings.unstructured_api_key.get_secret_value() == "test-unstructured-key-123456789"
+    assert str(test_settings.unstructured_api_url) == "http://localhost:8002/"
 
 
 def test_invalid_log_level(mock_env: None, monkeypatch: MonkeyPatch) -> None:
@@ -175,8 +128,8 @@ def test_environment_validation(mock_env: None, monkeypatch: MonkeyPatch) -> Non
 
 def test_str_representation(mock_env: None) -> None:
     """Test string representation masks sensitive values."""
-    settings = BossSettings()
-    str_repr = str(settings)
+    test_settings = BossSettings()
+    str_repr = str(test_settings)
 
     # Check that sensitive values are masked
     assert "**********" in str_repr
@@ -185,6 +138,6 @@ def test_str_representation(mock_env: None) -> None:
     assert "test-firecrawl-key-123456789" not in str_repr
 
     # Check that non-sensitive values are included
-    assert str(settings.storage_root) in str_repr
-    assert str(settings.max_file_size_mb) in str_repr
-    assert str(settings.environment) in str_repr
+    assert str(test_settings.storage_root) in str_repr
+    assert str(test_settings.max_file_size_mb) in str_repr
+    assert str(test_settings.environment) in str_repr

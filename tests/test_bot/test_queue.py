@@ -5,11 +5,17 @@ import discord
 from datetime import datetime
 from uuid import UUID
 
+from boss_bot.bot.client import BossBot
 from boss_bot.bot.cogs.task_queue import QueueCog
 from boss_bot.core.core_queue import QueueItem, QueueStatus
 
+# Note: Using standardized fixtures from conftest.py:
+# - settings
+# - bot
+# - ctx
+
 @pytest.mark.asyncio
-async def test_show_queue_empty(bot, ctx, mocker):
+async def test_show_queue_empty(bot: BossBot, ctx, mocker):
     """Test showing empty queue."""
     cog = QueueCog(bot)
     bot.queue_manager.get_queue_items = mocker.AsyncMock(return_value=[])
@@ -18,7 +24,7 @@ async def test_show_queue_empty(bot, ctx, mocker):
     ctx.send.assert_called_once_with("The download queue is empty.")
 
 @pytest.mark.asyncio
-async def test_show_queue_with_items(bot, ctx, mocker):
+async def test_show_queue_with_items(bot: BossBot, ctx, mocker):
     """Test showing queue with items."""
     cog = QueueCog(bot)
 

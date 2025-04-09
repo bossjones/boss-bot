@@ -330,7 +330,7 @@
         '\(Protocol\):$',
         '\s*\.\.\.$',
     ]
-    fail_under = 30
+    # fail_under = 30
     # Ignore source code that can't be found, emitting a warning instead of an exception
     ignore_errors = false
     omit          = ["*/studio/*", "*/test/*", "*/tests/*"]

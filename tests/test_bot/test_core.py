@@ -7,23 +7,6 @@ import discord
 from boss_bot.bot.client import BossBot
 from boss_bot.core.env import BossSettings
 
-
-@pytest.fixture
-def settings(mocker):
-    """Create test settings."""
-    mock_settings = mocker.Mock(spec=BossSettings)
-    mock_settings.discord_token.get_secret_value.return_value = "test_token"
-    mock_settings.environment = "development"
-    mock_settings.debug = True
-    return mock_settings
-
-@pytest.fixture
-async def bot(settings):
-    """Create a bot instance for testing."""
-    bot = BossBot(settings=settings)
-    yield bot
-    await bot.close()
-
 @pytest.mark.asyncio
 async def test_bot_error_handling(mocker, bot):
     """Test that bot handles command errors appropriately."""

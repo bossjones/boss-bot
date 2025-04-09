@@ -11,6 +11,13 @@ This rule is essential for maintaining consistency and quality in rule creation 
 - Implementing behavior patterns that need to be remembered
 - Requesting future behavior changes
 
+### [Diagram Generation](./../.cursor/rules/core-rules/diagram-generation-agent.mdc)
+Governs the generation and management of Mermaid diagrams from stories and tests. Apply this rule when:
+- Analyzing story files in .ai/stories/
+- Analyzing Python test files
+- Generating or updating diagrams in .ai/diagrams/
+- Reviewing relationships between business logic and code dependencies
+
 ### [Project Status Tracking](./../.cursor/rules/core-rules/project-status-tracker-agent.mdc)
 Governs project status tracking and reporting. Apply this rule when:
 - Requesting status checks

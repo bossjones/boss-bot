@@ -3,67 +3,18 @@
 import pytest
 import discord
 from discord.ext import commands
-from pytest import MonkeyPatch
 from pytest_mock import MockerFixture
 from typing import Any
-from collections.abc import AsyncGenerator
 
 from boss_bot.bot.client import BossBot
-from boss_bot.core.env import BossSettings
 from boss_bot.core.core_queue import QueueManager
 from boss_bot.downloaders.base import DownloadManager
+from boss_bot.core.env import BossSettings
 
-@pytest.fixture
-def mock_env(monkeypatch: MonkeyPatch) -> None:
-    """Set up test environment variables."""
-    env_vars = {
-        "DISCORD_TOKEN": "test_token_123",
-        "DISCORD_CLIENT_ID": "123456789012345678",
-        "DISCORD_SERVER_ID": "876543210987654321",
-        "DISCORD_ADMIN_USER_ID": "111222333444555666",
-        "STORAGE_ROOT": "/tmp/boss-bot",
-        "MAX_FILE_SIZE_MB": "50",
-        "MAX_CONCURRENT_DOWNLOADS": "5",
-        "MAX_QUEUE_SIZE": "50",
-        "LOG_LEVEL": "INFO",
-        "ENABLE_METRICS": "true",
-        "METRICS_PORT": "9090",
-        "ENABLE_HEALTH_CHECK": "true",
-        "HEALTH_CHECK_PORT": "8080",
-        "RATE_LIMIT_REQUESTS": "100",
-        "RATE_LIMIT_WINDOW_SECONDS": "60",
-        "ENABLE_FILE_VALIDATION": "true",
-        "DEBUG": "false",
-        "ENVIRONMENT": "development",
-        "OPENAI_API_KEY": "sk-test-key-123456789abcdef",
-        "COHERE_API_KEY": "test-cohere-key-123456789",
-        "DEBUG_AIDER": "true",
-        "FIRECRAWL_API_KEY": "test-firecrawl-key-123456789",
-        "LANGCHAIN_API_KEY": "test-langchain-key-123456789",
-        "LANGCHAIN_DEBUG_LOGS": "true",
-        "LANGCHAIN_ENDPOINT": "http://localhost:8000",
-        "LANGCHAIN_HUB_API_KEY": "test-hub-key-123456789",
-        "LANGCHAIN_HUB_API_URL": "http://localhost:8001",
-        "LANGCHAIN_PROJECT": "test-project",
-        "LANGCHAIN_TRACING_V2": "true",
-        "PINECONE_API_KEY": "test-pinecone-key-123456789",
-        "PINECONE_ENV": "test-env",
-        "PINECONE_INDEX": "test-index",
-        "TAVILY_API_KEY": "test-tavily-key-123456789",
-        "UNSTRUCTURED_API_KEY": "test-unstructured-key-123456789",
-        "UNSTRUCTURED_API_URL": "http://localhost:8002",
-    }
-
-    for key, value in env_vars.items():
-        monkeypatch.setenv(key, value)
-
-@pytest.fixture
-async def bot(mock_env: None) -> AsyncGenerator[BossBot, Any]:
-    """Create a bot instance for testing."""
-    bot = BossBot()
-    yield bot
-    # Cleanup
-    await bot.close()
+# Note: Using standardized fixtures from conftest.py:
+# - settings
+# - bot
+# - mock_env_vars
 
 @pytest.mark.asyncio
 async def test_bot_initialization(bot: BossBot):
@@ -76,9 +27,9 @@ async def test_bot_initialization(bot: BossBot):
     assert isinstance(bot.download_manager, DownloadManager)
 
 @pytest.mark.asyncio
-async def test_async_setup_hook(mock_env: None, mocker: MockerFixture):
+async def test_async_setup_hook(mock_settings: BossSettings, mocker: MockerFixture):
     """Test that extensions are loaded correctly."""
-    bot = BossBot()
+    bot = BossBot(settings=mock_settings)
 
     # Mock the load_extension method using pytest-mock
     mock_load_extension = mocker.patch.object(bot, 'load_extension', side_effect=mocker.AsyncMock())
@@ -92,11 +43,10 @@ async def test_async_setup_hook(mock_env: None, mocker: MockerFixture):
     assert mock_load_extension.call_count == 2
 
 @pytest.mark.asyncio
-# async def test_on_ready(capsys: pytest.CaptureFixture[Any], settings: BossSettings, mocker: MockerFixture):
-async def test_on_ready(capsys: pytest.CaptureFixture, settings: BossSettings, mocker: MockerFixture):
+async def test_on_ready(capsys: pytest.CaptureFixture, mock_settings: BossSettings, mocker: MockerFixture):
     """Test the on_ready event."""
     # Create bot with test settings
-    bot = BossBot(settings=settings)
+    bot = BossBot(settings=mock_settings)
 
     # Mock the user property
     mock_user = mocker.Mock()

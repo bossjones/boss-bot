@@ -1,28 +1,104 @@
-"""Test configuration and fixtures."""
+"""Test configuration and fixtures for Boss-Bot."""
 
 import asyncio
 from collections.abc import AsyncGenerator, Generator
 from pathlib import Path
+from typing import Dict, Any
 
 import pytest
 from discord.ext import commands
 from pydantic import AnyHttpUrl
+from pytest_mock import MockerFixture
 
 from boss_bot.bot.client import BossBot
 from boss_bot.core.env import BossSettings, Environment
 from boss_bot.core.core_queue import QueueManager
 from boss_bot.downloaders.base import DownloadManager
+from pytest import MonkeyPatch
+import os
+
+# --- Test Environment Configuration --- #
+
 
 @pytest.fixture
+def mock_env_vars_unit(monkeypatch: MonkeyPatch) -> Generator[MonkeyPatch, None, None]:
+    """Mock environment variables for unit tests.
+
+    Returns the monkeypatch instance for making additional modifications in tests.
+    """
+    monkeypatch.setenv("ANTHROPIC_API_KEY", os.getenv("ANTHROPIC_API_KEY", "test-anthropic-key"))
+    monkeypatch.setenv("BETTER_EXCEPTIONS", os.getenv("BETTER_EXCEPTIONS", "true"))
+    monkeypatch.setenv("COHERE_API_KEY", os.getenv("COHERE_API_KEY", "test-cohere-key"))
+    monkeypatch.setenv("DEBUG_AIDER", os.getenv("DEBUG_AIDER", "true"))
+    monkeypatch.setenv("DISCORD_ADMIN_USER_ID", os.getenv("DISCORD_ADMIN_USER_ID", "12345"))
+    monkeypatch.setenv("DISCORD_ADMIN_USER_INVITED", os.getenv("DISCORD_ADMIN_USER_INVITED", "false"))
+    monkeypatch.setenv("DISCORD_CLIENT_ID", os.getenv("DISCORD_CLIENT_ID", "123456789"))
+    monkeypatch.setenv("DISCORD_SERVER_ID", os.getenv("DISCORD_SERVER_ID", "987654321"))
+    monkeypatch.setenv("DISCORD_TOKEN", os.getenv("DISCORD_TOKEN", "test_token"))
+    monkeypatch.setenv("ENABLE_AI", os.getenv("ENABLE_AI", "true"))
+    monkeypatch.setenv("ENABLE_REDIS", os.getenv("ENABLE_REDIS", "false"))
+    monkeypatch.setenv("ENABLE_SENTRY", os.getenv("ENABLE_SENTRY", "false"))
+    monkeypatch.setenv("FIRECRAWL_API_KEY", os.getenv("FIRECRAWL_API_KEY", "test-firecrawl-key"))
+    monkeypatch.setenv("LANGCHAIN_API_KEY", os.getenv("LANGCHAIN_API_KEY", "test-langchain-key"))
+    monkeypatch.setenv("LANGCHAIN_DEBUG_LOGS", os.getenv("LANGCHAIN_DEBUG_LOGS", "true"))
+    monkeypatch.setenv("LANGCHAIN_ENDPOINT", os.getenv("LANGCHAIN_ENDPOINT", "http://localhost:8000"))
+    monkeypatch.setenv("LANGCHAIN_HUB_API_KEY", os.getenv("LANGCHAIN_HUB_API_KEY", "test-hub-key"))
+    monkeypatch.setenv("LANGCHAIN_HUB_API_URL", os.getenv("LANGCHAIN_HUB_API_URL", "http://localhost:8001"))
+    monkeypatch.setenv("LANGCHAIN_PROJECT", os.getenv("LANGCHAIN_PROJECT", "test-project"))
+    monkeypatch.setenv("LANGCHAIN_TRACING_V2", os.getenv("LANGCHAIN_TRACING_V2", "true"))
+    monkeypatch.setenv("LOCAL_TEST_DEBUG", os.getenv("LOCAL_TEST_DEBUG", "true"))
+    monkeypatch.setenv("LOCAL_TEST_ENABLE_EVALS", os.getenv("LOCAL_TEST_ENABLE_EVALS", "true"))
+    monkeypatch.setenv("OCO_LANGUAGE", os.getenv("OCO_LANGUAGE", "en"))
+    monkeypatch.setenv("OCO_MODEL", os.getenv("OCO_MODEL", "gpt-4o"))
+    monkeypatch.setenv("OCO_OPENAI_API_KEY", os.getenv("OCO_OPENAI_API_KEY", "sk-test-oco-key"))
+    monkeypatch.setenv("OCO_PROMPT_MODULE", os.getenv("OCO_PROMPT_MODULE", "conventional-commit"))
+    monkeypatch.setenv("OCO_TOKENS_MAX_INPUT", os.getenv("OCO_TOKENS_MAX_INPUT", "4096"))
+    monkeypatch.setenv("OCO_TOKENS_MAX_OUTPUT", os.getenv("OCO_TOKENS_MAX_OUTPUT", "500"))
+    monkeypatch.setenv("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY", "sk-test-key-123456789abcdef"))
+    monkeypatch.setenv("PINECONE_API_KEY", os.getenv("PINECONE_API_KEY", "test-pinecone-key"))
+    monkeypatch.setenv("PINECONE_ENV", os.getenv("PINECONE_ENV", "test-env"))
+    monkeypatch.setenv("PINECONE_INDEX", os.getenv("PINECONE_INDEX", "test-index"))
+    monkeypatch.setenv("PYTHON_DEBUG", os.getenv("PYTHON_DEBUG", "true"))
+    monkeypatch.setenv("PYTHONASYNCIODEBUG", os.getenv("PYTHONASYNCIODEBUG", "1"))
+    monkeypatch.setenv("SENTRY_DSN", os.getenv("SENTRY_DSN", "https://test-sentry-dsn"))
+    monkeypatch.setenv("TAVILY_API_KEY", os.getenv("TAVILY_API_KEY", "test-tavily-key"))
+    monkeypatch.setenv("UNSTRUCTURED_API_KEY", os.getenv("UNSTRUCTURED_API_KEY", "test-unstructured-key"))
+    monkeypatch.setenv("UNSTRUCTURED_API_URL", os.getenv("UNSTRUCTURED_API_URL", "http://localhost:8002"))
+
+    # Return the monkeypatch instance so tests can modify environment variables if needed
+    yield monkeypatch
+
+    # No explicit teardown needed - pytest's monkeypatch fixture handles cleanup automatically
+
+@pytest.fixture
+def set_langsmith_env_vars_evals(monkeypatch: MonkeyPatch) -> None:
+    """Set environment variables for LangSmith evals."""
+    monkeypatch.setenv("LANGCHAIN_API_KEY", os.getenv("LANGCHAIN_API_KEY"))
+    monkeypatch.setenv("LANGCHAIN_ENDPOINT", os.getenv("LANGCHAIN_ENDPOINT"))
+    monkeypatch.setenv("LANGCHAIN_PROJECT", os.getenv("LANGCHAIN_PROJECT"))
+
+
+# --- Core Test Fixtures --- #
+
+@pytest.fixture(scope="function")
 def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
-    """Create and provide a new event loop for each test."""
+    """Create and provide a new event loop for each test.
+
+    Scope: function - ensures each test gets a fresh event loop
+    Yields: asyncio.AbstractEventLoop
+    """
     loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     yield loop
     loop.close()
 
-@pytest.fixture
-def settings() -> BossSettings:
-    """Provide test settings."""
+@pytest.fixture(scope="function")
+def mock_settings() -> BossSettings:
+    """Provide standardized test settings.
+
+    Scope: function - allows tests to modify settings without affecting others
+    Returns: BossSettings instance with test configuration
+    """
     return BossSettings(
         # Discord settings
         discord_token="test_token",
@@ -78,19 +154,22 @@ def settings() -> BossSettings:
         pinecone_index="test-index",
         tavily_api_key="test-tavily-key",
         unstructured_api_key="test-unstructured-key",
-        unstructured_api_url=AnyHttpUrl("http://localhost:8002"),
-
-        # Environment variables for backward compatibility
-        DISCORD_TOKEN="test_token",
-        DISCORD_CLIENT_ID="123456789",
-        DISCORD_SERVER_ID="987654321",
-        DISCORD_ADMIN_USER_ID="12345"
+        unstructured_api_url=AnyHttpUrl("http://localhost:8002")
     )
 
-@pytest.fixture
-async def bot(settings: BossSettings, mocker) -> AsyncGenerator[BossBot, None]:
-    """Provide a test bot instance."""
-    bot = BossBot(settings=settings)
+# --- Discord Bot Fixtures --- #
+
+@pytest.fixture(scope="function")
+async def bot(mock_settings: BossSettings, mocker: MockerFixture) -> AsyncGenerator[BossBot, None]:
+    """Provide a test bot instance with mocked Discord.py methods.
+
+    Scope: function - ensures each test gets a fresh bot instance
+    Args:
+        settings: Test settings fixture
+        mocker: PyTest mocker fixture
+    Yields: Configured BossBot instance
+    """
+    bot = BossBot(settings=mock_settings)
 
     # Mock necessary Discord.py methods
     bot.wait_until_ready = mocker.AsyncMock()
@@ -103,19 +182,15 @@ async def bot(settings: BossSettings, mocker) -> AsyncGenerator[BossBot, None]:
     # Cleanup
     await bot.close()
 
-@pytest.fixture
-def queue_manager(settings: BossSettings) -> QueueManager:
-    """Provide a test queue manager."""
-    return QueueManager(max_queue_size=settings.max_queue_size)
+@pytest.fixture(scope="function")
+def ctx(mocker: MockerFixture) -> commands.Context:
+    """Provide a mock Discord context for command testing.
 
-@pytest.fixture
-def download_manager(settings: BossSettings) -> DownloadManager:
-    """Provide a test download manager."""
-    return DownloadManager(max_concurrent_downloads=settings.max_concurrent_downloads)
-
-@pytest.fixture
-def ctx(mocker) -> commands.Context:
-    """Provide a mock Discord context."""
+    Scope: function - ensures each test gets a fresh context
+    Args:
+        mocker: PyTest mocker fixture
+    Returns: Mocked Discord Context
+    """
     ctx = mocker.Mock(spec=commands.Context)
     ctx.send = mocker.AsyncMock()
     ctx.author = mocker.Mock()
@@ -123,3 +198,27 @@ def ctx(mocker) -> commands.Context:
     ctx.channel = mocker.Mock()
     ctx.channel.id = 67890
     return ctx
+
+# --- Service Fixtures --- #
+
+@pytest.fixture(scope="function")
+def queue_manager(mock_settings: BossSettings) -> QueueManager:
+    """Provide a test queue manager instance.
+
+    Scope: function - ensures each test gets a fresh queue
+    Args:
+        settings: Test settings fixture
+    Returns: Configured QueueManager instance
+    """
+    return QueueManager(max_queue_size=mock_settings.max_queue_size)
+
+@pytest.fixture(scope="function")
+def download_manager(mock_settings: BossSettings) -> DownloadManager:
+    """Provide a test download manager instance.
+
+    Scope: function - ensures each test gets a fresh manager
+    Args:
+        settings: Test settings fixture
+    Returns: Configured DownloadManager instance
+    """
+    return DownloadManager(max_concurrent_downloads=mock_settings.max_concurrent_downloads)

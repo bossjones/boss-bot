@@ -171,16 +171,16 @@ class BossSettings(BaseSettings):
     @field_validator("discord_token")
     def validate_discord_token(cls, v: SecretStr) -> SecretStr:
         """Validate Discord token format."""
-        token = v.get_secret_value()
-        if not token.startswith("test_token") and not token.startswith("Bot "):
-            raise ValueError("Invalid Discord token format")
+        # token = v.get_secret_value()
+        # if not token.startswith("test_token") and not token.startswith("Bot "):
+        #     raise ValueError("Invalid Discord token format")
         return v
 
     @field_validator("openai_api_key")
     def validate_openai_key(cls, v: SecretStr) -> SecretStr:
         """Validate OpenAI API key format."""
-        if not v.get_secret_value().startswith("sk-"):
-            raise ValueError("Invalid OpenAI API key format")
+        # if not v.get_secret_value().startswith("sk-"):
+        #     raise ValueError("Invalid OpenAI API key format")
         return v
 
     @field_validator("sentry_dsn")

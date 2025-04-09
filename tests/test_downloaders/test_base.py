@@ -3,13 +3,15 @@
 import asyncio
 import pytest
 from uuid import uuid4
+from pathlib import Path
 
 from boss_bot.downloaders.base import Download, DownloadManager, DownloadStatus
+from boss_bot.core.env import BossSettings
 
 @pytest.fixture
-def download_manager():
+def download_manager(settings: BossSettings):
     """Create a download manager instance for testing."""
-    return DownloadManager()
+    return DownloadManager(settings=settings)
 
 @pytest.mark.asyncio
 async def test_download_manager_initialization(download_manager: DownloadManager):

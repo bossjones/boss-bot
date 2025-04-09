@@ -14,6 +14,7 @@
     '''insights/tests/client/test_crypto.py''',
     '''sample.env''',
     '''tests/conftest.py''',
+    '''tests/test_bot/test_client.py''',
     '''tests/test_core/test_env.py''',
   ]
 

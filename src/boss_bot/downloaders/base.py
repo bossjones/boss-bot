@@ -41,17 +41,18 @@ class Download:
 class DownloadManager:
     """Manages download tasks."""
 
-    def __init__(self, max_concurrent_downloads: int | None = None):
+    def __init__(self, settings: BossSettings, max_concurrent_downloads: int | None = None):
         """Initialize the download manager.
 
         Args:
+            settings: BossSettings instance
             max_concurrent_downloads: Maximum number of concurrent downloads
         """
-        self.settings = BossSettings()
+        self.settings = settings
         self.max_concurrent_downloads = max_concurrent_downloads or self.settings.max_concurrent_downloads
         self.active_downloads: dict[UUID, Download] = {}
         self.validator = FileValidator()
-        self.quota_manager = QuotaManager()
+        self.quota_manager = QuotaManager(storage_root=self.settings.storage_root)
         self._download_lock = asyncio.Lock()
 
     async def start_download(self, download: Download) -> bool:

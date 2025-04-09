@@ -3,7 +3,10 @@
 import pytest
 import discord
 from discord.ext import commands
-from unittest.mock import Mock, PropertyMock
+from pytest import MonkeyPatch
+from pytest_mock import MockerFixture
+from typing import Any
+from collections.abc import AsyncGenerator
 
 from boss_bot.bot.client import BossBot
 from boss_bot.core.env import BossSettings
@@ -11,7 +14,7 @@ from boss_bot.core.core_queue import QueueManager
 from boss_bot.downloaders.base import DownloadManager
 
 @pytest.fixture
-def mock_env(monkeypatch):
+def mock_env(monkeypatch: MonkeyPatch) -> None:
     """Set up test environment variables."""
     env_vars = {
         "DISCORD_TOKEN": "test_token_123",
@@ -55,7 +58,7 @@ def mock_env(monkeypatch):
         monkeypatch.setenv(key, value)
 
 @pytest.fixture
-async def bot(mock_env):
+async def bot(mock_env: None) -> AsyncGenerator[BossBot, Any]:
     """Create a bot instance for testing."""
     bot = BossBot()
     yield bot
@@ -73,7 +76,7 @@ async def test_bot_initialization(bot: BossBot):
     assert isinstance(bot.download_manager, DownloadManager)
 
 @pytest.mark.asyncio
-async def test_async_setup_hook(mock_env, mocker):
+async def test_async_setup_hook(mock_env: None, mocker: MockerFixture):
     """Test that extensions are loaded correctly."""
     bot = BossBot()
 
@@ -89,16 +92,17 @@ async def test_async_setup_hook(mock_env, mocker):
     assert mock_load_extension.call_count == 2
 
 @pytest.mark.asyncio
-async def test_on_ready(capsys, settings):
+# async def test_on_ready(capsys: pytest.CaptureFixture[Any], settings: BossSettings, mocker: MockerFixture):
+async def test_on_ready(capsys: pytest.CaptureFixture, settings: BossSettings, mocker: MockerFixture):
     """Test the on_ready event."""
     # Create bot with test settings
     bot = BossBot(settings=settings)
 
     # Mock the user property
-    mock_user = Mock()
+    mock_user = mocker.Mock()
     mock_user.name = "TestBot"
     mock_user.id = 123456789
-    type(bot).user = PropertyMock(return_value=mock_user)
+    type(bot).user = mocker.PropertyMock(return_value=mock_user)
 
     # Call on_ready
     await bot.on_ready()

@@ -77,4 +77,4 @@ class MetricsRegistry:
 
 
 # Create global metrics registry
-metrics = MetricsRegistry()
+metrics_registry = MetricsRegistry()

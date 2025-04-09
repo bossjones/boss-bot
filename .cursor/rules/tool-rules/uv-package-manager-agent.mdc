@@ -11,20 +11,20 @@ alwaysApply: true
 - NEVER use pip or pip-related commands (pip install, pip list, etc.)
 - NEVER use `uv pip` commands - this is incorrect usage
 - ALWAYS use proper UV commands:
-  * `uv install` for installing packages
-  * `uv pip compile` for requirements.txt generation
-  * `uv pip sync` for syncing environments
+  * `uv sync` for installing all dependencies from pyproject.toml
+  * `uv sync --dev` for installing with development dependencies
+  * `uv install {package}` for installing single packages
 - For running Python scripts/tests:
   * Use `uv run python` instead of just `python`
   * Use `uv run pytest` instead of just `pytest`
   * Use `uv run` for any other Python-based commands
 - When installing packages:
   * ALWAYS use `uv install {package}` for single package
-  * ALWAYS use `uv pip sync requirements.txt` for bulk installs
+  * ALWAYS use `uv sync` for installing all dependencies
   * NEVER install packages without version pins in production
 - For development workflows:
-  * Use `uv pip compile pyproject.toml -o requirements.txt` to generate requirements
-  * Use `uv pip sync requirements-dev.txt` for dev dependencies
+  * Use `uv sync --dev` to install development dependencies
+  * UV will automatically maintain a lockfile (uv.lock) for reproducible builds
 - ALWAYS specify package versions in pyproject.toml
 - NEVER mix different package managers in the same project
 
@@ -33,16 +33,14 @@ alwaysApply: true
 <example>
 # Good - Proper UV Usage
 ```bash
-# Installing packages
-uv install pytest==8.0.0
-uv pip sync requirements.txt
+# Installing dependencies
+uv sync
+uv sync --dev  # with development dependencies
+uv install pytest==8.0.0  # single package
 
 # Running tests
 uv run pytest tests/
 uv run python -m pytest
-
-# Generating requirements
-uv pip compile pyproject.toml -o requirements.txt
 ```
 
 # Good - Package Version Management
@@ -54,6 +52,13 @@ dependencies = [
     "discord.py==2.3.2",
     "loguru==0.7.2"
 ]
+
+[project.optional-dependencies]
+dev = [
+    "black==24.2.0",
+    "mypy==1.8.0",
+    "ruff==0.3.0"
+]
 ```
 </example>
 
@@ -63,6 +68,7 @@ dependencies = [
 # NEVER do these
 pip install pytest
 uv pip install pytest
+uv pip sync requirements.txt
 python -m pytest
 pip freeze > requirements.txt
 

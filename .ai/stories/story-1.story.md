@@ -7,7 +7,7 @@
 
 ## Status
 
-Draft
+In Progress
 
 ## Context
 
@@ -104,7 +104,7 @@ Increased from 3 to 5 points due to additional security, monitoring, and CI/CD r
    6. - [ ] Configure resource usage monitoring
    7. - [ ] Set up security event logging
    8. - [ ] Set up health check endpoints
-   9. - [ ] Configure storage monitoring
+   9. - [ ] Set up storage monitoring
    10. - [ ] Set up performance profiling
 
 7. - [ ] Initialize Storage Structure
@@ -113,11 +113,27 @@ Increased from 3 to 5 points due to additional security, monitoring, and CI/CD r
       * ✅ File type validation - Implemented in FileValidator with ALLOWED_EXTENSIONS
       * ✅ File name sanitization - Implemented with sanitize_filename method
       * ✅ Basic security checks - Implemented path traversal detection and forbidden character validation
-   3. - [ ] ~~Configure cleanup policies~~ (Deferred to future story)
-   4. - [ ] ~~Set up storage quota management~~ (Deferred to future story)
-   5. - [ ] ~~Configure backup locations~~ (Deferred to future story)
-   6. - [ ] ~~Set up storage monitoring~~ (Deferred to future story)
-   7. - [ ] ~~Configure storage security~~ (Deferred to future story)
+   3. - [ ] ~~Configure cleanup policies~~ (Deferred)
+   4. - [ ] ~~Set up storage quota management~~ (Deferred)
+   5. - [ ] ~~Configure backup locations~~ (Deferred)
+   6. - [ ] ~~Set up storage monitoring~~ (Deferred)
+   7. - [ ] ~~Configure storage security~~ (Deferred)
+
+## Deferred Tasks
+The following tasks have been deferred to future stories:
+
+1. Storage Management (Task Group 7)
+   - Configure cleanup policies
+   - Set up storage quota management
+   - Configure backup locations
+   - Set up storage monitoring
+   - Configure storage security
+
+Rationale for Deferral:
+- These features require more complex implementation and testing
+- Not critical for MVP functionality
+- Can be implemented in a dedicated storage management story
+- Current focus is on core bot infrastructure and basic file validation
 
 ## Constraints
 

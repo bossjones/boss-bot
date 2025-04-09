@@ -19,12 +19,13 @@ import os
 
 # --- Test Environment Configuration --- #
 
-
-@pytest.fixture
-def mock_env_vars_unit(monkeypatch: MonkeyPatch) -> Generator[MonkeyPatch, None, None]:
+@pytest.fixture(scope="function")
+def fixture_env_vars_test(monkeypatch: MonkeyPatch) -> Generator[MonkeyPatch, None, None]:
     """Mock environment variables for unit tests.
 
-    Returns the monkeypatch instance for making additional modifications in tests.
+    Scope: function - ensures clean environment for each test
+    Yields: MonkeyPatch instance for test modifications
+    Cleanup: Automatically resets environment after each test
     """
     monkeypatch.setenv("ANTHROPIC_API_KEY", os.getenv("ANTHROPIC_API_KEY", "test-anthropic-key"))
     monkeypatch.setenv("BETTER_EXCEPTIONS", os.getenv("BETTER_EXCEPTIONS", "true"))
@@ -81,7 +82,7 @@ def set_langsmith_env_vars_evals(monkeypatch: MonkeyPatch) -> None:
 # --- Core Test Fixtures --- #
 
 @pytest.fixture(scope="function")
-def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
+def fixture_event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
     """Create and provide a new event loop for each test.
 
     Scope: function - ensures each test gets a fresh event loop
@@ -93,10 +94,12 @@ def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
     loop.close()
 
 @pytest.fixture(scope="function")
-def mock_settings() -> BossSettings:
+def fixture_settings_test(fixture_env_vars_test: MonkeyPatch) -> BossSettings:
     """Provide standardized test settings.
 
-    Scope: function - allows tests to modify settings without affecting others
+    Scope: function - ensures clean settings for each test
+    Args:
+        fixture_env_vars_test: Environment variables fixture
     Returns: BossSettings instance with test configuration
     """
     return BossSettings(
@@ -160,38 +163,54 @@ def mock_settings() -> BossSettings:
 # --- Discord Bot Fixtures --- #
 
 @pytest.fixture(scope="function")
-async def bot(mock_settings: BossSettings, mocker: MockerFixture) -> AsyncGenerator[BossBot, None]:
-    """Provide a test bot instance with mocked Discord.py methods.
+def fixture_discord_bot(
+    fixture_settings_test: BossSettings,
+    mocker: MockerFixture
+) -> AsyncGenerator[BossBot, None]:
+    """Provide a test bot instance with configurable mocking.
 
-    Scope: function - ensures each test gets a fresh bot instance
+    Scope: function - ensures clean bot instance for each test
     Args:
-        settings: Test settings fixture
+        fixture_settings_test: Test settings fixture
         mocker: PyTest mocker fixture
     Yields: Configured BossBot instance
+    Cleanup: Closes bot connection and resets state
     """
-    bot = BossBot(settings=mock_settings)
+    bot = BossBot(settings=fixture_settings_test)
+    bot.is_mock = True  # New flag for consistent mocking behavior
 
-    # Mock necessary Discord.py methods
-    bot.wait_until_ready = mocker.AsyncMock()
-    bot.login = mocker.AsyncMock()
-    bot.connect = mocker.AsyncMock()
-    bot.close = mocker.AsyncMock()
+    def configure_mock(mock_all: bool = True):
+        """Configure bot mocking level."""
+        if mock_all:
+            bot.wait_until_ready = mocker.AsyncMock()
+            bot.login = mocker.AsyncMock()
+            bot.connect = mocker.AsyncMock()
+            bot.close = mocker.AsyncMock()
+
+    bot.configure_mock = configure_mock
+    bot.configure_mock()  # Default to full mocking
 
     yield bot
 
     # Cleanup
-    await bot.close()
+    if not bot.is_closed():
+        await bot.close()
 
 @pytest.fixture(scope="function")
-def ctx(mocker: MockerFixture) -> commands.Context:
+def fixture_discord_context(
+    fixture_discord_bot: BossBot,
+    mocker: MockerFixture
+) -> commands.Context:
     """Provide a mock Discord context for command testing.
 
-    Scope: function - ensures each test gets a fresh context
+    Scope: function - ensures clean context for each test
     Args:
+        fixture_discord_bot: Bot fixture
         mocker: PyTest mocker fixture
     Returns: Mocked Discord Context
     """
     ctx = mocker.Mock(spec=commands.Context)
+    ctx.bot = fixture_discord_bot
     ctx.send = mocker.AsyncMock()
     ctx.author = mocker.Mock()
     ctx.author.id = 12345
@@ -202,23 +221,46 @@ def ctx(mocker: MockerFixture) -> commands.Context:
 # --- Service Fixtures --- #
 
 @pytest.fixture(scope="function")
-def queue_manager(mock_settings: BossSettings) -> QueueManager:
+def fixture_queue_manager(fixture_settings_test: BossSettings) -> QueueManager:
     """Provide a test queue manager instance.
 
-    Scope: function - ensures each test gets a fresh queue
+    Scope: function - ensures clean queue for each test
     Args:
-        settings: Test settings fixture
+        fixture_settings_test: Test settings fixture
     Returns: Configured QueueManager instance
     """
-    return QueueManager(max_queue_size=mock_settings.max_queue_size)
+    manager = QueueManager(max_queue_size=fixture_settings_test.max_queue_size)
+
+    def reset_state():
+        """Reset queue state between tests."""
+        manager.queue.clear()
+        manager.processing.clear()
+
+    manager.reset_state = reset_state
+    manager.reset_state()  # Start clean
+
+    return manager
 
 @pytest.fixture(scope="function")
-def download_manager(mock_settings: BossSettings) -> DownloadManager:
+def fixture_download_manager(fixture_settings_test: BossSettings) -> DownloadManager:
     """Provide a test download manager instance.
 
-    Scope: function - ensures each test gets a fresh manager
+    Scope: function - ensures clean manager for each test
     Args:
-        settings: Test settings fixture
+        fixture_settings_test: Test settings fixture
     Returns: Configured DownloadManager instance
     """
-    return DownloadManager(max_concurrent_downloads=mock_settings.max_concurrent_downloads)
+    manager = DownloadManager(
+        max_concurrent_downloads=fixture_settings_test.max_concurrent_downloads
+    )
+
+    def reset_state():
+        """Reset download state between tests."""
+        manager.active_downloads.clear()
+        manager.completed_downloads.clear()
+        manager.failed_downloads.clear()
+
+    manager.reset_state = reset_state
+    manager.reset_state()  # Start clean
+
+    return manager

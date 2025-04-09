@@ -1,7 +1,6 @@
-"""Storage management package for the boss-bot application."""
+"""Storage management for Boss-Bot."""
 
-from .cleanup import cleanup_manager
-from .quotas import quota_manager
-from .validation import storage_validator
+from .quotas import QuotaManager
+from .validation import FileValidationError, FileValidator
 
-__all__ = ["cleanup_manager", "quota_manager", "storage_validator"]
+__all__ = ["QuotaManager", "FileValidator", "FileValidationError"]

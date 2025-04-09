@@ -1,8 +1,10 @@
 """Storage validation utilities for the boss-bot application."""
 
 import os
+import re
+from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Optional, Set, Tuple, Union
 
 from pydantic import BaseModel
 
@@ -121,3 +123,165 @@ class StorageValidator:
 
 # Create global storage validator
 storage_validator = StorageValidator()
+
+
+@dataclass
+class ValidationResult:
+    """Result of a file validation check."""
+
+    is_valid: bool
+    sanitized_name: str
+    error_message: str = ""
+
+
+class FileValidationError(Exception):
+    """Raised when file validation fails."""
+
+    pass
+
+
+class FileValidator:
+    """Validates and sanitizes files for storage."""
+
+    # Allowed file extensions for media files
+    ALLOWED_EXTENSIONS: set[str] = {
+        # Video formats
+        "mp4",
+        "webm",
+        "mkv",
+        "avi",
+        "mov",
+        # Image formats
+        "jpg",
+        "jpeg",
+        "png",
+        "gif",
+        "webp",
+        # Audio formats
+        "mp3",
+        "wav",
+        "ogg",
+        "flac",
+    }
+
+    # Characters not allowed in filenames
+    FORBIDDEN_CHARS = r'[<>:"/\\|?*\$@]'  # Added @ to forbidden chars
+
+    def __init__(self):
+        """Initialize the file validator."""
+        pass
+
+    def is_valid_type(self, filename: str | Path) -> bool:
+        """Check if the file type is allowed.
+
+        Args:
+            filename: Name or path of the file to check
+
+        Returns:
+            True if file type is allowed, False otherwise
+        """
+        ext = str(filename).split(".")[-1].lower()
+        return ext in self.ALLOWED_EXTENSIONS
+
+    def sanitize_filename(self, filename: str | Path) -> str:
+        """Sanitize a filename to make it safe for storage.
+
+        Args:
+            filename: Name or path of the file to sanitize
+
+        Returns:
+            Sanitized filename
+        """
+        # Get just the filename if a path is provided
+        filename = Path(filename).name
+
+        # Convert to lowercase
+        filename = filename.lower()
+
+        # Replace forbidden characters with underscore
+        filename = re.sub(self.FORBIDDEN_CHARS, "_", filename)
+
+        # Replace spaces and multiple underscores with single underscore
+        filename = re.sub(r"\s+", "_", filename)
+        filename = re.sub(r"_+", "_", filename)
+
+        # Remove leading/trailing underscores
+        filename = filename.strip("_")
+
+        return filename
+
+    def has_path_traversal(self, filepath: str | Path) -> bool:
+        """Check if a filepath contains path traversal attempts.
+
+        Args:
+            filepath: Path to check
+
+        Returns:
+            True if path traversal is detected, False otherwise
+        """
+        # Convert to Path and get parts
+        path = Path(filepath)
+
+        # Check for path traversal in parts
+        return ".." in path.parts
+
+    def validate_filename(self, filename: str | Path) -> None:
+        """Validate a filename for security.
+
+        Args:
+            filename: Name or path of the file to validate
+
+        Raises:
+            FileValidationError: If the filename is invalid
+        """
+        path = Path(filename)
+
+        # Check for path traversal
+        if self.has_path_traversal(path):
+            raise FileValidationError("Invalid characters in filename: path traversal not allowed")
+
+        # Check for forbidden characters in the filename part
+        if re.search(self.FORBIDDEN_CHARS, path.name):
+            raise FileValidationError("Invalid characters in filename")
+
+    def validate_file(self, filename: str | Path, size_mb: float) -> ValidationResult:
+        """Validate a file for storage.
+
+        Args:
+            filename: Name or path of the file to validate
+            size_mb: Size of the file in megabytes
+
+        Returns:
+            ValidationResult with validation status and sanitized name
+        """
+        try:
+            # Check for path traversal first
+            if self.has_path_traversal(filename):
+                return ValidationResult(
+                    is_valid=False,
+                    sanitized_name="",
+                    error_message="Invalid characters in filename: path traversal not allowed",
+                )
+
+            # Check file type
+            if not self.is_valid_type(filename):
+                return ValidationResult(is_valid=False, sanitized_name="", error_message="File type not allowed")
+
+            # Check file size (50MB limit from story constraints)
+            if size_mb > 50:
+                return ValidationResult(
+                    is_valid=False,
+                    sanitized_name="",
+                    error_message=f"File size {size_mb}MB exceeds maximum size of 50MB",
+                )
+
+            # Validate the original filename
+            self.validate_filename(filename)
+
+            # If validation passes, sanitize the filename
+            sanitized = self.sanitize_filename(filename)
+
+            return ValidationResult(is_valid=True, sanitized_name=sanitized)
+
+        except FileValidationError as e:
+            return ValidationResult(is_valid=False, sanitized_name="", error_message=str(e))

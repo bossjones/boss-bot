@@ -8,7 +8,7 @@ from pathlib import Path
 from boss_bot.core.env import BossSettings
 
 @pytest.mark.asyncio
-async def test_clear_queue_command(bot):
+async def test_clear_queue_command(fixture_bot_test: BossBot) -> None:
     """Test clearing the queue."""
     # Add some downloads first
     for i in range(3):
@@ -29,7 +29,7 @@ async def test_clear_queue_command(bot):
     )
 
 @pytest.mark.asyncio
-async def test_cancel_download_command(bot):
+async def test_cancel_download_command(fixture_bot_test: BossBot) -> None:
     """Test canceling a specific download."""
     # Add a download
     await dpytest.message("$dl https://twitter.com/user/status/123")
@@ -45,7 +45,7 @@ async def test_cancel_download_command(bot):
     )
 
 @pytest.mark.asyncio
-async def test_queue_status_empty(bot):
+async def test_queue_status_empty(fixture_bot_test: BossBot) -> None:
     """Test queue status when empty."""
     await dpytest.message("$queue")
     assert dpytest.verify().message().contains().content(
@@ -53,15 +53,15 @@ async def test_queue_status_empty(bot):
     )
 
 @pytest.mark.asyncio
-async def test_queue_status_with_items(bot):
+async def test_queue_status_with_items(fixture_bot_test: BossBot) -> None:
     """Test queue status with items."""
     # Add some downloads
     for i in range(3):
         await dpytest.message(f"$dl https://twitter.com/user/status/{i}")
 
     await dpytest.message("$queue")
-    messages = dpytest.get_message()
+    message = dpytest.get_message()
 
     # Verify queue information is displayed
-    assert "Current Queue Status" in messages[-1].content
-    assert "Downloads in Queue: 3" in messages[-1].content
+    assert "Current Queue Status" in message.content
+    assert "Downloads in Queue: 3" in message.content

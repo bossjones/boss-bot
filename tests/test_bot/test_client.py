@@ -12,24 +12,24 @@ from boss_bot.downloaders.base import DownloadManager
 from boss_bot.core.env import BossSettings
 
 # Note: Using standardized fixtures from conftest.py:
-# - settings
-# - bot
-# - mock_env_vars
+# - fixture_bot_test: Clean bot instance for each test
+# - fixture_settings_test: Test settings fixture
+# - fixture_mock_bot_test: Mocked bot instance for testing
 
 @pytest.mark.asyncio
-async def test_bot_initialization(bot: BossBot):
+async def test_bot_initialization(fixture_bot_test: BossBot):
     """Test that bot is initialized with correct settings."""
-    assert isinstance(bot, commands.Bot)
-    assert bot.command_prefix == "$"
-    assert isinstance(bot.intents, discord.Intents)
-    assert bot.intents.message_content is True
-    assert isinstance(bot.queue_manager, QueueManager)
-    assert isinstance(bot.download_manager, DownloadManager)
+    assert isinstance(fixture_bot_test, commands.Bot)
+    assert fixture_bot_test.command_prefix == "$"
+    assert isinstance(fixture_bot_test.intents, discord.Intents)
+    assert fixture_bot_test.intents.message_content is True
+    assert isinstance(fixture_bot_test.queue_manager, QueueManager)
+    assert isinstance(fixture_bot_test.download_manager, DownloadManager)
 
 @pytest.mark.asyncio
-async def test_async_setup_hook(mock_settings: BossSettings, mocker: MockerFixture):
+async def test_async_setup_hook(fixture_settings_test: BossSettings, mocker: MockerFixture):
     """Test that extensions are loaded correctly."""
-    bot = BossBot(settings=mock_settings)
+    bot = BossBot(settings=fixture_settings_test)
 
     # Mock the load_extension method using pytest-mock
     mock_load_extension = mocker.patch.object(bot, 'load_extension', side_effect=mocker.AsyncMock())
@@ -43,23 +43,19 @@ async def test_async_setup_hook(mock_settings: BossSettings, mocker: MockerFixtu
     assert mock_load_extension.call_count == 2
 
 @pytest.mark.asyncio
-async def test_on_ready(capsys: pytest.CaptureFixture, mock_settings: BossSettings, mocker: MockerFixture):
+async def test_on_ready(
+    capsys: pytest.CaptureFixture[Any],
+    fixture_mock_bot_test: BossBot
+):
     """Test the on_ready event."""
-    # Create bot with test settings
-    bot = BossBot(settings=mock_settings)
-
-    # Mock the user property
-    mock_user = mocker.Mock()
+    # Configure mock bot user
+    mock_user = discord.Object(id=123456789)
     mock_user.name = "TestBot"
-    mock_user.id = 123456789
-    type(bot).user = mocker.PropertyMock(return_value=mock_user)
+    fixture_mock_bot_test.user = mock_user
 
     # Call on_ready
-    await bot.on_ready()
+    await fixture_mock_bot_test.on_ready()
 
     # Check output
     captured = capsys.readouterr()
     assert "Logged in as TestBot (ID: 123456789)" in captured.err
-
-    # Cleanup
-    await bot.close()

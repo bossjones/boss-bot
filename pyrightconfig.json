@@ -41,6 +41,7 @@
   "reportExplicitAny": "warning",
   "strictGenericNarrowing": true,
   "failOnWarnings": true,
+  "reportPrivateUsage": "none",
 
   "reportCallIssue": "none",
   "reportOptionalMemberAccess": "none",

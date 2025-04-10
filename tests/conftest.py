@@ -221,13 +221,14 @@ def fixture_discord_context(
 # --- Service Fixtures --- #
 
 @pytest.fixture(scope="function")
-def fixture_queue_manager(fixture_settings_test: BossSettings) -> QueueManager:
+def fixture_queue_manager_test(fixture_settings_test: BossSettings) -> QueueManager:
     """Provide a test queue manager instance.
 
     Scope: function - ensures clean queue for each test
     Args:
         fixture_settings_test: Test settings fixture
     Returns: Configured QueueManager instance
+    Cleanup: Automatically resets queue state after each test
     """
     manager = QueueManager(max_queue_size=fixture_settings_test.max_queue_size)
 
@@ -235,6 +236,7 @@ def fixture_queue_manager(fixture_settings_test: BossSettings) -> QueueManager:
         """Reset queue state between tests."""
         manager.queue.clear()
         manager.processing.clear()
+        manager._paused = False
 
     manager.reset_state = reset_state
     manager.reset_state()  # Start clean

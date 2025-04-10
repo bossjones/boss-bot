@@ -1,0 +1,165 @@
+---
+description: "This rule governs the analysis and resolution of pytest errors. It should be applied whenever: (1) Analyzing test failures, (2) Debugging pytest errors, (3) Reviewing test output, or (4) Implementing test fixes. This ensures systematic error analysis and consistent resolution approaches."
+globs:
+alwaysApply: false
+---
+
+# Pytest Error Analysis Standards
+
+## Critical Rules
+
+- ALWAYS wrap pytest errors in XML tags for structured analysis:
+  ```xml
+  <error>
+  <output>
+  [ERROR OUTPUT]
+  </output>
+  <context>
+  [TEST PURPOSE & CODE]
+  </context>
+  </error>
+  ```
+
+- For EACH error, provide comprehensive analysis sections:
+  ```xml
+  <analysis>
+  - Root cause identification
+  - Code references
+  - Compatibility issues
+  </analysis>
+
+  <proposed_fix>
+  - Code changes
+  - Dependency updates
+  - Configuration fixes
+  </proposed_fix>
+  ```
+
+- ALWAYS validate fixes with UV:
+  ```bash
+  uv run pytest path/to/test/ -k test_name --showlocals --tb=short
+  ```
+
+- Maintain error resolution history with:
+  * Original error
+  * Applied fixes
+  * Validation results
+  * Iteration steps if needed
+
+- Use `--showlocals` and `--tb=short` for clearer error context
+
+- Follow error resolution workflow:
+  1. Isolate and tag error
+  2. Analyze root cause
+  3. Propose specific fix
+  4. Validate with pytest
+  5. Document if fix succeeds
+  6. Iterate if fix fails
+
+## Examples
+
+<example>
+# Good - Proper Error Analysis
+<error>
+<output>
+E   AssertionError: assert response.status_code == 200
+E    +  where response.status_code = 404
+</output>
+<context>
+Test verifies API endpoint availability
+```python
+def test_api_health():
+    response = client.get("/api/health")
+    assert response.status_code == 200
+```
+</context>
+</error>
+
+<analysis>
+- Endpoint returns 404 instead of 200
+- API route may not be registered
+- FastAPI app configuration checked
+</analysis>
+
+<proposed_fix>
+1. Add missing endpoint:
+```python
+@app.get("/api/health")
+async def health_check():
+    return {"status": "healthy"}
+```
+
+2. Register in FastAPI app:
+```python
+app.include_router(health_router)
+```
+</proposed_fix>
+
+<validation>
+uv run pytest tests/api/ -k test_api_health --showlocals --tb=short
+</validation>
+
+# Good - Multiple Error Resolution
+<error>
+<output>
+E   ImportError: cannot import name 'create_user' from 'app.models'
+</output>
+<context>
+User creation test failing on import
+</context>
+</error>
+
+<analysis>
+- Missing model definition
+- Import path may be incorrect
+- Module structure needs review
+</analysis>
+
+<proposed_fix>
+1. Add missing model:
+```python
+# app/models/user.py
+def create_user(data: dict) -> User:
+    return User(**data)
+```
+
+2. Update imports:
+```python
+from app.models.user import create_user
+```
+</proposed_fix>
+
+<validation>
+uv run pytest tests/models/ -k test_user_creation
+</validation>
+</example>
+
+<example type="invalid">
+# Bad - Insufficient Error Analysis
+<error>
+Test failed
+</error>
+
+<fix>
+Change the code
+</fix>
+
+# Bad - Missing Validation
+<error>
+<output>
+AssertionError
+</output>
+</error>
+<fix>
+Update assert statement
+</fix>
+
+# Bad - Incomplete Context
+<error>
+<output>
+TypeError: missing argument
+</output>
+<fix>
+Add parameter
+</fix>
+</example>

@@ -4,15 +4,14 @@ from pathlib import Path
 import pytest
 from loguru import logger
 from boss_bot.monitoring.logging import log_config
-import logging
 
 def test_log_config_sets_logging_level(capsys):
     """Test that log_config sets the logging level to INFO and outputs a message."""
+    # Configure logging
     log_config()
 
     # Write a test message
     test_message = "Test log message"
-    logger = logging.getLogger(__name__)
     logger.info(test_message)
 
     # Check that message was written to stderr

@@ -55,9 +55,22 @@ class HealthCheck:
         """
         import asyncio
 
+        # Run first check immediately
+        try:
+            is_healthy = check_fn()
+            if is_healthy:
+                self.mark_component_healthy(component)
+            else:
+                self.mark_component_unhealthy(component)
+        except Exception:
+            self.mark_component_unhealthy(component)
+
+        # Then run periodic checks
         while True:
             if stop_event and stop_event.is_set():
                 break
+
+            await asyncio.sleep(interval_seconds)
 
             try:
                 is_healthy = check_fn()
@@ -65,10 +78,8 @@ class HealthCheck:
                     self.mark_component_healthy(component)
                 else:
                     self.mark_component_unhealthy(component)
-                await asyncio.sleep(interval_seconds)
             except Exception:
                 self.mark_component_unhealthy(component)
-                await asyncio.sleep(interval_seconds)
 
 
 def create_health_check_app() -> FastAPI:

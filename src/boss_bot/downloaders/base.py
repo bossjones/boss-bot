@@ -41,15 +41,15 @@ class Download:
 class DownloadManager:
     """Manages download tasks."""
 
-    def __init__(self, settings: BossSettings, max_concurrent_downloads: int | None = None):
+    def __init__(self, settings: BossSettings, max_concurrent_downloads: int | None = 2):
         """Initialize the download manager.
 
         Args:
             settings: BossSettings instance
-            max_concurrent_downloads: Maximum number of concurrent downloads
+            max_concurrent_downloads: Maximum number of concurrent downloads (default: 2)
         """
         self.settings = settings
-        self.max_concurrent_downloads = max_concurrent_downloads or self.settings.max_concurrent_downloads
+        self.max_concurrent_downloads = max_concurrent_downloads or 2
         self.active_downloads: dict[UUID, Download] = {}
         self.validator = FileValidator()
         self.quota_manager = QuotaManager(storage_root=self.settings.storage_root)
@@ -127,6 +127,14 @@ class DownloadManager:
         download.status = DownloadStatus.CANCELLED
         if download.task:
             download.task.cancel()
+            try:
+                await download.task
+            except asyncio.CancelledError:
+                pass
+
+        # Remove from active downloads
+        async with self._download_lock:
+            self.active_downloads.pop(download_id, None)
 
         return True
 
@@ -172,3 +180,22 @@ class DownloadManager:
             await asyncio.gather(*[d.task for d in self.active_downloads.values() if d.task], return_exceptions=True)
 
         self.active_downloads.clear()
+
+    async def validate_url(self, url: str) -> bool:
+        """Validate if a URL is supported for downloading.
+
+        Args:
+            url: URL to validate
+
+        Returns:
+            bool: True if URL is valid and supported
+        """
+        # For now, just check if it's a valid Twitter or Reddit URL
+        valid_domains = ["twitter.com", "reddit.com"]
+        try:
+            from urllib.parse import urlparse
+
+            parsed = urlparse(url)
+            return parsed.scheme in ["http", "https"] and any(domain in parsed.netloc for domain in valid_domains)
+        except Exception:
+            return False

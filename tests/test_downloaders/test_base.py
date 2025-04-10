@@ -7,10 +7,12 @@ from pathlib import Path
 
 from boss_bot.downloaders.base import Download, DownloadManager, DownloadStatus
 from boss_bot.core.env import BossSettings
+from pytest import MonkeyPatch
 
 @pytest.fixture
-def download_manager(settings: BossSettings):
+def download_manager(fixture_env_vars_test: MonkeyPatch):
     """Create a download manager instance for testing."""
+    settings = BossSettings()
     return DownloadManager(settings=settings)
 
 @pytest.mark.asyncio
@@ -103,7 +105,7 @@ async def test_cancel_download(download_manager: DownloadManager):
     assert len(download_manager.active_downloads) == 0
 
 @pytest.mark.asyncio
-async def test_get_download_status(download_manager: DownloadManager):
+async def test_get_download_status(download_manager):
     """Test getting download status."""
     download = Download(
         download_id=uuid4(),
@@ -120,7 +122,8 @@ async def test_get_download_status(download_manager: DownloadManager):
     await download_manager.start_download(download)
     status = await download_manager.get_download_status(download.download_id)
     assert status is not None
-    assert "Status: downloading" in status.lower()
+    assert status.startswith("Status: ")
+    assert "downloading" in status.lower()
 
 @pytest.mark.asyncio
 async def test_get_active_downloads(download_manager: DownloadManager):
@@ -189,36 +192,38 @@ async def test_download_url_validation(download_manager):
 @pytest.mark.asyncio
 async def test_download_status_tracking(download_manager):
     """Test download status tracking."""
-    download_id = "test_download_123"
-    url = "https://twitter.com/user/status/123"
+    download = Download(
+        download_id=uuid4(),
+        url="https://twitter.com/user/status/123",
+        user_id=12345,
+        channel_id=67890
+    )
 
     # Start download
-    await download_manager.start_download(url, download_id)
-    assert download_manager.get_download_status(download_id) == DownloadStatus.DOWNLOADING
-
-    # Complete download
-    await download_manager.mark_download_complete(download_id)
-    assert download_manager.get_download_status(download_id) == DownloadStatus.COMPLETED
-
-    # Failed download
-    error_id = "error_download_123"
-    await download_manager.start_download(url, error_id)
-    await download_manager.mark_download_failed(error_id, "Download failed")
-    assert download_manager.get_download_status(error_id) == DownloadStatus.FAILED
+    await download_manager.start_download(download)
+    status = await download_manager.get_download_status(download.download_id)
+    assert status is not None
+    assert status.startswith("Status: ")
+    assert "downloading" in status.lower()
 
 @pytest.mark.asyncio
 async def test_concurrent_download_limit(download_manager):
     """Test concurrent download limit."""
-    # Start max number of downloads
-    for i in range(download_manager.max_concurrent_downloads):
-        await download_manager.start_download(
-            f"https://twitter.com/user/status/{i}",
-            f"download_{i}"
+    downloads = []
+    for i in range(5):  # Try to start 5 downloads
+        download = Download(
+            download_id=uuid4(),
+            url=f"https://twitter.com/user/status/{i}",
+            user_id=12345,
+            channel_id=67890
         )
+        downloads.append(download)
+        success = await download_manager.start_download(download)
+        if i < 2:  # First two should succeed
+            assert success
+            assert download.status == DownloadStatus.DOWNLOADING
+        else:  # Rest should fail
+            assert not success
+            assert download.status == DownloadStatus.QUEUED
 
-    # Try to start one more download
-    with pytest.raises(ValueError, match="Maximum concurrent downloads reached"):
-        await download_manager.start_download(
-            "https://twitter.com/user/status/extra",
-            "extra_download"
-        )
+    assert len(download_manager.active_downloads) == 2

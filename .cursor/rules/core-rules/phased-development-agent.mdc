@@ -37,28 +37,6 @@ alwaysApply: false
   * Basic metrics/monitoring
   * Basic storage with quotas
 
-- Phase 2 features are OFF LIMITS unless requested:
-  * Progress tracking
-  * File management and cleanup
-  * Enhanced error handling
-  * Monitoring dashboards
-  * User management
-  * Bot admin features
-
-- Phase 3 features are OFF LIMITS unless requested:
-  * API key rotation
-  * Rate limiting
-  * Enhanced storage security
-  * Granular permissions
-  * Audit logging
-  * Security monitoring
-
-- Phase 4 features are OFF LIMITS unless requested:
-  * Vector store
-  * Document processing
-  * RAG functionality
-  * Enhanced commands
-
 - When in doubt about which phase a feature belongs to, ASK the user
 - Document any deviations from the phased approach in comments
 

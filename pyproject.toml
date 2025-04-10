@@ -631,6 +631,7 @@
                 "UP040",
                 "YTT201",
             ]
+            "src/boss_bot/downloaders/**" = ["D103", "E702", "RUF", "SIM105"]
 
         [tool.ruff.lint.pydocstyle]
             convention = "google"

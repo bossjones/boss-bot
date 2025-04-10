@@ -39,13 +39,17 @@ def test_download_duration_buckets(fixture_metrics_registry_test: MetricsRegistr
 
     # Get the current value
     samples = metric.collect()[0].samples
-    bucket_values = {s.name: s.value for s in samples if s.name.endswith('_bucket')}
+
+    # Create a mapping of le values to their counts
+    bucket_values = {}
+    for sample in samples:
+        if 'le' in sample.labels:
+            bucket_values[float(sample.labels['le'])] = sample.value
 
     # Verify bucket behavior
     for i, bucket in enumerate(expected_buckets):
-        bucket_name = f'boss_bot_download_duration_seconds_bucket_le_{bucket}'
-        assert bucket_name in bucket_values
-        assert bucket_values[bucket_name] >= i + 1  # At least i+1 values should be in this bucket
+        assert float(bucket) in bucket_values, f"Bucket {bucket} not found in {bucket_values.keys()}"
+        assert bucket_values[float(bucket)] >= i + 1, f"Expected at least {i + 1} values in bucket {bucket}"
 
 def test_download_size_buckets(fixture_metrics_registry_test: MetricsRegistry):
     """Test that download_size histogram has expected buckets."""
@@ -60,13 +64,17 @@ def test_download_size_buckets(fixture_metrics_registry_test: MetricsRegistry):
 
     # Get the current value
     samples = metric.collect()[0].samples
-    bucket_values = {s.name: s.value for s in samples if s.name.endswith('_bucket')}
+
+    # Create a mapping of le values to their counts
+    bucket_values = {}
+    for sample in samples:
+        if 'le' in sample.labels:
+            bucket_values[float(sample.labels['le'])] = sample.value
 
     # Verify bucket behavior
     for i, bucket in enumerate(expected_buckets):
-        bucket_name = f'boss_bot_download_size_bytes_bucket_le_{bucket}'
-        assert bucket_name in bucket_values
-        assert bucket_values[bucket_name] >= i + 1  # At least i+1 values should be in this bucket
+        assert float(bucket) in bucket_values, f"Bucket {bucket} not found in {bucket_values.keys()}"
+        assert bucket_values[float(bucket)] >= i + 1, f"Expected at least {i + 1} values in bucket {bucket}"
 
 def test_queue_size_labels(fixture_metrics_registry_test: MetricsRegistry):
     """Test that queue_size gauge has correct labels."""

@@ -7,6 +7,7 @@ from discord.ext import commands
 from boss_bot.bot.cogs.downloads import DownloadCog
 from boss_bot.bot.client import BossBot
 from boss_bot.core.core_queue import QueueItem, QueueStatus
+from pytest_mock import MockerFixture
 
 # Fixtures migrated to test_bot/conftest.py as fixture_mock_bot_test and fixture_download_cog_test
 # Original fixtures: mock_bot, cog
@@ -14,7 +15,7 @@ from boss_bot.core.core_queue import QueueItem, QueueStatus
 # Migration date: 2024-03-19
 
 @pytest.mark.asyncio
-async def test_download_command(mocker, fixture_mock_bot_test: BossBot, fixture_download_cog_test: DownloadCog):
+async def test_download_command(mocker: MockerFixture, fixture_mock_bot_test: BossBot, fixture_download_cog_test: DownloadCog):
     """Test the download command."""
     # Create mock context
     ctx = mocker.Mock()
@@ -35,7 +36,7 @@ async def test_download_command(mocker, fixture_mock_bot_test: BossBot, fixture_
     ctx.send.assert_called_once()
 
 @pytest.mark.asyncio
-async def test_download_command_invalid_url(mocker, fixture_mock_bot_test: BossBot, fixture_download_cog_test: DownloadCog):
+async def test_download_command_invalid_url(mocker: MockerFixture, fixture_mock_bot_test: BossBot, fixture_download_cog_test: DownloadCog):
     """Test the download command with an invalid URL."""
     # Create mock context
     ctx = mocker.Mock()
@@ -53,7 +54,7 @@ async def test_download_command_invalid_url(mocker, fixture_mock_bot_test: BossB
     assert "Invalid URL" in ctx.send.call_args[0][0]
 
 @pytest.mark.asyncio
-async def test_status_command(mocker, fixture_mock_bot_test: BossBot, fixture_download_cog_test: DownloadCog):
+async def test_status_command(mocker: MockerFixture, fixture_mock_bot_test: BossBot, fixture_download_cog_test: DownloadCog):
     """Test the status command."""
     # Create mock context
     ctx = mocker.Mock()

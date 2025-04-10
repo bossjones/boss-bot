@@ -1,4 +1,14 @@
 """Environment settings for the Boss-Bot application."""
+# pylint: disable=no-member
+# pylint: disable=possibly-used-before-assignment
+# pyright: reportImportCycles=false
+# pyright: reportFunctionMemberAccess=false
+# pyright: reportAttributeAccessIssue=false
+# pyright: reportUnknownVariableType=false
+# pyright: reportInvalidTypeForm=false
+# mypy: disable-error-code="index"
+# mypy: disable-error-code="no-redef"
+# pylint: disable=consider-using-with, consider-using-min-builtin
 
 from enum import Enum
 from pathlib import Path

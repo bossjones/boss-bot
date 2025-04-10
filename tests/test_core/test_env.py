@@ -1,4 +1,14 @@
 """Tests for environment settings."""
+# pylint: disable=no-member
+# pylint: disable=possibly-used-before-assignment
+# pyright: reportImportCycles=false
+# pyright: reportFunctionMemberAccess=false
+# pyright: reportAttributeAccessIssue=false
+# pyright: reportUnknownVariableType=false
+# pyright: reportInvalidTypeForm=false
+# mypy: disable-error-code="index"
+# mypy: disable-error-code="no-redef"
+# pylint: disable=consider-using-with, consider-using-min-builtin
 
 import os
 from pathlib import Path

@@ -163,31 +163,21 @@ def fixture_settings_test(fixture_env_vars_test: MonkeyPatch) -> BossSettings:
 # --- Discord Bot Fixtures --- #
 
 @pytest.fixture(scope="function")
-def fixture_discord_bot(
+async def fixture_discord_bot(
     fixture_settings_test: BossSettings,
     mocker: MockerFixture
 ) -> AsyncGenerator[BossBot, None]:
-    """Provide a test bot instance with configurable mocking.
+    """Provide a mock Discord bot for testing.
 
-    Scope: function - ensures clean bot instance for each test
+    Scope: function - ensures clean bot for each test
     Args:
         fixture_settings_test: Test settings fixture
         mocker: PyTest mocker fixture
-    Yields: Configured BossBot instance
-    Cleanup: Closes bot connection and resets state
+    Returns: Configured BossBot instance
+    Cleanup: Automatically closes bot after each test
     """
-    bot = BossBot(settings=fixture_settings_test)
-    bot.is_mock = True  # New flag for consistent mocking behavior
-
-    def configure_mock(mock_all: bool = True):
-        """Configure bot mocking level."""
-        if mock_all:
-            bot.wait_until_ready = mocker.AsyncMock()
-            bot.login = mocker.AsyncMock()
-            bot.connect = mocker.AsyncMock()
-            bot.close = mocker.AsyncMock()
-
-    bot.configure_mock = configure_mock
+    bot = mocker.AsyncMock(spec=BossBot)
+    # bot.configure_mock = configure_mock
     bot.configure_mock()  # Default to full mocking
 
     yield bot

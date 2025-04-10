@@ -1,14 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document>
+
+<document-metadata>
 # Epic-1 - Story-1
 # Project Initialization and Environment Setup
 
 **As a** developer
 **I want** to set up the initial project structure and development environment with security and monitoring foundations
 **so that** we have a solid, secure, and observable foundation for building the Boss-Bot Discord media download assistant
+</document-metadata>
 
+<section-status>
 ## Status
 
 In Progress
+</section-status>
 
+<table-of-contents>
+- [Status](#status)
+- [Context](#context)
+- [Estimation](#estimation)
+- [Tasks](#tasks)
+- [Deferred Tasks](#deferred-tasks)
+- [Constraints](#constraints)
+- [Data Models / Schema](#data-models--schema)
+- [Structure](#structure)
+- [Diagrams](#diagrams)
+- [Dev Notes](#dev-notes)
+- [Chat Command Log](#chat-command-log)
+- [Implementation Evidence](#implementation-evidence)
+</table-of-contents>
+
+<section-context>
 ## Context
 
 This is the first story of Epic-1 (Core Bot Infrastructure) which sets up the foundational project structure and development environment. This story is critical as it establishes:
@@ -22,6 +45,7 @@ This is the first story of Epic-1 (Core Bot Infrastructure) which sets up the fo
 - Monitoring setup ✅
 - CI/CD pipeline foundation ❌
 
+<subsection-technical-decisions>
 Key technical decisions from the PRD and architecture documents:
 - Python 3.12 as the primary development language ✅
 - UV for package management ✅
@@ -32,14 +56,20 @@ Key technical decisions from the PRD and architecture documents:
 - Better-exceptions for error handling ✅
 - Security-first approach with proper environment variable handling 🚧
 - Monitoring and metrics collection from the start ✅
+</subsection-technical-decisions>
+</section-context>
 
+<section-estimation>
 ## Estimation
 
 Story Points: 5 (5 days human development = 50 minutes AI development)
 Increased from 3 to 5 points due to additional security, monitoring, and CI/CD requirements.
+</section-estimation>
 
+<section-tasks>
 ## Tasks
 
+<task-group-project-initialization>
 1. - [🚧] Initialize Python Project
    1. - [✅] Create project structure following PRD layout
    2. - [✅] Set up pyproject.toml with initial dependencies
@@ -61,7 +91,9 @@ Increased from 3 to 5 points due to additional security, monitoring, and CI/CD r
       * ❌ Periodic health check failing
       * 🚧 Component health checks need refinement
    8. - [✅] Configure storage directory structure
+</task-group-project-initialization>
 
+<task-group-dev-environment>
 2. - [🚧] Configure Development Environment
    1. - [✅] Set up Ruff for linting and formatting
       * ✅ Basic configuration in pyproject.toml
@@ -85,7 +117,9 @@ Increased from 3 to 5 points due to additional security, monitoring, and CI/CD r
    6. - [🚧] Configure development security checks
    7. - [✅] Set up detailed VSCode configuration
    8. - [❌] Configure dependency review automation
+</task-group-dev-environment>
 
+<task-group-test-infrastructure>
 3. - [🚧] Set up Test Infrastructure
    1. - [✅] Configure pytest with required plugins
    2. - [✅] Set up test directory structure
@@ -99,7 +133,9 @@ Increased from 3 to 5 points due to additional security, monitoring, and CI/CD r
       * ❌ Bot test environment validation failing
       * ❌ Mock configuration issues in bot tests
       * 🚧 Help command tests need fixes
+</task-group-test-infrastructure>
 
+<task-group-documentation>
 4. - [❌] Initialize Documentation
    1. - [❌] Set up MkDocs with required extensions
    2. - [❌] Create initial documentation structure
@@ -111,7 +147,9 @@ Increased from 3 to 5 points due to additional security, monitoring, and CI/CD r
    8. - [❌] Create code style guide
    9. - [❌] Create testing guide
    10. - [❌] Create storage management guide
+</task-group-documentation>
 
+<task-group-cicd>
 5. - [❌] Set up CI/CD Pipeline
    1. - [❌] Configure GitHub Actions workflow
    2. - [❌] Set up dependency scanning
@@ -123,7 +161,9 @@ Increased from 3 to 5 points due to additional security, monitoring, and CI/CD r
    8. - [❌] Set up CodeQL analysis
    9. - [❌] Configure dependency review
    10. - [❌] Set up release drafting
+</task-group-cicd>
 
+<task-group-monitoring>
 6. - [🚧] Configure Monitoring Foundation
    1. - [✅] Set up loguru configuration
    2. - [✅] Configure better-exceptions
@@ -137,7 +177,9 @@ Increased from 3 to 5 points due to additional security, monitoring, and CI/CD r
    8. - [🚧] Set up health check endpoints
    9. - [✅] Set up storage monitoring
    10. - [✅] Set up performance profiling
+</task-group-monitoring>
 
+<task-group-storage>
 7. - [✅] Initialize Storage Structure
    1. - [✅] Set up temporary storage directory structure
       * ✅ Created main downloads directory
@@ -162,7 +204,10 @@ Increased from 3 to 5 points due to additional security, monitoring, and CI/CD r
    5. - [ ] ~~Configure backup locations~~ (Deferred to Phase 2)
    6. - [ ] ~~Set up storage monitoring~~ (Deferred to Phase 2)
    7. - [ ] ~~Configure storage security~~ (Deferred to Phase 3)
+</task-group-storage>
+</section-tasks>
 
+<section-deferred-tasks>
 ## Deferred Tasks
 The following tasks have been deferred to future phases:
 
@@ -172,11 +217,15 @@ The following tasks have been deferred to future phases:
    - Set up storage monitoring (Phase 2)
    - Configure storage security (Phase 3)
 
+<subsection-deferral-rationale>
 Rationale for Deferral:
 - These features belong to later phases per phased development plan
 - Not critical for MVP functionality
 - Current focus is on core bot infrastructure and basic file validation
+</subsection-deferral-rationale>
+</section-deferred-tasks>
 
+<section-constraints>
 ## Constraints
 
 - Python 3.12+ required
@@ -191,7 +240,9 @@ Rationale for Deferral:
 - Maximum file size: 50MB
 - Secure environment variable handling required
 - Monitoring metrics must be collected from start
+</section-constraints>
 
+<section-data-models>
 ## Data Models / Schema
 
 ```python
@@ -242,7 +293,9 @@ select = [
     "B",   # flake8-bugbear
 ]
 ```
+</section-data-models>
 
+<section-structure>
 ## Structure
 
 Following the project structure from the PRD:
@@ -302,7 +355,9 @@ boss-bot/
 ├── pyproject.toml
 └── README.md
 ```
+</section-structure>
 
+<section-diagrams>
 ## Diagrams
 
 ```mermaid
@@ -335,7 +390,9 @@ graph TD
     F --> F2[Metrics]
     F --> F3[Monitoring]
 ```
+</section-diagrams>
 
+<section-dev-notes>
 ## Dev Notes
 
 - Ensure all dependencies are pinned to specific versions for reproducibility
@@ -363,13 +420,18 @@ graph TD
   * Added idempotent creation
   * Ensured file preservation
   * Added comprehensive test suite
+</section-dev-notes>
 
+<section-command-log>
 ## Chat Command Log
 
 No commands executed yet - initial story creation.
+</section-command-log>
 
+<section-implementation-evidence>
 ## Implementation Evidence
 
+<subsection-test-coverage>
 ### Test Coverage Status
 1. Overall Coverage: 56.16% (Exceeding MVP targets)
 2. Key Component Coverage:
@@ -383,7 +445,9 @@ No commands executed yet - initial story creation.
    - Bot/Help: 85% ✅
    - Bot/Client: 32% ✅ (Meets MVP target)
    - Bot/Cogs: ~30% ✅ (Meets MVP target)
+</subsection-test-coverage>
 
+<subsection-test-results>
 ### Test Results Summary
 - Total Tests: 123
 - Passed: 78 ✅
@@ -395,14 +459,18 @@ No commands executed yet - initial story creation.
   * Health check periodic testing
   * Bot help command formatting
   * Mock configuration issues in bot tests
+</subsection-test-results>
 
+<subsection-priority-tasks>
 ### Next Priority Tasks
 1. Fix environment validation errors in bot tests
 2. Address metrics histogram label issues
 3. Fix health check periodic testing
 4. Resolve bot help command formatting
 5. Fix mock configuration in bot tests
+</subsection-priority-tasks>
 
+<subsection-env-config>
 ### Environment Configuration
 1. Environment Settings:
    - Location: src/boss_bot/core/env.py
@@ -431,7 +499,9 @@ No commands executed yet - initial story creation.
      * Default values from env.py
      * Secure placeholders for API keys
      * Development-focused defaults
+</subsection-env-config>
 
+<subsection-storage-management>
 ### Storage Management Implementation
 1. Storage Quota System:
    - Location: src/boss_bot/storage/quotas.py
@@ -459,7 +529,9 @@ No commands executed yet - initial story creation.
      * Idempotent creation
      * File preservation
      * Comprehensive tests
+</subsection-storage-management>
 
+<subsection-dev-environment>
 ### Development Environment
 1. Pre-commit Configuration:
    - Location: .pre-commit-config.yaml
@@ -481,3 +553,7 @@ No commands executed yet - initial story creation.
      * Support for .env and secrets directory
      * Type safety and validation
      * Environment-specific configuration
+</subsection-dev-environment>
+</section-implementation-evidence>
+
+</document>

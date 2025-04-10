@@ -78,6 +78,33 @@ def set_langsmith_env_vars_evals(monkeypatch: MonkeyPatch) -> None:
     monkeypatch.setenv("LANGCHAIN_ENDPOINT", os.getenv("LANGCHAIN_ENDPOINT"))
     monkeypatch.setenv("LANGCHAIN_PROJECT", os.getenv("LANGCHAIN_PROJECT"))
 
+@pytest.fixture
+def mock_env_vars_unit(monkeypatch: MonkeyPatch) -> None:
+    """Mock environment variables for unit tests."""
+    monkeypatch.setenv("DISCORD_TOKEN", "test_token_123")
+    monkeypatch.setenv("DISCORD_CLIENT_ID", "123456789012345678")
+    monkeypatch.setenv("DISCORD_SERVER_ID", "876543210987654321")
+    monkeypatch.setenv("DISCORD_ADMIN_USER_ID", "111222333444555666")
+    monkeypatch.setenv("STORAGE_ROOT", "/tmp/boss-bot")
+    monkeypatch.setenv("LOG_LEVEL", "INFO")
+    monkeypatch.setenv("ENVIRONMENT", "development")
+
+@pytest.fixture
+def mock_env(monkeypatch: MonkeyPatch) -> None:
+    """Mock environment variables for environment tests."""
+    monkeypatch.setenv("DISCORD_TOKEN", "test_token")
+    monkeypatch.setenv("ENVIRONMENT", "development")
+
+@pytest.fixture
+def ctx(mocker: MockerFixture) -> commands.Context:
+    """Create a mock Discord context."""
+    context = mocker.Mock(spec=commands.Context)
+    context.send = mocker.AsyncMock()
+    context.author = mocker.Mock()
+    context.author.id = 12345
+    context.channel = mocker.Mock()
+    context.channel.id = 67890
+    return context
 
 # --- Core Test Fixtures --- #
 
@@ -214,19 +241,16 @@ def fixture_discord_context(
 def fixture_queue_manager_test(fixture_settings_test: BossSettings) -> QueueManager:
     """Provide a test queue manager instance.
 
-    Scope: function - ensures clean queue for each test
+    Scope: function - ensures clean manager for each test
     Args:
         fixture_settings_test: Test settings fixture
     Returns: Configured QueueManager instance
-    Cleanup: Automatically resets queue state after each test
     """
     manager = QueueManager(max_queue_size=fixture_settings_test.max_queue_size)
 
     def reset_state():
         """Reset queue state between tests."""
-        manager.queue.clear()
-        manager.processing.clear()
-        manager._paused = False
+        manager._queue.clear()
 
     manager.reset_state = reset_state
     manager.reset_state()  # Start clean
@@ -243,14 +267,13 @@ def fixture_download_manager(fixture_settings_test: BossSettings) -> DownloadMan
     Returns: Configured DownloadManager instance
     """
     manager = DownloadManager(
+        settings=fixture_settings_test,
         max_concurrent_downloads=fixture_settings_test.max_concurrent_downloads
     )
 
     def reset_state():
         """Reset download state between tests."""
         manager.active_downloads.clear()
-        manager.completed_downloads.clear()
-        manager.failed_downloads.clear()
 
     manager.reset_state = reset_state
     manager.reset_state()  # Start clean

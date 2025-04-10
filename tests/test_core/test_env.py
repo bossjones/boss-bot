@@ -21,15 +21,15 @@ from pytest import MonkeyPatch
 from boss_bot.core.env import BossSettings, Environment
 
 
-def test_settings_load(mock_env_vars_unit: None) -> None:
+def test_settings_load(fixture_env_vars_test: None) -> None:
     """Test that settings load correctly from environment variables."""
     test_settings = BossSettings()
 
     # Test Discord settings
-    assert test_settings.discord_token.get_secret_value() == "test_token_123"
-    assert test_settings.discord_client_id == 123456789012345678
-    assert test_settings.discord_server_id == 876543210987654321
-    assert test_settings.discord_admin_user_id == 111222333444555666
+    assert test_settings.discord_token.get_secret_value() == "test_token"
+    assert test_settings.discord_client_id == 123456789
+    assert test_settings.discord_server_id == 987654321
+    assert test_settings.discord_admin_user_id == 12345
 
     # Test Storage settings
     assert test_settings.storage_root == Path("/tmp/boss-bot")
@@ -55,22 +55,22 @@ def test_settings_load(mock_env_vars_unit: None) -> None:
 
     # Test API Keys
     assert test_settings.openai_api_key.get_secret_value() == "sk-test-key-123456789abcdef"
-    assert test_settings.cohere_api_key.get_secret_value() == "test-cohere-key-123456789"
+    assert test_settings.cohere_api_key.get_secret_value() == "test-cohere-key"
     assert test_settings.debug_aider is True
-    assert test_settings.firecrawl_api_key.get_secret_value() == "test-firecrawl-key-123456789"
-    assert test_settings.langchain_api_key.get_secret_value() == "test-langchain-key-123456789"
+    assert test_settings.firecrawl_api_key.get_secret_value() == "test-firecrawl-key"
+    assert test_settings.langchain_api_key.get_secret_value() == "test-langchain-key"
     assert test_settings.langchain_debug_logs is True
-    assert str(test_settings.langchain_endpoint) == "http://localhost:8000/"
-    assert test_settings.langchain_hub_api_key.get_secret_value() == "test-hub-key-123456789"
-    assert str(test_settings.langchain_hub_api_url) == "http://localhost:8001/"
+    assert str(test_settings.langchain_endpoint) == "http://localhost:8000"
+    assert test_settings.langchain_hub_api_key.get_secret_value() == "test-hub-key"
+    assert str(test_settings.langchain_hub_api_url) == "http://localhost:8001"
     assert test_settings.langchain_project == "test-project"
     assert test_settings.langchain_tracing_v2 is True
-    assert test_settings.pinecone_api_key.get_secret_value() == "test-pinecone-key-123456789"
+    assert test_settings.pinecone_api_key.get_secret_value() == "test-pinecone-key"
     assert test_settings.pinecone_env == "test-env"
     assert test_settings.pinecone_index == "test-index"
-    assert test_settings.tavily_api_key.get_secret_value() == "test-tavily-key-123456789"
-    assert test_settings.unstructured_api_key.get_secret_value() == "test-unstructured-key-123456789"
-    assert str(test_settings.unstructured_api_url) == "http://localhost:8002/"
+    assert test_settings.tavily_api_key.get_secret_value() == "test-tavily-key"
+    assert test_settings.unstructured_api_key.get_secret_value() == "test-unstructured-key"
+    assert str(test_settings.unstructured_api_url) == "http://localhost:8002"
 
 
 def test_invalid_log_level(mock_env: None, monkeypatch: MonkeyPatch) -> None:
@@ -144,8 +144,8 @@ def test_str_representation(mock_env: None) -> None:
     # Check that sensitive values are masked
     assert "**********" in str_repr
     assert "sk-test-key-123456789abcdef" not in str_repr
-    assert "test-cohere-key-123456789" not in str_repr
-    assert "test-firecrawl-key-123456789" not in str_repr
+    assert "test-cohere-key" not in str_repr
+    assert "test-firecrawl-key" not in str_repr
 
     # Check that non-sensitive values are included
     assert str(test_settings.storage_root) in str_repr

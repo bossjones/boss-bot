@@ -36,7 +36,9 @@ class BossBot(commands.Bot):
 
         # Initialize services
         self.queue_manager = QueueManager(max_queue_size=self.settings.max_queue_size)
-        self.download_manager = DownloadManager(max_concurrent_downloads=self.settings.max_concurrent_downloads)
+        self.download_manager = DownloadManager(
+            settings=self.settings, max_concurrent_downloads=self.settings.max_concurrent_downloads
+        )
 
         # Set up logging
         logging.basicConfig(

@@ -1,10 +1,14 @@
 """Test fixtures for bot-related tests."""
 
+import glob
+import os
 from collections.abc import AsyncGenerator
 import pytest
 from discord.ext import commands
 import discord.ext.test as dpytest
 from pytest_mock import MockerFixture
+from _pytest.main import Session
+from _pytest.config import ExitCode
 
 from boss_bot.bot.client import BossBot
 from boss_bot.bot.cogs.downloads import DownloadCog
@@ -24,7 +28,9 @@ async def fixture_bot_test(fixture_settings_test: BossSettings) -> AsyncGenerato
     await bot._async_setup_hook()
     dpytest.configure(bot)
     yield bot
-    await bot.close()
+    # Teardown
+    await dpytest.empty_queue() # empty the global message queue as test teardown
+
 
 @pytest.fixture(scope="function")
 def fixture_mock_bot_test(mocker: MockerFixture) -> BossBot:
@@ -67,3 +73,20 @@ def fixture_help_command_test(mocker: MockerFixture) -> commands.HelpCommand:
     ctx.clean_prefix = "$"
     help_cmd.context = ctx
     return help_cmd
+
+def pytest_sessionfinish(session: Session, exitstatus: ExitCode | int) -> None:
+    """Code to execute after all tests.
+
+    Cleans up dpytest attachment files that may have been created during testing.
+
+    Args:
+        session: The pytest session object
+        exitstatus: The status code from the test run
+    """
+    print("\n-------------------------\nClean dpytest_*.dat files")
+    fileList = glob.glob('./dpytest_*.dat')
+    for filePath in fileList:
+        try:
+            os.remove(filePath)
+        except Exception:
+            print("Error while deleting file : ", filePath)

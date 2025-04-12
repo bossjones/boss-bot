@@ -60,9 +60,9 @@ def test_settings_load(fixture_env_vars_test: None) -> None:
     assert test_settings.firecrawl_api_key.get_secret_value() == "test-firecrawl-key"
     assert test_settings.langchain_api_key.get_secret_value() == "test-langchain-key"
     assert test_settings.langchain_debug_logs is True
-    assert str(test_settings.langchain_endpoint) == "http://localhost:8000"
+    assert str(test_settings.langchain_endpoint) == "http://localhost:8000/"
     assert test_settings.langchain_hub_api_key.get_secret_value() == "test-hub-key"
-    assert str(test_settings.langchain_hub_api_url) == "http://localhost:8001"
+    assert str(test_settings.langchain_hub_api_url) == "http://localhost:8001/"
     assert test_settings.langchain_project == "test-project"
     assert test_settings.langchain_tracing_v2 is True
     assert test_settings.pinecone_api_key.get_secret_value() == "test-pinecone-key"
@@ -70,7 +70,7 @@ def test_settings_load(fixture_env_vars_test: None) -> None:
     assert test_settings.pinecone_index == "test-index"
     assert test_settings.tavily_api_key.get_secret_value() == "test-tavily-key"
     assert test_settings.unstructured_api_key.get_secret_value() == "test-unstructured-key"
-    assert str(test_settings.unstructured_api_url) == "http://localhost:8002"
+    assert str(test_settings.unstructured_api_url) == "http://localhost:8002/"
 
 
 def test_invalid_log_level(mock_env: None, monkeypatch: MonkeyPatch) -> None:

@@ -1,92 +1,107 @@
-"""Queue command cog implementation."""
+"""Discord cog for managing the download queue."""
 
-import asyncio
+import math
 
 import discord
 from discord.ext import commands
-from discord.ext.commands import has_permissions
+
+from boss_bot.bot.client import BossBot
+from boss_bot.core.core_queue import QueueItem
 
 
 class QueueCog(commands.Cog):
-    """Cog for handling queue-related commands."""
+    """Cog for managing the download queue."""
 
-    def __init__(self, bot):
-        """Initialize queue cog."""
+    def __init__(self, bot: BossBot):
+        """Initialize the cog with bot instance."""
         self.bot = bot
-
-    @commands.command(name="clearqueue")
-    @has_permissions(administrator=True)
-    async def clear_queue(self, ctx: commands.Context):
-        """Clear the entire download queue. Admin only."""
-        try:
-            # Create new empty queue
-            self.bot.queue_manager.queue = asyncio.Queue(maxsize=self.bot.queue_manager.max_queue_size)
-            await ctx.send("Queue cleared successfully.")
-        except Exception as e:
-            await ctx.send(f"Failed to clear queue: {e!s}")
-
-    @commands.command(name="cancel")
-    async def cancel_download(self, ctx: commands.Context, download_id: str):
-        """Cancel a specific download."""
-        try:
-            # Check if download exists and belongs to user
-            download = self.bot.download_manager.active_downloads.get(download_id)
-            if not download:
-                await ctx.send("Download not found.")
-                return
-
-            if download["user_id"] != ctx.author.id and not ctx.author.guild_permissions.administrator:
-                await ctx.send("You can only cancel your own downloads.")
-                return
-
-            # Remove from active downloads
-            self.bot.download_manager.active_downloads.pop(download_id)
-            await ctx.send(f"Download {download_id} cancelled.")
-
-        except Exception as e:
-            await ctx.send(f"Failed to cancel download: {e!s}")
+        self.items_per_page = 5
 
     @commands.command(name="queue")
-    async def queue_status(self, ctx: commands.Context):
-        """Show detailed queue status."""
-        try:
-            status = self.bot.queue_manager.get_queue_status()
+    async def show_queue(self, ctx: commands.Context, page: int = 1):
+        """Show the current download queue.
 
-            embed = discord.Embed(
-                title="Current Queue Status",
-                description="Current downloads and queue information",
-                color=discord.Color.blue(),
-            )
+        Args:
+            ctx: The command context
+            page: The page number to display (default: 1)
+        """
+        items = await self.bot.queue_manager.get_queue_items()
 
-            # Queue stats
-            embed.add_field(name="Downloads in Queue", value=status["total_items"], inline=True)
-            embed.add_field(
-                name="Queue Capacity",
-                value=f"{status['total_items']}/{self.bot.queue_manager.max_queue_size}",
-                inline=True,
-            )
+        if not items:
+            await ctx.send("The download queue is empty.")
+            return
 
-            # Active downloads
-            active_count = len(self.bot.download_manager.active_downloads)
-            embed.add_field(name="Active Downloads", value=active_count, inline=True)
+        # Calculate pagination
+        total_pages = math.ceil(len(items) / self.items_per_page)
+        page = min(max(1, page), total_pages)
+        start_idx = (page - 1) * self.items_per_page
+        end_idx = start_idx + self.items_per_page
+        page_items = items[start_idx:end_idx]
 
-            # Add footer with command help
-            embed.set_footer(text="Use $dl <url> to add to queue | $cancel <id> to cancel a download")
+        # Create embed
+        embed = discord.Embed(title="📥 Download Queue", color=discord.Color.blue())
 
-            await ctx.send(embed=embed)
+        # Add queue items to embed
+        description = ""
+        for item in page_items:
+            user = self.bot.get_user(item.user_id)
+            username = user.name if user else "Unknown User"
+            filename = item.filename if hasattr(item, "filename") else "Unnamed"
+            description += f"• {filename} (Added by {username})\n"
 
-        except Exception as e:
-            await ctx.send(f"Failed to get queue status: {e!s}")
+        embed.description = description
+        embed.set_footer(text=f"Page {page}/{total_pages}")
 
-    @clear_queue.error
-    async def clear_queue_error(self, ctx: commands.Context, error):
-        """Handle errors in clear_queue command."""
-        if isinstance(error, commands.MissingPermissions):
-            await ctx.send("You need administrator permissions to clear the queue.")
+        await ctx.send(embed=embed)
+
+    @commands.command(name="clear")
+    async def clear_queue(self, ctx: commands.Context):
+        """Clear the download queue.
+
+        Args:
+            ctx: The command context
+        """
+        await self.bot.queue_manager.clear_queue()
+        await ctx.send("Download queue cleared.")
+
+    @commands.command(name="remove")
+    async def remove_from_queue(self, ctx: commands.Context, download_id: str):
+        """Remove a download from the queue.
+
+        Args:
+            ctx: The command context
+            download_id: The ID of the download to remove
+        """
+        if await self.bot.queue_manager.remove_from_queue(download_id):
+            await ctx.send(f"Download {download_id} removed from queue.")
         else:
-            await ctx.send(f"An error occurred: {error!s}")
+            await ctx.send(f"Download {download_id} not found or you don't have permission to remove it.")
+
+    @commands.command(name="pause")
+    async def pause_queue(self, ctx: commands.Context):
+        """Pause the download queue.
+
+        Args:
+            ctx: The command context
+        """
+        await self.bot.queue_manager.pause_queue()
+        await ctx.send("Download queue paused. Current downloads will complete but no new downloads will start.")
+
+    @commands.command(name="resume")
+    async def resume_queue(self, ctx: commands.Context):
+        """Resume the download queue.
+
+        Args:
+            ctx: The command context
+        """
+        await self.bot.queue_manager.resume_queue()
+        await ctx.send("Download queue resumed. New downloads will now start.")
 
 
-async def setup(bot):
-    """Add cog to bot."""
+async def setup(bot: BossBot):
+    """Load the QueueCog.
+
+    Args:
+        bot: The bot instance
+    """
     await bot.add_cog(QueueCog(bot))

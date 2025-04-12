@@ -21,11 +21,9 @@ async def test_download_command(mocker: MockerFixture, fixture_mock_bot_test: Bo
     ctx = mocker.Mock()
     url = "https://example.com/video.mp4"
 
-    # Set up mock behaviors using pytest-mock
-    mocker.patch.object(fixture_mock_bot_test.download_manager, 'validate_url',
-                       return_value=True, autospec=True)
-    mocker.patch.object(fixture_mock_bot_test.queue_manager, 'add_to_queue',
-                       side_effect=mocker.AsyncMock(), autospec=True)
+    # Set up mock behaviors
+    fixture_mock_bot_test.download_manager.validate_url.return_value = True
+    fixture_mock_bot_test.queue_manager.add_to_queue = mocker.AsyncMock()
 
     # Call the download command
     await fixture_download_cog_test.download(ctx, url)
@@ -43,8 +41,7 @@ async def test_download_command_invalid_url(mocker: MockerFixture, fixture_mock_
     url = "invalid_url"
 
     # Set up mock behavior for invalid URL
-    mocker.patch.object(fixture_mock_bot_test.download_manager, 'validate_url',
-                       return_value=False, autospec=True)
+    fixture_mock_bot_test.download_manager.validate_url.return_value = False
 
     # Call the download command
     await fixture_download_cog_test.download(ctx, url)
@@ -60,10 +57,8 @@ async def test_status_command(mocker: MockerFixture, fixture_mock_bot_test: Boss
     ctx = mocker.Mock()
 
     # Set up mock behaviors
-    mocker.patch.object(fixture_mock_bot_test.download_manager, 'get_active_downloads',
-                       return_value=2, autospec=True)
-    mocker.patch.object(fixture_mock_bot_test.queue_manager, 'get_queue_size',
-                       return_value=5, autospec=True)
+    fixture_mock_bot_test.download_manager.get_active_downloads.return_value = 2
+    fixture_mock_bot_test.queue_manager.get_queue_size.return_value = 5
 
     # Call the status command
     await fixture_download_cog_test.status(ctx)

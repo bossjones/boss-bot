@@ -1,71 +1,39 @@
-"""Download command cog implementation."""
+"""Discord cog for handling downloads."""
 
-import uuid
-from datetime import datetime
-
-import discord
 from discord.ext import commands
 
-from boss_bot.core.core_queue import QueueItem, QueueStatus
+from boss_bot.bot.client import BossBot
 
 
 class DownloadCog(commands.Cog):
-    """Cog for handling download commands."""
+    """Cog for handling downloads."""
 
-    def __init__(self, bot):
-        """Initialize download cog."""
+    def __init__(self, bot: BossBot):
+        """Initialize the cog."""
         self.bot = bot
 
-    @commands.command(name="dl")
+    @commands.command(name="download")
     async def download(self, ctx: commands.Context, url: str):
-        """Download media from supported platforms."""
-        try:
-            # Validate URL
-            if not await self.bot.download_manager.validate_url(url):
-                await ctx.send("Invalid URL. Please provide a valid Twitter or Reddit URL.")
-                return
+        """Download a video from a URL."""
+        if not self.bot.download_manager.validate_url(url):
+            await ctx.send("Invalid URL provided.")
+            return
 
-            # Create download item
-            download_id = str(uuid.uuid4())
-            queue_item = QueueItem(
-                id=download_id,
-                url=url,
-                user_id=ctx.author.id,
-                channel_id=ctx.channel.id,
-                status=QueueStatus.QUEUED,
-                created_at=datetime.now(),
-            )
+        await self.bot.queue_manager.add_to_queue(url, ctx.author.id, ctx.channel.id)
+        await ctx.send(f"Added {url} to download queue.")
 
-            # Add to queue
-            try:
-                await self.bot.queue_manager.add_download(queue_item)
-            except ValueError:
-                await ctx.send("Queue is currently full. Please try again later.")
-                return
-
-            # Get queue position
-            position = self.bot.queue_manager.get_queue_size()
-
-            await ctx.send(f"Download started! Your position in queue: {position}\nUse `$queue` to check queue status.")
-
-        except Exception as e:
-            await ctx.send(f"An error occurred: {e!s}")
-
-    @commands.command(name="queue")
-    async def queue_status(self, ctx: commands.Context):
-        """Show current queue status."""
-        status = self.bot.queue_manager.get_queue_status()
-
-        embed = discord.Embed(title="Current Queue Status", color=discord.Color.blue())
-
-        embed.add_field(name="Downloads in Queue", value=status["total_items"], inline=True)
-        embed.add_field(
-            name="Queue Capacity", value=f"{status['total_items']}/{self.bot.queue_manager.max_queue_size}", inline=True
-        )
-
-        await ctx.send(embed=embed)
+    @commands.command(name="status")
+    async def status(self, ctx: commands.Context):
+        """Show the current download status."""
+        active_downloads = self.bot.download_manager.get_active_downloads()
+        queue_size = self.bot.queue_manager.get_queue_size()
+        await ctx.send(f"Active downloads: {active_downloads}\nQueue size: {queue_size}")
 
 
-async def setup(bot):
-    """Add cog to bot."""
+async def setup(bot: BossBot):
+    """Load the DownloadCog.
+
+    Args:
+        bot: The bot instance
+    """
     await bot.add_cog(DownloadCog(bot))

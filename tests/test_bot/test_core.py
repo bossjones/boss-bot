@@ -104,14 +104,12 @@ async def test_help_command_customization(
     assert fixture_bot_test.help_command is not None
     help_command = fixture_bot_test.help_command
 
-    # Create a mock help command with the expected attributes
-    mock_help = mocker.Mock(spec=commands.DefaultHelpCommand)
-    mock_help.dm_help = False
-    mock_help.case_insensitive = True
-
-    # Verify the attributes match
-    assert help_command.dm_help == mock_help.dm_help
-    assert help_command.case_insensitive == mock_help.case_insensitive
+    # Verify the help command is properly configured
+    assert help_command.dm_help is False
+    assert help_command.sort_commands is True
+    assert help_command.no_category == "General Commands"
+    assert help_command.width == 65
+    assert help_command.indent == 2
 
 @pytest.mark.asyncio
 async def test_bot_reconnect_handling(

@@ -74,6 +74,25 @@ def fixture_help_command_test(mocker: MockerFixture) -> commands.HelpCommand:
     help_cmd.context = ctx
     return help_cmd
 
+@pytest.fixture(scope="function")
+def fixture_ctx_test(mocker: MockerFixture) -> commands.Context:
+    """Create a mock context for testing.
+
+    Scope: function - ensures clean context for each test
+    Args:
+        mocker: PyTest mock fixture
+    Returns: Mocked Context instance
+    """
+    ctx = mocker.Mock(spec=commands.Context)
+    ctx.send = mocker.AsyncMock()
+    ctx.author = mocker.Mock()
+    ctx.author.id = 12345
+    ctx.channel = mocker.Mock()
+    ctx.channel.id = 67890
+    ctx.guild = mocker.Mock()
+    ctx.guild.id = 13579
+    return ctx
+
 def pytest_sessionfinish(session: Session, exitstatus: ExitCode | int) -> None:
     """Code to execute after all tests.
 

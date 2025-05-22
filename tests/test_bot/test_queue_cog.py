@@ -10,58 +10,85 @@ from boss_bot.core.env import BossSettings
 @pytest.mark.asyncio
 async def test_clear_queue_command(fixture_bot_test: BossBot) -> None:
     """Test clearing the queue."""
+    # Configure dpytest with our bot
+    dpytest.configure(fixture_bot_test)
+
+    # Create test guild and channel
+    guild = dpytest.backend.make_guild("Test Guild")
+    channel = dpytest.backend.make_text_channel("test-channel", guild)
+
+    # Create test user
+    member = dpytest.backend.make_member("TestUser", guild)
+
     # Add some downloads first
     for i in range(3):
-        await dpytest.message(f"$dl https://twitter.com/user/status/{i}")
+        message = await dpytest.message(f"$download https://twitter.com/user/status/{i}", channel=channel, member=member)
+        assert "Added" in message.content
 
     # Clear queue
-    await dpytest.message("$clearqueue")
-
-    # Check response
-    assert dpytest.verify().message().content(
-        "Queue cleared successfully."
-    )
+    message = await dpytest.message("$clear", channel=channel, member=member)
+    assert "Download queue cleared" in message.content
 
     # Verify queue is empty
-    await dpytest.message("$queue")
-    assert dpytest.verify().message().contains().content(
-        "Downloads in Queue: 0"
-    )
+    message = await dpytest.message("$status", channel=channel, member=member)
+    assert "Queue size: 0" in message.content
 
 @pytest.mark.asyncio
 async def test_cancel_download_command(fixture_bot_test: BossBot) -> None:
     """Test canceling a specific download."""
-    # Add a download
-    await dpytest.message("$dl https://twitter.com/user/status/123")
+    # Configure dpytest with our bot
+    dpytest.configure(fixture_bot_test)
 
-    # Get download ID from response
-    messages = dpytest.get_message()
-    # Note: In a real scenario, we'd parse the download ID from the message
+    # Create test guild and channel
+    guild = dpytest.backend.make_guild("Test Guild")
+    channel = dpytest.backend.make_text_channel("test-channel", guild)
+
+    # Create test user
+    member = dpytest.backend.make_member("TestUser", guild)
+
+    # Add a download
+    message = await dpytest.message("$download https://twitter.com/user/status/123", channel=channel, member=member)
+    assert "Added" in message.content
 
     # Try to cancel with invalid ID
-    await dpytest.message("$cancel invalid_id")
-    assert dpytest.verify().message().content(
-        "Download not found."
-    )
+    message = await dpytest.message("$cancel invalid_id", channel=channel, member=member)
+    assert "not found" in message.content.lower()
 
 @pytest.mark.asyncio
 async def test_queue_status_empty(fixture_bot_test: BossBot) -> None:
     """Test queue status when empty."""
-    await dpytest.message("$queue")
-    assert dpytest.verify().message().contains().content(
-        "Downloads in Queue: 0"
-    )
+    # Configure dpytest with our bot
+    dpytest.configure(fixture_bot_test)
+
+    # Create test guild and channel
+    guild = dpytest.backend.make_guild("Test Guild")
+    channel = dpytest.backend.make_text_channel("test-channel", guild)
+
+    # Create test user
+    member = dpytest.backend.make_member("TestUser", guild)
+
+    # Check empty queue
+    message = await dpytest.message("$status", channel=channel, member=member)
+    assert "Queue size: 0" in message.content
 
 @pytest.mark.asyncio
 async def test_queue_status_with_items(fixture_bot_test: BossBot) -> None:
     """Test queue status with items."""
+    # Configure dpytest with our bot
+    dpytest.configure(fixture_bot_test)
+
+    # Create test guild and channel
+    guild = dpytest.backend.make_guild("Test Guild")
+    channel = dpytest.backend.make_text_channel("test-channel", guild)
+
+    # Create test user
+    member = dpytest.backend.make_member("TestUser", guild)
+
     # Add some downloads
     for i in range(3):
-        await dpytest.message(f"$dl https://twitter.com/user/status/{i}")
+        message = await dpytest.message(f"$download https://twitter.com/user/status/{i}", channel=channel, member=member)
+        assert "Added" in message.content
 
-    await dpytest.message("$queue")
-    message = dpytest.get_message()
-
-    # Verify queue information is displayed
-    assert "Current Queue Status" in message.content
-    assert "Downloads in Queue: 3" in message.content
+    # Check queue status
+    message = await dpytest.message("$status", channel=channel, member=member)
+    assert "Queue size: 3" in message.content

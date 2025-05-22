@@ -103,6 +103,13 @@ Boss-Bot is a Discord bot that enables downloading and managing media files. The
 
 ### Known Test Failures and Fixes
 - `test_download_command_queue_full`: Fixed by adding exception handling in download command (src/boss_bot/bot/cogs/downloads.py:22-26)
+- **Queue Tests (tests/test_bot/test_queue.py)**: All tests failed with `TypeError: QueueCog.show_queue() missing 1 required positional argument: 'ctx'`
+  - **Root Cause**: Tests were calling command methods directly instead of using the `.callback()` pattern for decorated commands
+  - **Fix**: Replace direct calls like `await cog.show_queue(ctx)` with `await cog.show_queue.callback(cog, ctx)`
+  - **Additional Issue**: Discord embed calls use keyword arguments (`embed=...`) not positional arguments
+  - **Fix**: Access embed via `call_args.kwargs['embed']` instead of `call_args[0][0]`
+  - **String Splitting Issue**: Tests failed due to trailing newlines creating empty strings when splitting
+  - **Fix**: Use `.strip().split('\n')` instead of `.split('\n')` when counting lines
 
 ## Code Style Guidelines
 - Python 3.12+ with type hints throughout

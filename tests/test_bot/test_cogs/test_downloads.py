@@ -17,34 +17,44 @@ from pytest_mock import MockerFixture
 @pytest.mark.asyncio
 async def test_download_command(mocker: MockerFixture, fixture_mock_bot_test: BossBot, fixture_download_cog_test: DownloadCog):
     """Test the download command."""
-    # Create mock context
-    ctx = mocker.Mock()
+    # Create mock context with required attributes
+    ctx = mocker.Mock(spec=commands.Context)
+    ctx.author = mocker.Mock()
+    ctx.author.id = 12345
+    ctx.channel = mocker.Mock()
+    ctx.channel.id = 67890
+    ctx.send = mocker.AsyncMock()
     url = "https://example.com/video.mp4"
 
     # Set up mock behaviors
     fixture_mock_bot_test.download_manager.validate_url.return_value = True
     fixture_mock_bot_test.queue_manager.add_to_queue = mocker.AsyncMock()
 
-    # Call the download command
-    await fixture_download_cog_test.download(ctx, url)
+    # Call the download command's callback directly
+    await fixture_download_cog_test.download.callback(fixture_download_cog_test, ctx, url)
 
     # Verify interactions
     fixture_mock_bot_test.download_manager.validate_url.assert_called_once_with(url)
-    fixture_mock_bot_test.queue_manager.add_to_queue.assert_called_once_with(url, ctx.author)
+    fixture_mock_bot_test.queue_manager.add_to_queue.assert_called_once_with(url, ctx.author.id, ctx.channel.id)
     ctx.send.assert_called_once()
 
 @pytest.mark.asyncio
 async def test_download_command_invalid_url(mocker: MockerFixture, fixture_mock_bot_test: BossBot, fixture_download_cog_test: DownloadCog):
     """Test the download command with an invalid URL."""
-    # Create mock context
-    ctx = mocker.Mock()
+    # Create mock context with required attributes
+    ctx = mocker.Mock(spec=commands.Context)
+    ctx.author = mocker.Mock()
+    ctx.author.id = 12345
+    ctx.channel = mocker.Mock()
+    ctx.channel.id = 67890
+    ctx.send = mocker.AsyncMock()
     url = "invalid_url"
 
     # Set up mock behavior for invalid URL
     fixture_mock_bot_test.download_manager.validate_url.return_value = False
 
-    # Call the download command
-    await fixture_download_cog_test.download(ctx, url)
+    # Call the download command's callback directly
+    await fixture_download_cog_test.download.callback(fixture_download_cog_test, ctx, url)
 
     # Verify error message was sent
     ctx.send.assert_called_once()
@@ -53,15 +63,20 @@ async def test_download_command_invalid_url(mocker: MockerFixture, fixture_mock_
 @pytest.mark.asyncio
 async def test_status_command(mocker: MockerFixture, fixture_mock_bot_test: BossBot, fixture_download_cog_test: DownloadCog):
     """Test the status command."""
-    # Create mock context
-    ctx = mocker.Mock()
+    # Create mock context with required attributes
+    ctx = mocker.Mock(spec=commands.Context)
+    ctx.author = mocker.Mock()
+    ctx.author.id = 12345
+    ctx.channel = mocker.Mock()
+    ctx.channel.id = 67890
+    ctx.send = mocker.AsyncMock()
 
     # Set up mock behaviors
     fixture_mock_bot_test.download_manager.get_active_downloads.return_value = 2
     fixture_mock_bot_test.queue_manager.get_queue_size.return_value = 5
 
-    # Call the status command
-    await fixture_download_cog_test.status(ctx)
+    # Call the status command's callback directly
+    await fixture_download_cog_test.status.callback(fixture_download_cog_test, ctx)
 
     # Verify status was sent
     ctx.send.assert_called_once()

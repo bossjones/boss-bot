@@ -137,7 +137,7 @@ jobs:
 
       - name: Run tests and collect coverage
         run: |
-          ./scripts/retry -t 2 -- uv run goobctl chroma generate
+          ./scripts/retry -t 2 -- uv run goobctl version
           uv run lint
           uv run python -c 'import boss_bot'
           ./scripts/retry -t 2 -- uv run pytest --diff-width=60 --diff-symbols --cov-append --cov-report=term-missing --cov-report=xml:cov.xml --cov-report=html:htmlcov --junitxml=junit/test-results.xml --cov=.

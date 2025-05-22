@@ -1,94 +1,67 @@
 """Tests for queue command cog."""
 import pytest
 from discord.ext import commands
-import discord.ext.test as dpytest
+from pytest_mock import MockerFixture
+
 from boss_bot.bot.client import BossBot
 from boss_bot.bot.cogs.task_queue import QueueCog
-from pathlib import Path
-from boss_bot.core.env import BossSettings
+
 
 @pytest.mark.asyncio
-async def test_clear_queue_command(fixture_bot_test: BossBot) -> None:
+async def test_clear_queue_command(fixture_mock_bot_test: BossBot, fixture_ctx_test: commands.Context, mocker: MockerFixture) -> None:
     """Test clearing the queue."""
-    # Configure dpytest with our bot
-    dpytest.configure(fixture_bot_test)
+    cog = QueueCog(fixture_mock_bot_test)
+    fixture_mock_bot_test.queue_manager.clear_queue = mocker.AsyncMock()
 
-    # Create test guild and channel
-    guild = dpytest.backend.make_guild("Test Guild")
-    channel = dpytest.backend.make_text_channel("test-channel", guild)
+    await cog.clear_queue.callback(cog, fixture_ctx_test)
 
-    # Create test user
-    member = dpytest.backend.make_member("TestUser", guild)
+    fixture_mock_bot_test.queue_manager.clear_queue.assert_called_once()
+    fixture_ctx_test.send.assert_called_once_with("Download queue cleared.")
 
-    # Add some downloads first
-    for i in range(3):
-        message = await dpytest.message(f"$download https://twitter.com/user/status/{i}", channel=channel, member=member)
-        assert "Added" in message.content
-
-    # Clear queue
-    message = await dpytest.message("$clear", channel=channel, member=member)
-    assert "Download queue cleared" in message.content
-
-    # Verify queue is empty
-    message = await dpytest.message("$status", channel=channel, member=member)
-    assert "Queue size: 0" in message.content
 
 @pytest.mark.asyncio
-async def test_cancel_download_command(fixture_bot_test: BossBot) -> None:
-    """Test canceling a specific download."""
-    # Configure dpytest with our bot
-    dpytest.configure(fixture_bot_test)
+async def test_remove_from_queue_command(fixture_mock_bot_test: BossBot, fixture_ctx_test: commands.Context, mocker: MockerFixture) -> None:
+    """Test removing a download from the queue."""
+    cog = QueueCog(fixture_mock_bot_test)
+    fixture_mock_bot_test.queue_manager.remove_from_queue = mocker.AsyncMock(return_value=True)
 
-    # Create test guild and channel
-    guild = dpytest.backend.make_guild("Test Guild")
-    channel = dpytest.backend.make_text_channel("test-channel", guild)
+    await cog.remove_from_queue.callback(cog, fixture_ctx_test, "test-download-id")
 
-    # Create test user
-    member = dpytest.backend.make_member("TestUser", guild)
+    fixture_mock_bot_test.queue_manager.remove_from_queue.assert_called_once_with("test-download-id")
+    fixture_ctx_test.send.assert_called_once_with("Download test-download-id removed from queue.")
 
-    # Add a download
-    message = await dpytest.message("$download https://twitter.com/user/status/123", channel=channel, member=member)
-    assert "Added" in message.content
-
-    # Try to cancel with invalid ID
-    message = await dpytest.message("$cancel invalid_id", channel=channel, member=member)
-    assert "not found" in message.content.lower()
 
 @pytest.mark.asyncio
-async def test_queue_status_empty(fixture_bot_test: BossBot) -> None:
-    """Test queue status when empty."""
-    # Configure dpytest with our bot
-    dpytest.configure(fixture_bot_test)
+async def test_remove_from_queue_not_found(fixture_mock_bot_test: BossBot, fixture_ctx_test: commands.Context, mocker: MockerFixture) -> None:
+    """Test removing a non-existent download from the queue."""
+    cog = QueueCog(fixture_mock_bot_test)
+    fixture_mock_bot_test.queue_manager.remove_from_queue = mocker.AsyncMock(return_value=False)
 
-    # Create test guild and channel
-    guild = dpytest.backend.make_guild("Test Guild")
-    channel = dpytest.backend.make_text_channel("test-channel", guild)
+    await cog.remove_from_queue.callback(cog, fixture_ctx_test, "invalid-id")
 
-    # Create test user
-    member = dpytest.backend.make_member("TestUser", guild)
+    fixture_mock_bot_test.queue_manager.remove_from_queue.assert_called_once_with("invalid-id")
+    fixture_ctx_test.send.assert_called_once_with("Download invalid-id not found or you don't have permission to remove it.")
 
-    # Check empty queue
-    message = await dpytest.message("$status", channel=channel, member=member)
-    assert "Queue size: 0" in message.content
 
 @pytest.mark.asyncio
-async def test_queue_status_with_items(fixture_bot_test: BossBot) -> None:
-    """Test queue status with items."""
-    # Configure dpytest with our bot
-    dpytest.configure(fixture_bot_test)
+async def test_pause_queue_command(fixture_mock_bot_test: BossBot, fixture_ctx_test: commands.Context, mocker: MockerFixture) -> None:
+    """Test pausing the queue."""
+    cog = QueueCog(fixture_mock_bot_test)
+    fixture_mock_bot_test.queue_manager.pause_queue = mocker.AsyncMock()
 
-    # Create test guild and channel
-    guild = dpytest.backend.make_guild("Test Guild")
-    channel = dpytest.backend.make_text_channel("test-channel", guild)
+    await cog.pause_queue.callback(cog, fixture_ctx_test)
 
-    # Create test user
-    member = dpytest.backend.make_member("TestUser", guild)
+    fixture_mock_bot_test.queue_manager.pause_queue.assert_called_once()
+    fixture_ctx_test.send.assert_called_once_with("Download queue paused. Current downloads will complete but no new downloads will start.")
 
-    # Add some downloads
-    for i in range(3):
-        message = await dpytest.message(f"$download https://twitter.com/user/status/{i}", channel=channel, member=member)
-        assert "Added" in message.content
 
-    # Check queue status
-    message = await dpytest.message("$status", channel=channel, member=member)
-    assert "Queue size: 3" in message.content
+@pytest.mark.asyncio
+async def test_resume_queue_command(fixture_mock_bot_test: BossBot, fixture_ctx_test: commands.Context, mocker: MockerFixture) -> None:
+    """Test resuming the queue."""
+    cog = QueueCog(fixture_mock_bot_test)
+    fixture_mock_bot_test.queue_manager.resume_queue = mocker.AsyncMock()
+
+    await cog.resume_queue.callback(cog, fixture_ctx_test)
+
+    fixture_mock_bot_test.queue_manager.resume_queue.assert_called_once()
+    fixture_ctx_test.send.assert_called_once_with("Download queue resumed. New downloads will now start.")

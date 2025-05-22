@@ -666,11 +666,436 @@ rmdir src/boss_bot/downloaders/  # If completely migrated
 4. **Comprehensive Testing**: Full test suite runs after each phase
 5. **Rollback Ready**: Each phase can be individually rolled back
 
-### Testing Strategy
-- Run full test suite after each migration step
-- Add integration tests for new AI components
-- Performance benchmarking to ensure no regression
-- User acceptance testing for CLI changes
+### TDD-First Testing Strategy
+
+This migration follows **Test-Driven Development (TDD)** principles using pytest and specialized plugins for comprehensive testing without high costs.
+
+#### Core Testing Framework Stack
+- **pytest**: Primary testing framework for all test types
+- **pytest-asyncio**: Testing async/await patterns (Discord bot, AI chains)
+- **pytest-mock**: Mocking without unittest.mock dependency
+- **pytest-vcr** + **vcrpy**: Record/replay for LLM API calls (following LangChain patterns)
+- **pytest-freezegun**: Time-based testing for queues and monitoring
+- **pytest-aioresponses**: HTTP mocking for download handlers
+
+#### VCR.py Integration (LangChain Pattern)
+Following LangChain's approach for cost-effective AI testing:
+- **Cassette-based testing**: Record real API responses once, replay forever
+- **Integration test focus**: VCR for external API calls, mocks for unit tests
+- **CI/CD optimization**: `--vcr-record=none` to prevent new recordings in CI
+
+#### TDD Migration Approach
+**Write tests BEFORE implementing new structure:**
+
+1. **Red Phase**: Write failing tests for new module structure
+2. **Green Phase**: Implement minimal code to pass tests
+3. **Refactor Phase**: Improve code while keeping tests green
+4. **MVP Focus**: Core functionality tests first, edge cases later
+
+#### Testing Strategy by Component
+
+##### 1. **AI Components Testing (pytest-vcr + vcrpy)**
+```python
+# tests/test_ai/test_agents/test_content_analyzer.py
+import pytest
+import vcr
+from pytest_vcr import use_cassette
+
+# Following LangChain's VCR pattern for AI testing
+@use_cassette("tests/cassettes/ai/content_analyzer_basic.yaml")
+@pytest.mark.asyncio
+async def test_content_analyzer_basic_analysis():
+    """Test basic content analysis functionality.
+
+    MVP: Basic content classification only
+    TODO: Add edge cases like malformed content, rate limits, API errors
+    """
+    analyzer = ContentAnalyzer()
+    result = await analyzer.analyze("https://example.com/video")
+    assert result.content_type in ["video", "image", "text"]
+    # TODO: Add tests for unsupported formats
+    # TODO: Add tests for large content handling
+    # TODO: Add tests for content moderation flags
+
+# LangChain-style context manager approach for dynamic cassettes
+@pytest.mark.asyncio
+async def test_langchain_summarization():
+    """Test LangChain summarization functionality.
+
+    MVP: Basic text summarization
+    TODO: Add tests for different content types, languages, lengths
+    """
+    cassette_path = "tests/cassettes/ai/langchain_summarization.yaml"
+    with vcr.use_cassette(cassette_path, record_mode='once'):
+        # This will record on first run, replay on subsequent runs
+        chain = SummarizationChain()
+        result = await chain.run("Sample text to summarize")
+        assert len(result) < len("Sample text to summarize")
+        # TODO: Add tests for different content types, languages, lengths
+
+# Provider-specific cassette organization (LangChain pattern)
+@use_cassette("tests/cassettes/ai/openai/chat_completion.yaml")
+@pytest.mark.asyncio
+async def test_openai_integration():
+    """Test OpenAI API integration."""
+    # Implementation will use recorded responses
+    pass
+
+@use_cassette("tests/cassettes/ai/anthropic/claude_completion.yaml")
+@pytest.mark.asyncio
+async def test_anthropic_integration():
+    """Test Anthropic Claude API integration."""
+    # Implementation will use recorded responses
+    pass
+```
+
+##### 2. **CLI Testing (pytest-mock, pytest-freezegun)**
+```python
+# tests/test_cli/test_commands/test_bot_commands.py
+import pytest
+from pytest_mock import MockerFixture
+from freezegun import freeze_time
+
+@pytest.mark.asyncio
+async def test_bot_start_command(mocker: MockerFixture):
+    """Test bot start command.
+
+    MVP: Basic start/stop functionality
+    TODO: Add tests for restart, graceful shutdown, error recovery
+    """
+    mock_bot = mocker.Mock()
+    # Test implementation
+
+@freeze_time("2024-01-01 12:00:00")
+def test_bot_status_command_with_uptime(mocker: MockerFixture):
+    """Test bot status shows correct uptime.
+
+    MVP: Basic status display
+    TODO: Add tests for detailed metrics, health status, resource usage
+    """
+    # Test implementation with frozen time
+    pass
+```
+
+##### 3. **Download Handlers Testing (pytest-aioresponses)**
+```python
+# tests/test_core/test_downloads/test_handlers/test_youtube_handler.py
+import pytest
+from aioresponses import aioresponses
+
+@pytest.mark.asyncio
+async def test_youtube_handler_basic_download():
+    """Test YouTube download handler.
+
+    MVP: Basic YouTube URL parsing and metadata extraction
+    TODO: Add tests for playlists, live streams, age-restricted content
+    """
+    with aioresponses() as mocked:
+        mocked.get('https://youtube.com/api/video/info', payload={'title': 'Test Video'})
+
+        handler = YouTubeHandler()
+        result = await handler.extract_info("https://youtube.com/watch?v=test")
+        assert result.title == "Test Video"
+        # TODO: Add tests for video quality selection
+        # TODO: Add tests for subtitle extraction
+        # TODO: Add tests for playlist handling
+```
+
+##### 4. **Queue Management Testing (pytest-asyncio, pytest-freezegun)**
+```python
+# tests/test_core/test_queue/test_manager.py
+import pytest
+from freezegun import freeze_time
+
+@pytest.mark.asyncio
+async def test_queue_manager_basic_operations():
+    """Test basic queue operations.
+
+    MVP: Add, remove, pause, resume functionality
+    TODO: Add tests for priority queues, queue persistence, error recovery
+    """
+    manager = QueueManager()
+    item = QueueItem(url="https://example.com", user_id=123)
+
+    await manager.add_to_queue(item)
+    assert await manager.get_queue_size() == 1
+    # TODO: Add tests for queue limits
+    # TODO: Add tests for queue serialization
+    # TODO: Add tests for concurrent access
+
+@freeze_time("2024-01-01 12:00:00")
+@pytest.mark.asyncio
+async def test_queue_processing_timing():
+    """Test queue processing respects timing constraints.
+
+    MVP: Basic processing timing
+    TODO: Add tests for rate limiting, retry logic, exponential backoff
+    """
+    # Test implementation
+    pass
+```
+
+##### 5. **Backward Compatibility Testing**
+```python
+# tests/test_migration/test_deprecation_warnings.py
+import pytest
+import warnings
+
+def test_deprecated_import_paths_show_warnings():
+    """Test that deprecated import paths show proper warnings.
+
+    MVP: Basic deprecation warnings
+    TODO: Add tests for import path mapping, version-specific warnings
+    """
+    with pytest.warns(DeprecationWarning, match="boss_bot.global_cogs is deprecated"):
+        from boss_bot.global_cogs import DownloadCog
+
+    # TODO: Add tests for all deprecated paths
+    # TODO: Add tests for warning suppression in production
+
+def test_deprecated_functionality_still_works():
+    """Test that deprecated code paths still function correctly.
+
+    MVP: Basic functionality preservation
+    TODO: Add comprehensive functional tests for all deprecated paths
+    """
+    # Test that old import paths work identically to new ones
+    pass
+```
+
+#### MVP Testing Priorities
+
+##### **Phase 1: Foundation Tests (Week 1)**
+```python
+# MVP Test Coverage Goals:
+# - [ ] New directory structure imports work
+# - [ ] Deprecation warnings are shown
+# - [ ] Basic functionality preserved
+# - [ ] Core bot client still initializes
+
+# TODO for Post-MVP:
+# - [ ] Comprehensive error handling tests
+# - [ ] Performance regression tests
+# - [ ] Memory usage tests
+# - [ ] Concurrency stress tests
+```
+
+##### **Phase 2: CLI Tests (Week 2)**
+```python
+# MVP Test Coverage Goals:
+# - [ ] Basic CLI commands work
+# - [ ] Subcommand structure functions
+# - [ ] Help text displays correctly
+# - [ ] Basic error handling
+
+# TODO for Post-MVP:
+# - [ ] Complex command combinations
+# - [ ] Configuration edge cases
+# - [ ] Interactive command testing
+# - [ ] CLI performance optimization
+```
+
+##### **Phase 3: AI Integration Tests (Week 3-4)**
+```python
+# MVP Test Coverage Goals:
+# - [ ] Basic LangChain chain execution
+# - [ ] Simple content analysis
+# - [ ] AI tool integration with Discord
+# - [ ] Cost-controlled testing with recordings
+
+# TODO for Post-MVP:
+# - [ ] Complex multi-step workflows
+# - [ ] Error recovery and retry logic
+# - [ ] Performance optimization
+# - [ ] Multiple AI provider testing
+```
+
+#### Cost-Controlled Testing Strategy
+
+##### **VCR Configuration for LLM Calls (LangChain Pattern)**
+```python
+# conftest.py additions for AI testing
+import pytest
+import vcr
+
+@pytest.fixture(scope="session")
+def vcr_config():
+    """Configure VCR for LLM API recording (following LangChain approach)."""
+    return {
+        "cassette_library_dir": "tests/cassettes",
+        "filter_headers": [
+            "authorization",
+            "x-api-key",
+            "openai-api-key",
+            "anthropic-api-key"
+        ],
+        "decode_compressed_response": True,
+        "ignore_localhost": True,
+        "record_mode": "once",  # Record once, replay forever
+        "match_on": ["method", "scheme", "host", "port", "path", "query"],
+    }
+
+@pytest.fixture(scope="session")
+def vcr_cassette_dir():
+    """Set VCR cassette directory (LangChain pattern)."""
+    return "tests/cassettes"
+
+# CI/CD command for cost control (LangChain approach):
+# pytest tests/test_ai/ --vcr-record=none
+```
+
+##### **Cassette Organization (LangChain Structure)**
+```python
+# tests/cassettes/ directory structure following LangChain pattern
+tests/cassettes/
+├── ai/
+│   ├── openai/
+│   │   ├── chat_completion.yaml
+│   │   ├── text_completion.yaml
+│   │   └── embedding.yaml
+│   ├── anthropic/
+│   │   ├── claude_completion.yaml
+│   │   └── claude_streaming.yaml
+│   ├── langsmith/
+│   │   ├── run_tracking.yaml
+│   │   └── evaluation.yaml
+│   └── chains/
+│       ├── summarization_chain.yaml
+│       └── classification_chain.yaml
+├── downloads/
+│   ├── youtube_api.yaml
+│   ├── twitter_api.yaml
+│   └── generic_metadata.yaml
+└── integrations/
+    ├── discord_webhooks.yaml
+    └── health_checks.yaml
+```
+
+##### **Mock Strategy for Development (Hybrid Approach)**
+```python
+# tests/fixtures/ai_fixtures.py
+@pytest.fixture
+def mock_llm_response(mocker: MockerFixture):
+    """Mock LLM responses for fast unit testing."""
+    return mocker.patch("langchain.llms.base.LLM.generate",
+                       return_value=mock_response_data)
+
+# Hybrid approach: VCR for integration tests, mocks for unit tests
+# Unit tests: Fast mocks for business logic testing
+# Integration tests: VCR cassettes for real API interaction testing
+```
+
+##### **VCR Record Modes (LangChain Approach)**
+```python
+# Different record modes for different testing scenarios:
+
+# record_mode='once' - Record once, replay forever (default)
+@use_cassette("test.yaml", record_mode='once')
+
+# record_mode='new_episodes' - Record new interactions, replay existing
+@use_cassette("test.yaml", record_mode='new_episodes')
+
+# record_mode='none' - Only replay, never record (CI/CD)
+# pytest --vcr-record=none
+
+# record_mode='all' - Always record (for cassette updates)
+@use_cassette("test.yaml", record_mode='all')
+```
+
+##### **CI/CD Cost Control Commands**
+```bash
+# Development: Allow recording new cassettes
+pytest tests/test_ai/
+
+# CI/CD: Prevent new recordings, fail if cassette missing
+pytest tests/test_ai/ --vcr-record=none
+
+# Update cassettes: Force re-recording (use sparingly)
+pytest tests/test_ai/ --vcr-record=all
+
+# Integration tests only: Skip unit tests to save time
+pytest tests/integration_tests/ --vcr-record=none
+```
+
+#### Testing Phase Timeline
+
+##### **Week 1-2: Foundation TDD**
+- Write tests for new structure before implementation
+- Focus on import path testing and deprecation warnings
+- Basic functionality preservation tests
+
+##### **Week 3: CLI TDD**
+- Test-driven CLI subcommand development
+- Mock external dependencies with pytest-mock
+- Time-based testing with pytest-freezegun
+
+##### **Week 4-5: AI TDD**
+- Record initial LLM interactions for playback
+- Test-driven AI agent development
+- Cost-controlled integration testing
+
+##### **Week 6-8: Integration TDD**
+- End-to-end workflow testing
+- Performance baseline establishment
+- Production readiness verification
+
+#### Test Organization Structure (LangChain-Inspired)
+```
+tests/
+├── fixtures/                    # Shared test fixtures and mocks
+│   ├── ai_fixtures.py          # LLM mocks for unit tests
+│   ├── bot_fixtures.py         # Discord bot test helpers
+│   └── cli_fixtures.py         # CLI testing utilities
+├── cassettes/                   # VCR cassettes (LangChain pattern)
+│   ├── ai/                     # AI provider recordings
+│   │   ├── openai/             # OpenAI API responses
+│   │   ├── anthropic/          # Anthropic API responses
+│   │   ├── langsmith/          # LangSmith tracking
+│   │   └── chains/             # LangChain chain recordings
+│   ├── downloads/              # Download service recordings
+│   │   ├── youtube_api.yaml    # YouTube API responses
+│   │   ├── twitter_api.yaml    # Twitter API responses
+│   │   └── generic_metadata.yaml
+│   └── integrations/           # External service recordings
+│       ├── discord_webhooks.yaml
+│       └── health_checks.yaml
+├── unit_tests/                 # Fast unit tests (mocked)
+│   ├── test_ai/               # AI component unit tests
+│   ├── test_cli/              # CLI component unit tests
+│   ├── test_core/             # Core business logic tests
+│   └── test_migration/        # Migration-specific tests
+├── integration_tests/          # Slower integration tests (VCR)
+│   ├── test_ai_integrations/  # AI provider integration tests
+│   ├── test_download_integrations/ # Download service tests
+│   └── test_bot_integrations/ # Discord bot integration tests
+└── end_to_end/                # Full workflow tests
+    ├── test_bot_workflows.py
+    ├── test_ai_workflows.py
+    └── test_cli_workflows.py
+
+# Following LangChain's testing philosophy:
+# - unit_tests/: Fast, mocked, comprehensive coverage
+# - integration_tests/: VCR-recorded, external service validation
+# - end_to_end/: Full workflow validation with real components
+```
+
+#### MVP Success Criteria
+- ✅ All existing tests pass with new structure
+- ✅ New components have basic test coverage (>80%)
+- ✅ AI components tested with VCR cassettes (cost-controlled, LangChain pattern)
+- ✅ CLI components have command-level testing
+- ✅ Deprecation warnings properly tested
+- ✅ Performance baseline established
+- ✅ VCR cassettes organized by provider (OpenAI, Anthropic, LangSmith)
+- ✅ CI/CD configured with `--vcr-record=none` for cost control
+
+#### Post-MVP Testing Expansion
+- 🔄 Comprehensive edge case testing
+- 🔄 Stress testing and performance optimization
+- 🔄 Security testing for AI inputs
+- 🔄 Comprehensive error recovery testing
+- 🔄 Multi-provider AI testing
+- 🔄 Advanced CLI interaction testing
 
 ### Rollback Plan
 - **Git branches** for each migration phase

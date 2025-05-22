@@ -130,7 +130,7 @@ src/boss_bot/
 │   │   ├── queue.py           # Queue management commands
 │   │   ├── download.py        # Download commands
 │   │   ├── ai.py              # AI workflow commands
-│   │   └── config.py          # Configuration commands
+│   │   └── cli_config.py      # Configuration commands
 │   ├── utils/                  # CLI utilities (new)
 │   │   ├── __init__.py
 │   │   ├── formatters.py      # Rich formatting utilities
@@ -198,7 +198,7 @@ src/boss_bot/
 │   │       └── datadog.py     # Datadog exporter (future)
 │   └── logging/                # Logging configuration (reorganized)
 │       ├── __init__.py
-│       ├── config.py          # Logging setup (from current monitoring/logging.py)
+│       ├── logging_config.py  # Logging setup (from current monitoring/logging.py)
 │       └── formatters.py      # Log formatters (new)
 │
 ├── schemas/                      # 📄 Data Schemas & Validation
@@ -219,13 +219,13 @@ src/boss_bot/
 │   ├── __init__.py
 │   ├── langsmith/              # LangSmith integration
 │   │   ├── __init__.py
-│   │   └── client.py
+│   │   └── langsmith_client.py
 │   ├── anthropic/              # Anthropic API integration
 │   │   ├── __init__.py
-│   │   └── client.py
+│   │   └── anthropic_client.py
 │   ├── openai/                 # OpenAI API integration
 │   │   ├── __init__.py
-│   │   └── client.py
+│   │   └── openai_client.py
 │   └── webhooks/               # Webhook handlers
 │       ├── __init__.py
 │       └── discord_webhook.py
@@ -265,6 +265,9 @@ To avoid module name conflicts with third-party libraries and Python standard li
 - `twitter.py` → Use `twitter_handler.py`
 - `local.py` → Use `local_storage.py`
 - `s3.py` → Use `s3_storage.py`
+- `openai.py` → Use `openai_client.py`
+- `anthropic.py` → Use `anthropic_client.py`
+- `config.py` → Use `settings.py`, `cli_config.py`, `logging_config.py`
 
 ### ✅ **Naming Patterns**
 - **Service-specific**: `{service}_{purpose}.py` (e.g., `discord_integration.py`)
@@ -272,6 +275,7 @@ To avoid module name conflicts with third-party libraries and Python standard li
 - **Backend pattern**: `{type}_storage.py` (e.g., `local_storage.py`)
 - **Health checks**: `{component}_health.py` (e.g., `discord_health.py`)
 - **Purpose suffix**: `{name}_{purpose}.py` (e.g., `discord_webhook.py`)
+- **Client pattern**: `{service}_client.py` (e.g., `openai_client.py`, `anthropic_client.py`)
 
 ### 📋 **Module Conflict Checklist**
 Before creating new modules, check against:
@@ -544,7 +548,7 @@ mv src/boss_bot/storage/validation_manager.py src/boss_bot/storage/managers/vali
 # Move monitoring components
 mv src/boss_bot/monitoring/health_check.py src/boss_bot/monitoring/health/checker.py
 mv src/boss_bot/monitoring/metrics.py src/boss_bot/monitoring/metrics/collector.py
-mv src/boss_bot/monitoring/logging.py src/boss_bot/monitoring/logging/config.py
+mv src/boss_bot/monitoring/logging.py src/boss_bot/monitoring/logging/logging_config.py
 ```
 
 #### Step 1.3: Add Backward Compatibility and Deprecation Warnings
@@ -672,7 +676,7 @@ if __name__ == "__main__":
 - `cli/commands/bot.py` - Bot management (start, stop, status, restart)
 - `cli/commands/queue.py` - Queue operations (list, clear, pause, resume)
 - `cli/commands/download.py` - Download management (start, cancel, status)
-- `cli/commands/config.py` - Configuration management (show, set, validate)
+- `cli/commands/cli_config.py` - Configuration management (show, set, validate)
 - `cli/commands/ai.py` - AI workflow commands (analyze, summarize, classify)
 
 #### Step 2.3: CLI Utilities
@@ -689,9 +693,9 @@ if __name__ == "__main__":
 - `ai/prompts/templates.py` - Prompt templates
 
 #### Step 3.2: AI Service Integrations
-- `integrations/langsmith/client.py` - LangSmith tracking
-- `integrations/anthropic/client.py` - Claude API integration
-- `integrations/openai/client.py` - OpenAI API integration
+- `integrations/langsmith/langsmith_client.py` - LangSmith tracking
+- `integrations/anthropic/anthropic_client.py` - Claude API integration
+- `integrations/openai/openai_client.py` - OpenAI API integration
 
 #### Step 3.3: AI-Powered Discord Commands
 - `bot/cogs/ai_commands.py` - AI-powered Discord commands
@@ -966,14 +970,16 @@ async def test_langchain_summarization():
 @use_cassette("tests/cassettes/ai/openai/chat_completion.yaml")
 @pytest.mark.asyncio
 async def test_openai_integration():
-    """Test OpenAI API integration."""
+    """Test OpenAI API integration via openai_client.py."""
+    from boss_bot.integrations.openai.openai_client import OpenAIClient
     # Implementation will use recorded responses
     pass
 
 @use_cassette("tests/cassettes/ai/anthropic/claude_completion.yaml")
 @pytest.mark.asyncio
 async def test_anthropic_integration():
-    """Test Anthropic Claude API integration."""
+    """Test Anthropic Claude API integration via anthropic_client.py."""
+    from boss_bot.integrations.anthropic.anthropic_client import AnthropicClient
     # Implementation will use recorded responses
     pass
 ```

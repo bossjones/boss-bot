@@ -126,7 +126,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cp -f env.sample .env
+          cp -f env.sample .env || true
           ./scripts/retry -t 4 -- uv sync --dev
 
       - name: Display UV and Python versions

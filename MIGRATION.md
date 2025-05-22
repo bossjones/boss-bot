@@ -279,6 +279,214 @@ Before creating new modules, check against:
 - Third-party dependencies (discord.py, langchain, etc.)
 - Common package names (boto3, azure, etc.)
 
+## Dependencies & Environment Setup
+
+### New Dependencies Required for Migration
+
+The migration introduces new testing and AI capabilities that require additional dependencies. Follow UV package manager standards for all dependency management.
+
+#### Testing Framework Dependencies
+```bash
+# Add testing dependencies with UV (dev dependencies)
+uv add --dev pytest-vcr==1.0.2
+uv add --dev vcrpy==4.4.0
+uv add --dev pytest-asyncio==0.23.2
+uv add --dev pytest-mock==3.12.0
+uv add --dev pytest-freezegun==0.4.2
+uv add --dev pytest-aioresponses==0.7.6
+
+# Verify installation
+uv sync
+```
+
+#### AI/LangChain Dependencies
+```bash
+# Core AI framework dependencies
+uv add langchain==0.1.0
+uv add langgraph==0.0.62
+uv add langchain-openai==0.0.6
+uv add langchain-anthropic==0.1.1
+
+# Optional AI dependencies (for enhanced features)
+uv add langsmith==0.0.87  # For AI workflow tracking
+uv add tiktoken==0.5.2    # For token counting
+
+# Verify AI dependencies
+uv run python -c "import langchain; print('LangChain OK')"
+```
+
+#### pyproject.toml Updates
+```toml
+# Add to pyproject.toml [project.dependencies] for core features
+dependencies = [
+    # ... existing dependencies ...
+    "langchain>=0.1.0,<0.2.0",
+    "langgraph>=0.0.60,<0.1.0",
+    "langchain-openai>=0.0.6,<0.1.0",
+    "langchain-anthropic>=0.1.0,<0.2.0",
+]
+
+# Add to [project.optional-dependencies] for development
+[project.optional-dependencies]
+dev = [
+    # ... existing dev dependencies ...
+    "pytest-vcr>=1.0.2,<2.0.0",
+    "vcrpy>=4.4.0,<5.0.0",
+    "pytest-asyncio>=0.23.0,<0.24.0",
+    "pytest-mock>=3.12.0,<4.0.0",
+    "pytest-freezegun>=0.4.2,<0.5.0",
+    "pytest-aioresponses>=0.7.6,<0.8.0",
+]
+
+ai-optional = [
+    "langsmith>=0.0.87,<0.1.0",
+    "tiktoken>=0.5.2,<0.6.0",
+]
+
+# UV-specific configuration for package sources
+[tool.uv.sources]
+# Example: If using custom forks or local packages
+# pytest-vcr = { git = "https://github.com/organization/pytest-vcr.git" }
+```
+
+### Environment Variables for Testing
+
+Create environment-specific configurations for the new testing approach:
+
+```bash
+# .env.test (for VCR testing)
+OPENAI_API_KEY="test-key-for-vcr-recording"
+ANTHROPIC_API_KEY="test-key-for-vcr-recording"
+LANGSMITH_API_KEY="test-key-for-vcr-recording"
+
+# VCR Configuration
+VCR_RECORD_MODE="once"
+PYTEST_VCR_CASSETTE_DIR="tests/cassettes"
+
+# AI Testing Configuration
+AI_TESTING_MODE="vcr"  # Options: vcr, mock, live
+AI_RATE_LIMIT_ENABLED="true"
+```
+
+```bash
+# .env.development
+# Use real API keys for development
+OPENAI_API_KEY="${OPENAI_API_KEY}"
+ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY}"
+LANGSMITH_API_KEY="${LANGSMITH_API_KEY}"
+
+# Development AI settings
+AI_TESTING_MODE="live"
+AI_DEBUG_ENABLED="true"
+```
+
+### Development Environment Setup
+
+```bash
+# Initial setup for migration development
+uv sync --extra ai-optional
+
+# Verify all dependencies are working
+uv run python -c "import pytest, langchain, discord; print('All core dependencies OK')"
+
+# Install pre-commit hooks (important for VCR cassette management)
+uv run pre-commit install
+
+# Run test discovery to verify pytest configuration
+uv run pytest --collect-only -q
+
+# Verify VCR is working
+uv run python -c "import vcr; print('VCR OK')"
+```
+
+### Dependency Upgrade Strategy During Migration
+
+```bash
+# Check for outdated packages before migration
+uv sync --upgrade-package pytest
+uv sync --upgrade-package discord.py
+
+# Lock current working versions (recommended before migration)
+uv lock
+
+# After each migration phase, verify dependencies still work
+uv sync --dev
+uv run pytest tests/test_migration/ -v
+```
+
+### Package Management Best Practices for Migration
+
+1. **Phase-by-Phase Dependency Addition**:
+   ```bash
+   # Phase 1: Testing framework
+   uv add --dev pytest-vcr vcrpy pytest-asyncio
+   uv sync
+
+   # Phase 3: AI dependencies
+   uv add langchain langgraph
+   uv sync
+
+   # Verify after each addition
+   uv run pytest --collect-only
+   ```
+
+2. **Lock File Management**:
+   ```bash
+   # Always commit uv.lock after dependency changes
+   git add uv.lock pyproject.toml
+   git commit -m "deps: add VCR testing dependencies for migration"
+   ```
+
+3. **Rollback Strategy**:
+   ```bash
+   # If dependencies cause issues, rollback
+   git checkout HEAD~1 -- pyproject.toml uv.lock
+   uv sync
+   ```
+
+4. **CI/CD Considerations**:
+   ```yaml
+   # GitHub Actions example
+   - name: Install dependencies
+     run: |
+       uv sync --extra ai-optional
+
+   - name: Run tests with VCR
+     run: |
+       uv run pytest tests/ --vcr-record=none
+     env:
+       VCR_RECORD_MODE: none
+   ```
+
+### Dependency Validation Commands
+
+```bash
+# Pre-migration validation
+uv run python -c "import boss_bot; print('Current codebase imports OK')"
+
+# Post-migration validation for each phase
+uv run python -c "import boss_bot.ai.agents; print('AI components OK')"  # Phase 3
+uv run python -c "import boss_bot.cli.main; print('CLI components OK')"   # Phase 2
+
+# Full system validation
+uv run pytest tests/test_migration/test_dependencies.py -v
+```
+
+### Troubleshooting Common Dependency Issues
+
+```bash
+# If VCR cassettes fail to load
+uv add --upgrade vcrpy
+uv run pytest tests/cassettes/ --collect-only
+
+# If LangChain imports fail
+uv add --upgrade langchain
+uv run python -c "from langchain.llms import OpenAI; print('LangChain OK')"
+
+# If pytest discovery fails
+uv run pytest --collect-only --tb=short
+```
+
 ## Migration Plan
 
 ### Phase 1: Foundation Reorganization (Week 1-2)
@@ -1157,6 +1365,1084 @@ Total estimated time: **12 weeks** for complete migration with safe deprecation 
 - **v1.6.0** (Week 10): Import migration complete, warnings remain
 - **v1.9.0** (Week 12): Final warning before removal
 - **v2.0.0** (Future): Remove deprecated paths entirely
+
+## Common Migration Issues & Solutions
+
+### Import and Module Errors
+
+#### **Circular Import Issues**
+```bash
+# Problem: Circular imports during migration
+# Solution: Break circular dependencies with forward references
+
+# Error example:
+# ImportError: cannot import name 'QueueManager' from partially initialized module
+
+# Fix approach:
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from boss_bot.core.queue.manager import QueueManager
+
+# Use string annotations for type hints
+def process_queue(manager: "QueueManager") -> None:
+    pass
+```
+
+#### **Missing Module Errors During Migration**
+```bash
+# Problem: ModuleNotFoundError for new structure
+# Solution: Verify __init__.py files and import paths
+
+# Debug command:
+python -c "import boss_bot.ai.agents; print('AI agents import OK')"
+
+# Create missing __init__.py files:
+touch src/boss_bot/ai/__init__.py
+touch src/boss_bot/ai/agents/__init__.py
+touch src/boss_bot/cli/__init__.py
+touch src/boss_bot/cli/commands/__init__.py
+
+# Verify package structure:
+python -c "import pkgutil; print(list(pkgutil.walk_packages(['src/boss_bot'])))"
+```
+
+#### **Deprecation Warning Suppression (Production)**
+```python
+# Problem: Deprecation warnings flood production logs
+# Solution: Selective warning suppression
+
+# In production configuration:
+import warnings
+from boss_bot.core.env import BossSettings
+
+settings = BossSettings()
+if settings.environment == "production":
+    # Suppress only migration-related deprecation warnings
+    warnings.filterwarnings(
+        "ignore",
+        category=DeprecationWarning,
+        module="boss_bot.global_cogs"
+    )
+    warnings.filterwarnings(
+        "ignore",
+        category=DeprecationWarning,
+        module="boss_bot.downloaders"
+    )
+
+# Keep other deprecation warnings visible
+# Only suppress our own migration warnings
+```
+
+### VCR Cassette Issues
+
+#### **Missing Cassettes in CI/CD**
+```bash
+# Problem: CI fails with "Cassette not found" errors
+# Solution: Ensure cassettes are committed and paths are correct
+
+# Check cassette files exist:
+ls tests/cassettes/ai/openai/
+ls tests/cassettes/ai/anthropic/
+
+# Verify cassette paths in tests:
+grep -r "use_cassette" tests/test_ai/
+
+# Generate missing cassettes (dev only):
+uv run pytest tests/test_ai/ --vcr-record=once
+git add tests/cassettes/
+git commit -m "Add missing VCR cassettes for AI tests"
+
+# CI configuration to fail fast:
+# pytest tests/ --vcr-record=none --tb=short
+```
+
+#### **API Keys in VCR Recordings**
+```yaml
+# Problem: Accidentally recorded API keys in cassettes
+# Solution: Filter sensitive headers
+
+# VCR configuration (conftest.py):
+@pytest.fixture(scope="session")
+def vcr_config():
+    return {
+        "filter_headers": [
+            "authorization",
+            "x-api-key",
+            "openai-api-key",
+            "anthropic-api-key",
+            "x-anthropic-api-key",
+            "bearer"
+        ],
+        "filter_query_parameters": ["api_key", "key"],
+        "before_record_response": lambda response: response
+    }
+
+# Clean existing cassettes with exposed keys:
+find tests/cassettes -name "*.yaml" -exec grep -l "sk-" {} \;
+# Delete and re-record these cassettes
+```
+
+#### **VCR Cassette Version Conflicts**
+```bash
+# Problem: Cassettes recorded with different VCR versions are incompatible
+# Solution: Standardize VCR version and re-record if needed
+
+# Check VCR versions:
+uv run python -c "import vcr; print(vcr.__version__)"
+
+# Re-record all cassettes with current version:
+uv run pytest tests/test_ai/ --vcr-record=all
+git add tests/cassettes/
+git commit -m "Re-record cassettes with VCR $(uv run python -c 'import vcr; print(vcr.__version__)')"
+```
+
+### CLI Migration Problems
+
+#### **Command Not Found Errors**
+```bash
+# Problem: New CLI commands not discoverable
+# Solution: Verify entry points and CLI registration
+
+# Check entry points in pyproject.toml:
+[project.scripts]
+goobctl = "boss_bot.cli.main:main"
+boss-bot = "boss_bot.cli.main:main"  # Backward compatibility
+
+# Reinstall in development mode:
+uv pip install -e .
+
+# Test CLI discovery:
+goobctl --help
+boss-bot --help
+
+# Debug CLI import issues:
+python -c "from boss_bot.cli.main import main; main(['--help'])"
+```
+
+#### **CLI Entry Point Issues**
+```bash
+# Problem: Entry points not updating after migration
+# Solution: Reinstall package and clear pip cache
+
+# Reinstall package in development mode:
+uv sync
+
+# If issues persist, remove and reinstall:
+rm -rf .venv
+uv sync
+
+# Verify entry points:
+which goobctl
+goobctl --version
+
+# Alternative: Direct execution
+uv run python -m boss_bot.cli --help
+```
+
+### AI Integration Issues
+
+#### **LangChain Import Failures**
+```bash
+# Problem: LangChain components fail to import
+# Solution: Verify versions and optional dependencies
+
+# Check LangChain installation:
+uv run python -c "import langchain; print(langchain.__version__)"
+uv run python -c "import langgraph; print('LangGraph OK')"
+
+# Install missing components:
+uv add langchain-openai
+uv add langchain-anthropic
+uv add langchain-community
+
+# Debug specific import failures:
+uv run python -c "from langchain.llms import OpenAI; print('OpenAI OK')"
+uv run python -c "from langchain_anthropic import ChatAnthropic; print('Anthropic OK')"
+```
+
+#### **AI Service Authentication Failures**
+```bash
+# Problem: AI services fail authentication during testing
+# Solution: Verify environment variables and API key format
+
+# Check environment variables:
+echo $OPENAI_API_KEY | head -c 10  # Should start with 'sk-'
+echo $ANTHROPIC_API_KEY | head -c 10  # Should start with 'sk-ant-'
+
+# Test API connectivity:
+curl -H "Authorization: Bearer $OPENAI_API_KEY" \
+     https://api.openai.com/v1/models
+
+# Test in development environment:
+uv run python -c "
+from boss_bot.core.env import BossSettings
+settings = BossSettings()
+print(f'OpenAI key: {settings.openai_api_key[:10]}...')
+print(f'Anthropic key: {settings.anthropic_api_key[:10]}...')
+"
+```
+
+## Migration Validation & Testing
+
+### Pre-Migration Validation
+
+#### **Current System Health Check**
+```bash
+# Verify current system is stable before migration
+just check  # Run full test suite
+just check-coverage  # Ensure test coverage baseline
+
+# Document current performance baseline:
+time python -m boss_bot --version
+time goobctl --help
+
+# Memory usage baseline:
+/usr/bin/time -v uv run python -c "import boss_bot; print('Import OK')"
+
+# Save baseline metrics:
+echo "Pre-migration baseline: $(date)" > migration-baseline.txt
+just check 2>&1 | grep -E "(passed|failed|error)" >> migration-baseline.txt
+```
+
+#### **Dependency Compatibility Check**
+```bash
+# Verify all dependencies are compatible
+uv pip check
+
+# Check for conflicting versions:
+uv tree
+
+# Verify Python version compatibility:
+python --version  # Should be >= 3.12
+python -c "import sys; print(sys.version_info)"
+
+# Check critical imports work:
+uv run python -c "import discord, pytest, rich, typer; print('Core deps OK')"
+```
+
+### Post-Phase Validation
+
+#### **Phase 1 Validation: Foundation**
+```bash
+# After Phase 1 completion, verify:
+
+# 1. All new directories exist:
+find src/boss_bot -type d -name "__pycache__" -prune -o -type d -print
+
+# 2. All __init__.py files present:
+find src/boss_bot -name "__init__.py" | wc -l  # Should be > 20
+
+# 3. Deprecation warnings work:
+uv run python -W error::DeprecationWarning -c "
+try:
+    from boss_bot.global_cogs import downloads
+except DeprecationWarning:
+    print('Deprecation warnings working correctly')
+"
+
+# 4. Import path mappings work:
+uv run python -c "
+from boss_bot.core.queue.manager import QueueManager
+from boss_bot.core.core_queue import QueueManager as OldQueueManager
+assert QueueManager is OldQueueManager
+print('Import mapping working')
+"
+
+# 5. Tests still pass:
+just check-test
+```
+
+#### **Phase 2 Validation: CLI**
+```bash
+# After Phase 2 completion, verify:
+
+# 1. CLI commands discoverable:
+goobctl --help | grep -E "(bot|queue|download|config)"
+
+# 2. Subcommands work:
+goobctl bot --help
+goobctl queue --help
+goobctl config --help
+
+# 3. Backward compatibility:
+uv run python -c "from boss_bot.cli import main; print('Old CLI import works')"
+
+# 4. CLI performance:
+time goobctl --help  # Should be < 2 seconds
+
+# 5. CLI tests pass:
+pytest tests/test_cli/ -v
+```
+
+#### **Phase 3 Validation: AI Integration**
+```bash
+# After Phase 3 completion, verify:
+
+# 1. AI imports work:
+uv run python -c "import boss_bot.ai.agents; print('AI agents OK')"
+uv run python -c "import boss_bot.ai.chains; print('AI chains OK')"
+
+# 2. LangChain integration:
+uv run python -c "
+from boss_bot.ai.chains.summarization import SummarizationChain
+print('LangChain integration OK')
+"
+
+# 3. VCR cassettes exist:
+find tests/cassettes/ai -name "*.yaml" | wc -l  # Should be > 5
+
+# 4. AI tests pass with VCR:
+pytest tests/test_ai/ --vcr-record=none -v
+
+# 5. Cost control verification:
+grep -r "ANTHROPIC_API_KEY" tests/cassettes/ && echo "WARNING: API keys in cassettes!"
+```
+
+### Performance Validation
+
+#### **Import Performance Testing**
+```bash
+# Test import time doesn't regress
+time uv run python -c "import boss_bot"  # Should be < 1 second
+time uv run python -c "import boss_bot.bot.client"  # Should be < 0.5 seconds
+time uv run python -c "import boss_bot.ai.agents"  # Should be < 2 seconds (AI deps)
+
+# Memory usage testing:
+/usr/bin/time -v uv run python -c "
+import boss_bot
+from boss_bot.bot.client import BossBot
+bot = BossBot()
+print('Bot initialized')
+" 2>&1 | grep "Maximum resident set size"
+```
+
+#### **Runtime Performance Testing**
+```bash
+# Bot startup time:
+time uv run python -c "
+from boss_bot.bot.client import BossBot
+bot = BossBot()
+print('Bot ready')
+"  # Should be < 3 seconds
+
+# CLI responsiveness:
+time goobctl bot status  # Should be < 1 second
+time goobctl queue list  # Should be < 1 second
+
+# AI chain performance (with VCR):
+time uv run pytest tests/test_ai/test_chains/test_summarization.py::test_basic_summarization -v
+```
+
+### Automated Validation Scripts
+
+#### **Migration Health Check Script**
+```python
+# scripts/migration_health_check.py
+#!/usr/bin/env python3
+"""
+Migration health check script.
+Run after each migration phase to verify system integrity.
+"""
+
+import subprocess
+import sys
+from pathlib import Path
+from typing import Dict, List
+
+def run_command(cmd: str) -> tuple[int, str, str]:
+    """Run command and return exit code, stdout, stderr."""
+    result = subprocess.run(
+        cmd.split(),
+        capture_output=True,
+        text=True
+    )
+    return result.returncode, result.stdout, result.stderr
+
+def check_imports() -> Dict[str, bool]:
+    """Check critical imports work."""
+    imports_to_test = [
+        "boss_bot",
+        "boss_bot.bot.client",
+        "boss_bot.core.env",
+        "boss_bot.core.queue.manager",
+        "boss_bot.cli.main",
+    ]
+
+    results = {}
+    for import_path in imports_to_test:
+        code = f"import {import_path}"
+        exit_code, _, _ = run_command(f"uv run python -c \"{code}\"")
+        results[import_path] = exit_code == 0
+
+    return results
+
+def check_tests() -> bool:
+    """Check that tests pass."""
+    exit_code, _, _ = run_command("just check-test")
+    return exit_code == 0
+
+def check_cli() -> bool:
+    """Check CLI functionality."""
+    exit_code, _, _ = run_command("goobctl --help")
+    return exit_code == 0
+
+def main():
+    """Run all health checks."""
+    print("Running migration health checks...")
+
+    # Check imports
+    print("\n1. Testing imports...")
+    import_results = check_imports()
+    for import_path, success in import_results.items():
+        status = "✅" if success else "❌"
+        print(f"  {status} {import_path}")
+
+    # Check tests
+    print("\n2. Testing test suite...")
+    tests_pass = check_tests()
+    status = "✅" if tests_pass else "❌"
+    print(f"  {status} Test suite")
+
+    # Check CLI
+    print("\n3. Testing CLI...")
+    cli_works = check_cli()
+    status = "✅" if cli_works else "❌"
+    print(f"  {status} CLI functionality")
+
+    # Summary
+    all_good = all(import_results.values()) and tests_pass and cli_works
+    print("\n" + "="*50)
+    if all_good:
+        print("✅ All health checks passed!")
+        sys.exit(0)
+    else:
+        print("❌ Some health checks failed!")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
+```
+
+#### **Usage Example**
+```bash
+# Run after each migration phase:
+uv run python scripts/migration_health_check.py
+
+# Integrate into CI/CD:
+# .github/workflows/migration.yml
+- name: Migration Health Check
+  run: |
+    uv run python scripts/migration_health_check.py
+```
+
+## Production Deployment Strategy
+
+### GitHub Release-Based Deployment
+
+#### **Deployment Architecture**
+Deployment is handled through GitHub releases with automated CI/CD workflows. Each migration phase is deployed as a new release version with feature flags controlling the rollout.
+
+```yaml
+# .github/workflows/release.yml
+name: Release and Deploy
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup UV
+        uses: astral-sh/setup-uv@v3
+
+      - name: Install dependencies
+        run: uv sync --extra ai-optional
+
+      - name: Run tests
+        run: uv run pytest tests/ --vcr-record=none
+
+      - name: Build and deploy
+        run: |
+          # Build Docker image with release tag
+          docker build -t boss-bot:${{ github.event.release.tag_name }} .
+
+          # Deploy to production environment
+          # This could be Kubernetes, Docker Compose, or other deployment target
+          ./scripts/deploy-production.sh ${{ github.event.release.tag_name }}
+        env:
+          ENABLE_AI_FEATURES: ${{ secrets.ENABLE_AI_FEATURES }}
+          AI_ROLLOUT_PERCENTAGE: ${{ secrets.AI_ROLLOUT_PERCENTAGE }}
+```
+
+#### **Feature Flags for Gradual AI Rollout**
+```python
+# src/boss_bot/core/env.py
+class BossSettings(BaseSettings):
+    # ... existing settings ...
+
+    # Migration feature flags
+    enable_ai_features: bool = Field(default=False, env="ENABLE_AI_FEATURES")
+    enable_new_cli: bool = Field(default=False, env="ENABLE_NEW_CLI")
+    enable_enhanced_monitoring: bool = Field(default=False, env="ENABLE_ENHANCED_MONITORING")
+
+    # AI feature granular flags
+    enable_content_analysis: bool = Field(default=False, env="ENABLE_CONTENT_ANALYSIS")
+    enable_summarization: bool = Field(default=False, env="ENABLE_SUMMARIZATION")
+    enable_moderation: bool = Field(default=False, env="ENABLE_MODERATION")
+
+    # Rollout percentage (0-100)
+    ai_rollout_percentage: int = Field(default=0, env="AI_ROLLOUT_PERCENTAGE")
+
+# Feature flag usage in cogs:
+class DownloadCog(commands.Cog):
+    @commands.command()
+    async def download(self, ctx, url: str):
+        # ... existing download logic ...
+
+        # AI-powered analysis (behind feature flag)
+        if self.bot.settings.enable_ai_features and self.bot.settings.enable_content_analysis:
+            # Check rollout percentage
+            import random
+            if random.randint(1, 100) <= self.bot.settings.ai_rollout_percentage:
+                try:
+                    from boss_bot.ai.agents.content_analyzer import ContentAnalyzer
+                    analyzer = ContentAnalyzer()
+                    analysis = await analyzer.analyze(url)
+                    await ctx.send(f"Content analysis: {analysis.summary}")
+                except Exception as e:
+                    # Graceful fallback - don't break existing functionality
+                    logger.warning(f"AI analysis failed, continuing with download: {e}")
+```
+
+#### **Environment-Specific Configurations**
+```bash
+# Production environment (.env.production)
+ENABLE_AI_FEATURES=true
+ENABLE_NEW_CLI=true
+ENABLE_ENHANCED_MONITORING=true
+
+# AI feature rollout (start conservative)
+ENABLE_CONTENT_ANALYSIS=true
+ENABLE_SUMMARIZATION=false  # Not ready yet
+ENABLE_MODERATION=true
+AI_ROLLOUT_PERCENTAGE=10  # Start with 10% of users
+
+# VCR for production testing
+VCR_RECORD_MODE=none  # Never record in production
+AI_TESTING_MODE=live  # Use real APIs in production
+
+# Staging environment (.env.staging)
+ENABLE_AI_FEATURES=true
+ENABLE_NEW_CLI=true
+ENABLE_ENHANCED_MONITORING=true
+
+# More aggressive rollout in staging
+AI_ROLLOUT_PERCENTAGE=50
+VCR_RECORD_MODE=none
+AI_TESTING_MODE=live
+
+# Development environment (.env.development)
+ENABLE_AI_FEATURES=true
+ENABLE_NEW_CLI=true
+ENABLE_ENHANCED_MONITORING=true
+
+# Full features in development
+AI_ROLLOUT_PERCENTAGE=100
+VCR_RECORD_MODE=once  # Record new cassettes
+AI_TESTING_MODE=vcr   # Use VCR for development
+```
+
+### Health Checks During Migration
+
+#### **Migration-Aware Health Checks**
+```python
+# src/boss_bot/monitoring/health/migration_health.py
+from typing import Dict, Any
+from boss_bot.core.env import BossSettings
+
+class MigrationHealthChecker:
+    """Health checks specific to migration status."""
+
+    def __init__(self, settings: BossSettings):
+        self.settings = settings
+
+    async def check_migration_status(self) -> Dict[str, Any]:
+        """Check migration-specific health indicators."""
+        checks = {}
+
+        # Check import paths work
+        checks["legacy_imports"] = await self._check_legacy_imports()
+        checks["new_imports"] = await self._check_new_imports()
+
+        # Check feature flags
+        checks["feature_flags"] = self._check_feature_flags()
+
+        # Check AI components (if enabled)
+        if self.settings.enable_ai_features:
+            checks["ai_components"] = await self._check_ai_health()
+
+        # Check CLI availability
+        checks["cli_health"] = await self._check_cli_health()
+
+        return {
+            "migration_status": "healthy" if all(checks.values()) else "degraded",
+            "checks": checks,
+            "migration_phase": self._detect_migration_phase()
+        }
+
+    def _detect_migration_phase(self) -> str:
+        """Detect which migration phase we're in."""
+        try:
+            # Check for new structure
+            import boss_bot.ai.agents
+            if self.settings.enable_ai_features:
+                return "phase_3_ai_integration"
+            return "phase_2_cli_expansion"
+        except ImportError:
+            try:
+                import boss_bot.cli.main
+                return "phase_2_cli_expansion"
+            except ImportError:
+                return "phase_1_foundation"
+
+# Health check endpoint
+@app.get("/health/migration")
+async def migration_health_endpoint():
+    checker = MigrationHealthChecker(settings)
+    return await checker.check_migration_status()
+```
+
+#### **Automated Health Monitoring**
+```bash
+# Production health check script
+#!/bin/bash
+# scripts/production_health_check.sh
+
+set -e
+
+echo "Checking production health during migration..."
+
+# Basic connectivity
+curl -f http://localhost:8080/health || exit 1
+
+# Migration-specific health
+curl -f http://localhost:8080/health/migration || exit 1
+
+# Discord bot responsiveness
+timeout 30s uv run python -c "
+import asyncio
+from boss_bot.bot.client import BossBot
+
+async def test_bot():
+    bot = BossBot()
+    # Test basic bot functionality
+    print('Bot health check passed')
+
+asyncio.run(test_bot())
+" || exit 1
+
+# CLI responsiveness
+timeout 10s goobctl --version || exit 1
+
+echo "✅ Production health check passed"
+```
+
+### Release Management and Rollback
+
+#### **Commitizen-Based Release Workflow**
+
+The project uses Commitizen for automated release management with conventional commits. Migration releases follow the same pattern but with migration-specific documentation.
+
+##### **Step 1: Prepare Release (using existing script)**
+```bash
+# Use the existing cz-prepare-release.sh script
+# This script handles version determination, branch creation, and PR creation
+./scripts/ci/cz-prepare-release.sh
+
+# For migration phases, you can use prerelease versions:
+PRERELEASE_PHASE=beta ./scripts/ci/cz-prepare-release.sh
+```
+
+**What `cz-prepare-release.sh` does for migration:**
+- ✅ Checks for uncommitted changes (stashes them safely)
+- ✅ Determines next version from conventional commits
+- ✅ Creates release branch (`task/prepare-release-{VERSION}`)
+- ✅ Bumps version in all configured files
+- ✅ Runs pre-commit hooks to ensure quality
+- ✅ Creates pull request with release label
+- ✅ Handles prerelease phases (alpha, beta, rc) for migration testing
+
+##### **Step 2: Create GitHub Release (using existing script)**
+```bash
+# After the release PR is merged, create the GitHub release
+./scripts/ci/cz-release.sh
+```
+
+**What `cz-release.sh` does:**
+- ✅ Verifies GitHub CLI authentication
+- ✅ Determines current version from Commitizen
+- ✅ Pushes tags to remote
+- ✅ Creates GitHub release with auto-generated notes
+- ✅ Uses semantic versioning for proper release management
+
+##### **Migration-Specific Release Process**
+```bash
+# Complete migration release workflow
+#!/bin/bash
+# Enhanced workflow for migration phases
+
+set -e
+
+PHASE=$1  # e.g., "phase-3-ai", "phase-2-cli"
+PRERELEASE_TYPE=${2:-""}  # optional: alpha, beta, rc
+
+echo "===== MIGRATION RELEASE WORKFLOW ====="
+echo "Phase: $PHASE"
+echo "Prerelease type: ${PRERELEASE_TYPE:-"none (stable release)"}"
+
+# Step 1: Prepare release using existing script
+if [ -n "$PRERELEASE_TYPE" ]; then
+    echo "-- Preparing prerelease version --"
+    PRERELEASE_PHASE=$PRERELEASE_TYPE ./scripts/ci/cz-prepare-release.sh
+else
+    echo "-- Preparing stable release --"
+    ./scripts/ci/cz-prepare-release.sh
+fi
+
+echo "\n🎯 Next steps:"
+echo "1. Review and merge the release PR"
+echo "2. Run: ./scripts/ci/cz-release.sh"
+echo "3. Update release notes with migration phase details"
+echo "4. Monitor deployment via GitHub Actions"
+
+# Step 2: After PR merge, create release (manual step)
+echo "\n📋 Post-merge commands:"
+echo "./scripts/ci/cz-release.sh"
+echo "gh release edit v\$(uv run cz version -p) --notes-file migration-release-notes.md"
+```
+
+##### **Migration Release Notes Template**
+```markdown
+# migration-release-notes.md
+# Use this template to enhance auto-generated release notes
+
+## 🚀 Migration Phase: [Phase Name]
+
+### ✨ What's New in This Phase
+- [List migration-specific improvements]
+- [New AI capabilities, CLI enhancements, etc.]
+- [Infrastructure improvements]
+
+### 🎛️ Feature Flags Available
+```bash
+# Control AI features rollout
+ENABLE_AI_FEATURES=true/false
+AI_ROLLOUT_PERCENTAGE=0-100
+
+# Control CLI features
+ENABLE_NEW_CLI=true/false
+
+# Control monitoring enhancements
+ENABLE_ENHANCED_MONITORING=true/false
+```
+
+### 🧪 Testing
+- All existing functionality preserved
+- VCR cassettes updated for AI testing
+- Migration validation scripts included
+
+### 📦 Deployment
+- Automatic deployment via GitHub Actions
+- Feature flags allow gradual rollout
+- Health checks monitor migration status
+
+### 🔄 Rollback
+If issues occur:
+```bash
+# Quick rollback via environment variables
+echo "ENABLE_AI_FEATURES=false" >> .env.production
+echo "AI_ROLLOUT_PERCENTAGE=0" >> .env.production
+
+# Full rollback to previous release
+./scripts/rollback-release.sh v[current] v[previous]
+```
+
+### 📞 Support
+- Issues: GitHub Issues
+- Discussions: GitHub Discussions
+- Migration Guide: MIGRATION.md
+```
+
+#### **Rollback via Commitizen Workflow**
+
+##### **Quick Feature Flag Rollback**
+```bash
+#!/bin/bash
+# scripts/quick-rollback.sh - Immediate feature disable
+
+set -e
+
+echo "🚨 QUICK ROLLBACK - DISABLING FEATURES"
+echo "Timestamp: $(date)"
+
+# 1. Disable problematic features immediately
+echo "Disabling AI features..."
+echo "ENABLE_AI_FEATURES=false" >> .env.production
+echo "AI_ROLLOUT_PERCENTAGE=0" >> .env.production
+echo "ENABLE_NEW_CLI=false" >> .env.production
+
+# 2. Restart application to pick up new environment
+echo "Restarting application..."
+# This depends on your deployment method
+# systemctl restart boss-bot
+# kubectl rollout restart deployment/boss-bot
+# docker-compose restart
+
+# 3. Verify features are disabled
+sleep 10
+curl -f http://localhost:8080/health/migration || {
+    echo "CRITICAL: Health check failed after rollback!"
+    exit 1
+}
+
+echo "✅ Quick rollback completed - AI features disabled"
+echo "Application should be running with previous functionality only"
+```
+
+##### **Full Version Rollback with Commitizen**
+```bash
+#!/bin/bash
+# scripts/rollback-release.sh - Full version rollback
+
+set -e
+
+CURRENT_VERSION=$1
+ROLLBACK_VERSION=$2
+
+if [ -z "$CURRENT_VERSION" ] || [ -z "$ROLLBACK_VERSION" ]; then
+    echo "Usage: $0 <current-version> <rollback-version>"
+    echo "Example: $0 v1.5.0 v1.4.2"
+    exit 1
+fi
+
+echo "🚨 FULL ROLLBACK INITIATED"
+echo "Rolling back from $CURRENT_VERSION to $ROLLBACK_VERSION"
+echo "Timestamp: $(date)"
+
+# 1. Quick feature disable first
+echo "Step 1: Disabling features immediately..."
+./scripts/quick-rollback.sh
+
+# 2. Create rollback branch and prepare emergency release
+echo "Step 2: Creating rollback branch..."
+ROLLBACK_BRANCH="emergency/rollback-to-$ROLLBACK_VERSION"
+git checkout -b "$ROLLBACK_BRANCH"
+
+# 3. Reset to rollback version
+echo "Step 3: Resetting to $ROLLBACK_VERSION..."
+git reset --hard "$ROLLBACK_VERSION"
+
+# 4. Create emergency release using existing scripts
+echo "Step 4: Creating emergency release..."
+EMERGENCY_VERSION="$ROLLBACK_VERSION-emergency-$(date +%Y%m%d-%H%M)"
+
+# Manually set version for emergency release
+echo "$EMERGENCY_VERSION" > .emergency-version
+
+# Create emergency release
+gh release create "$EMERGENCY_VERSION" \
+    --target "$ROLLBACK_BRANCH" \
+    --title "🚨 Emergency Rollback to $ROLLBACK_VERSION" \
+    --notes "$(cat <<EOF
+## 🚨 Emergency Rollback
+
+**Rolled back from:** $CURRENT_VERSION
+**Rolled back to:** $ROLLBACK_VERSION
+**Reason:** Production issues detected
+
+### Changes
+- All migration features disabled
+- Reverted to stable functionality
+- Emergency deployment triggered
+
+### Next Steps
+1. Monitor application stability
+2. Investigate root cause
+3. Plan fix and re-deployment
+EOF
+)" \
+    --prerelease
+
+# 5. Verify rollback
+echo "Step 5: Verifying rollback..."
+sleep 30
+curl -f http://localhost:8080/health || {
+    echo "CRITICAL: Rollback verification failed!"
+    exit 1
+}
+
+# 6. Alert team
+echo "Step 6: Alerting team..."
+if [ -n "$SLACK_WEBHOOK_URL" ]; then
+    curl -X POST $SLACK_WEBHOOK_URL -d '{
+        "text": "🚨 Emergency rollback from '$CURRENT_VERSION' to '$ROLLBACK_VERSION' completed. Release: '$EMERGENCY_VERSION'"
+    }'
+fi
+
+echo "✅ Full rollback completed successfully"
+echo "Emergency release: $EMERGENCY_VERSION"
+echo "\nNext steps:"
+echo "1. Monitor logs for stability"
+echo "2. Investigate issue that caused rollback"
+echo "3. Fix issues in development"
+echo "4. Test thoroughly before next migration attempt"
+echo "5. Update migration documentation with lessons learned"
+```
+
+### Integration with Existing Release Process
+
+#### **Commitizen Integration for Migration Releases**
+
+The migration leverages the existing Commitizen-based release process with migration-specific enhancements:
+
+##### **Conventional Commits for Migration**
+```bash
+# Migration commits should follow conventional commit format
+# to ensure proper version bumping
+
+# Examples:
+feat(ai): add content analysis agent for migration phase 3
+feat(cli): implement modular CLI structure for migration phase 2
+fix(migration): resolve import path conflicts in backward compatibility
+chore(migration): update feature flags for gradual AI rollout
+
+# Breaking changes (major version bump)
+feat(core)!: restructure project layout for migration
+
+# The existing cz-prepare-release.sh will automatically:
+# - Determine version bump based on these commits
+# - Generate appropriate changelog
+# - Create proper release branch and PR
+```
+
+##### **Release Labels and Tracking**
+```bash
+# The existing scripts automatically handle:
+
+# 1. Release label creation (via cz-prepare-release.sh)
+gh label create release --description "Label for marking official releases" --color 28a745
+
+# 2. PR creation with proper labels
+gh pr create --label "release" --label "migration" \
+    --title "Prepare for release of v1.4.0 to v1.5.0" \
+    --body "Migration phase 3: AI integration release"
+
+# 3. Automatic release creation (via cz-release.sh)
+gh release create "v1.5.0" --generate-notes
+```
+
+##### **Migration Release Communication**
+```bash
+# Enhanced release notes for migration phases
+#!/bin/bash
+# scripts/enhance-migration-release.sh
+
+VERSION=$(uv run cz version -p)
+PHASE=$1  # e.g., "phase-3-ai"
+
+if [ -z "$PHASE" ]; then
+    echo "Usage: $0 <migration-phase>"
+    echo "Example: $0 phase-3-ai"
+    exit 1
+fi
+
+# After release creation, enhance with migration details
+gh release edit "v$VERSION" --notes-file <(cat <<EOF
+$(gh release view "v$VERSION" --json body -q .body)
+
+---
+
+## 🔄 Migration Information
+
+**Migration Phase:** $PHASE
+**Previous Version:** $(git describe --tags --abbrev=0 HEAD^)
+**Migration Guide:** [MIGRATION.md](MIGRATION.md)
+
+### 🎛️ Feature Flags
+\`\`\`bash
+# Gradual rollout controls
+ENABLE_AI_FEATURES=true
+AI_ROLLOUT_PERCENTAGE=10  # Start with 10%
+ENABLE_ENHANCED_MONITORING=true
+\`\`\`
+
+### 🚨 Rollback Commands
+\`\`\`bash
+# Quick feature disable
+./scripts/quick-rollback.sh
+
+# Full version rollback
+./scripts/rollback-release.sh v$VERSION v$(git describe --tags --abbrev=0 HEAD^)
+\`\`\`
+
+### 📋 Post-Release Checklist
+- [ ] Monitor health checks for 24 hours
+- [ ] Gradually increase AI_ROLLOUT_PERCENTAGE
+- [ ] Update documentation
+- [ ] Plan next migration phase
+EOF
+)
+
+echo "✅ Enhanced release v$VERSION with migration details"
+```
+
+##### **Complete Migration Release Workflow**
+```bash
+# Complete workflow combining existing scripts with migration enhancements
+#!/bin/bash
+# scripts/migration-release-workflow.sh
+
+set -e
+
+PHASE=$1
+PRERELEASE_TYPE=${2:-""}
+
+if [ -z "$PHASE" ]; then
+    echo "Usage: $0 <phase> [prerelease-type]"
+    echo "Example: $0 phase-3-ai beta"
+    exit 1
+fi
+
+echo "===== MIGRATION RELEASE WORKFLOW ====="
+echo "Phase: $PHASE"
+echo "Prerelease: ${PRERELEASE_TYPE:-"none"}"
+
+# Step 1: Prepare release using existing Commitizen workflow
+echo "\n🔄 Step 1: Preparing release..."
+if [ -n "$PRERELEASE_TYPE" ]; then
+    PRERELEASE_PHASE=$PRERELEASE_TYPE ./scripts/ci/cz-prepare-release.sh
+else
+    ./scripts/ci/cz-prepare-release.sh
+fi
+
+echo "\n✅ Release preparation complete!"
+echo "\n📋 Next steps:"
+echo "1. Review the release PR created by cz-prepare-release.sh"
+echo "2. Merge the PR when ready"
+echo "3. Run: ./scripts/ci/cz-release.sh"
+echo "4. Run: ./scripts/enhance-migration-release.sh $PHASE"
+echo "5. Monitor deployment and health checks"
+
+echo "\n🔗 PR URL: Check GitHub for the release PR"
+echo "🔗 Release process: Uses existing Commitizen workflow"
+echo "🔗 Migration guide: MIGRATION.md"
+```
+
+This approach maintains consistency with the existing release process while adding migration-specific enhancements.
 
 ## Success Metrics
 

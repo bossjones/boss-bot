@@ -58,19 +58,51 @@ Boss-Bot is a Discord bot that enables downloading and managing media files. The
      - Direct method calls to cog commands won't work (e.g., `cog.download(ctx, url)`) because they're decorated with `@commands.command`
      - Instead, call the command's callback directly: `await cog.download.callback(cog, ctx, url)`
      - Always include `ctx.send = mocker.AsyncMock()` when mocking a Context
+     - When working with context objects, ensure they're fully mocked:
+     ```python
+     # Create context
+     ctx = mocker.Mock(spec=commands.Context)
+     ctx.send = mocker.AsyncMock()
+     ctx.author = mocker.Mock()
+     ctx.author.id = 12345
+     ctx.channel = mocker.Mock()
+     ctx.channel.id = 67890
+     ```
 
   2. **Integration Testing (dpytest)**:
-     - When using dpytest for integration testing, create members using discord.User objects:
+     - When using dpytest for integration testing, avoid using custom-created user objects
+     - Instead, use the built-in configuration helpers:
      ```python
-     # Wrong: member = dpytest.backend.make_member("TestUser", guild)
-     # Correct:
-     user = discord.Object(id=12345)
-     user.name = "TestUser"
-     member = dpytest.backend.make_member(user, guild)
+     # Configure dpytest with the bot
+     dpytest.configure(bot)
+
+     # Access pre-configured objects
+     config = dpytest.get_config()
+     guild = config.guilds[0]
+     channel = config.channels[0]
+     member = config.members[0]
+
+     # Send message with existing member
+     message = await dpytest.message("$command", channel=channel, member=member)
      ```
      - Ensure the bot has commands registered with `await bot._async_setup_hook()` before testing
      - Call `await dpytest.empty_queue()` after tests to prevent message leakage
-     - Configure dpytest only once per test: `dpytest.configure(bot)`
+
+  3. **Error Handling in Commands**:
+     - Discord commands should handle exceptions gracefully and send user-friendly error messages
+     - When testing exception scenarios, use `side_effect` to simulate failures:
+     ```python
+     # Test queue full scenario
+     fixture_mock_bot_test.queue_manager.add_to_queue.side_effect = Exception("Queue is currently full")
+     await cog.download.callback(cog, ctx, url)
+     # Verify error message is sent to user
+     assert "Queue is currently full" in ctx.send.call_args[0][0]
+     ```
+     - Commands should wrap risky operations in try/except blocks
+     - Always use `await ctx.send(str(e))` to send exception messages to users
+
+### Known Test Failures and Fixes
+- `test_download_command_queue_full`: Fixed by adding exception handling in download command (src/boss_bot/bot/cogs/downloads.py:22-26)
 
 ## Code Style Guidelines
 - Python 3.12+ with type hints throughout

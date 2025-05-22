@@ -744,6 +744,7 @@ dependencies = [
     { name = "llm-python" },
     { name = "llm-sentence-transformers" },
     { name = "llms-txt" },
+    { name = "llmstxt-architect" },
     { name = "logging-tree" },
     { name = "loguru" },
     { name = "lxml" },
@@ -966,6 +967,7 @@ requires-dist = [
     { name = "llm-python", specifier = ">=0.1" },
     { name = "llm-sentence-transformers", specifier = ">=0.2" },
     { name = "llms-txt", specifier = ">=0.0.4" },
+    { name = "llmstxt-architect", specifier = ">=0.6.1" },
     { name = "logging-tree", specifier = ">=1.10" },
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "lxml", specifier = ">=5.3.2" },
@@ -3546,6 +3548,19 @@ wheels = [
 ]
 
 [[package]]
+name = "langchain-ollama"
+version = "0.3.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "langchain-core" },
+    { name = "ollama" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/54/39/32f61a775a85a4162fa1661894ab56f722cf69484bb0bd4cd3812c3bd762/langchain_ollama-0.3.1.tar.gz", hash = "sha256:d847d1bd6da280f7b2f667c98dc240d23f19c72315e0f01d7d05e78a60b42276", size = 20813 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f1/e9/63fe4aaf5e648d3a152638aba28e9ee1c91e3eebfc216f8f8539a0f0b7f7/langchain_ollama-0.3.1-py3-none-any.whl", hash = "sha256:5b3e01b73014bf52d1b26d5bf920914583954ab12166b18b456da9906216904c", size = 20477 },
+]
+
+[[package]]
 name = "langchain-openai"
 version = "0.3.12"
 source = { registry = "https://pypi.org/simple" }
@@ -3920,6 +3935,25 @@ wheels = [
 ]
 
 [[package]]
+name = "llmstxt-architect"
+version = "0.6.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "beautifulsoup4" },
+    { name = "httpx" },
+    { name = "langchain" },
+    { name = "langchain-anthropic" },
+    { name = "langchain-community" },
+    { name = "langchain-ollama" },
+    { name = "lxml" },
+    { name = "markdownify" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/2c/48/d6fa038fa7454c216c2ee3d31f9ad6eb9d24999d556792bd78b8f267b96e/llmstxt_architect-0.6.1.tar.gz", hash = "sha256:c23596094993deff3038d2b5d23f9eea8fc2f0d708a56f7a416bc84104c9abdf", size = 246812 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b2/f4/1630aa2c7f8c0441fac69b72c3232941482ed5e71c6530c0a4145e62bc4c/llmstxt_architect-0.6.1-py3-none-any.whl", hash = "sha256:e17a12d6d565bbbddbf81158fa150dd17a89bdeadc43298b070cb909087676a3", size = 21619 },
+]
+
+[[package]]
 name = "locket"
 version = "1.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -4083,6 +4117,19 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/44/52/d7dcc6284d59edb8301b8400435fbb4926a9b0f13a12b5cbaf3a4a54bb7b/markdown2-2.5.3.tar.gz", hash = "sha256:4d502953a4633408b0ab3ec503c5d6984d1b14307e32b325ec7d16ea57524895", size = 141676 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/84/37/0a13c83ccf5365b8e08ea572dfbc04b8cb87cadd359b2451a567f5248878/markdown2-2.5.3-py3-none-any.whl", hash = "sha256:a8ebb7e84b8519c37bf7382b3db600f1798a22c245bfd754a1f87ca8d7ea63b3", size = 48550 },
+]
+
+[[package]]
+name = "markdownify"
+version = "1.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "beautifulsoup4" },
+    { name = "six" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/2f/78/c48fed23c7aebc2c16049062e72de1da3220c274de59d28c942acdc9ffb2/markdownify-1.1.0.tar.gz", hash = "sha256:449c0bbbf1401c5112379619524f33b63490a8fa479456d41de9dc9e37560ebd", size = 17127 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/64/11/b751af7ad41b254a802cf52f7bc1fca7cabe2388132f2ce60a1a6b9b9622/markdownify-1.1.0-py3-none-any.whl", hash = "sha256:32a5a08e9af02c8a6528942224c91b933b4bd2c7d078f9012943776fc313eeef", size = 13901 },
 ]
 
 [[package]]
@@ -5118,6 +5165,19 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/69/1b/077b508e3e500e1629d366249c3ccb32f95e50258b231705c09e3c7a4366/olefile-0.47.zip", hash = "sha256:599383381a0bf3dfbd932ca0ca6515acd174ed48870cbf7fee123d698c192c1c", size = 112240 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/17/d3/b64c356a907242d719fc668b71befd73324e47ab46c8ebbbede252c154b2/olefile-0.47-py2.py3-none-any.whl", hash = "sha256:543c7da2a7adadf21214938bb79c83ea12b473a4b6ee4ad4bf854e7715e13d1f", size = 114565 },
+]
+
+[[package]]
+name = "ollama"
+version = "0.4.7"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "httpx" },
+    { name = "pydantic" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b0/6d/dc77539c735bbed5d0c873fb029fb86aa9f0163df169b34152914331c369/ollama-0.4.7.tar.gz", hash = "sha256:891dcbe54f55397d82d289c459de0ea897e103b86a3f1fad0fdb1895922a75ff", size = 12843 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/31/83/c3ffac86906c10184c88c2e916460806b072a2cfe34cdcaf3a0c0e836d39/ollama-0.4.7-py3-none-any.whl", hash = "sha256:85505663cca67a83707be5fb3aeff0ea72e67846cea5985529d8eca4366564a1", size = 13210 },
 ]
 
 [[package]]

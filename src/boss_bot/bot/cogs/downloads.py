@@ -19,8 +19,11 @@ class DownloadCog(commands.Cog):
             await ctx.send("Invalid URL provided.")
             return
 
-        await self.bot.queue_manager.add_to_queue(url, ctx.author.id, ctx.channel.id)
-        await ctx.send(f"Added {url} to download queue.")
+        try:
+            await self.bot.queue_manager.add_to_queue(url, ctx.author.id, ctx.channel.id)
+            await ctx.send(f"Added {url} to download queue.")
+        except Exception as e:
+            await ctx.send(str(e))
 
     @commands.command(name="status")
     async def status(self, ctx: commands.Context):

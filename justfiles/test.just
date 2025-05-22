@@ -11,3 +11,8 @@ test-ci:
 [group('test')]
 test-fix:
 	uv run pre-commit run -a --show-diff-on-failure
+
+
+# lint via pre-commit
+[group('test')]
+lint: test-fix

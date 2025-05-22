@@ -26,6 +26,18 @@ from pathlib import Path
 from re import Pattern
 from typing import Annotated, Any, Dict, List, Optional, Set, Tuple, Type, Union
 
+import rich
+import typer
+from rich.console import Console
+
+import boss_bot
+from boss_bot.bot.client import BossBot
+from boss_bot.core.env import BossSettings
+from boss_bot.utils.asynctyper import AsyncTyper
+
+# Set up logging
+LOGGER = logging.getLogger(__name__)
+
 APP = AsyncTyper()
 console = Console()
 cprint = console.print
@@ -95,6 +107,13 @@ def main():
 def entry():
     """Required entry point to enable hydra to work as a console_script."""
     main()  # pylint: disable=no-value-for-parameter
+
+
+async def run_bot():
+    """Run the Discord bot."""
+    settings = BossSettings()
+    bot = BossBot(settings)
+    await bot.start(settings.discord_token)
 
 
 @APP.command()

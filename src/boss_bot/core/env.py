@@ -31,9 +31,9 @@ class BossSettings(BaseSettings):
 
     Attributes:
         discord_token: Discord bot token
-        discord_client_id: Discord client ID
-        discord_server_id: Discord server ID
-        discord_admin_user_id: Discord admin user ID
+        discord_client_id: Discord client ID (optional)
+        discord_server_id: Discord server ID (optional)
+        discord_admin_user_id: Discord admin user ID (optional)
         discord_admin_user_invited: Whether the admin user has been invited
         enable_ai: Whether AI features are enabled
         enable_redis: Whether Redis is enabled
@@ -54,9 +54,9 @@ class BossSettings(BaseSettings):
         enable_file_validation: Enable file validation and security checks
         debug: Enable debug mode
         environment: Environment (development, staging, production)
-        cohere_api_key: Cohere API key
+        cohere_api_key: Cohere API key (optional)
         debug_aider: Enable debug aider
-        firecrawl_api_key: Firecrawl API key
+        firecrawl_api_key: Firecrawl API key (optional)
         langchain_api_key: LangChain API key
         langchain_debug_logs: Enable LangChain debug logs
         langchain_endpoint: LangChain endpoint
@@ -64,11 +64,11 @@ class BossSettings(BaseSettings):
         langchain_hub_api_url: LangChain Hub API URL
         langchain_project: LangChain project name
         langchain_tracing_v2: Enable LangChain tracing v2
-        pinecone_api_key: Pinecone API key
+        pinecone_api_key: Pinecone API key (optional)
         pinecone_env: Pinecone environment
         pinecone_index: Pinecone index name
-        tavily_api_key: Tavily API key
-        unstructured_api_key: Unstructured API key
+        tavily_api_key: Tavily API key (optional)
+        unstructured_api_key: Unstructured API key (optional)
         unstructured_api_url: Unstructured API URL
     """
 
@@ -84,10 +84,10 @@ class BossSettings(BaseSettings):
 
     # Discord settings
     discord_token: SecretStr = Field(..., description="Discord bot token", validation_alias="DISCORD_TOKEN")
-    discord_client_id: int = Field(..., description="Discord client ID", validation_alias="DISCORD_CLIENT_ID")
-    discord_server_id: int = Field(..., description="Discord server ID", validation_alias="DISCORD_SERVER_ID")
-    discord_admin_user_id: int = Field(
-        ..., description="Discord admin user ID", validation_alias="DISCORD_ADMIN_USER_ID"
+    discord_client_id: int | None = Field(None, description="Discord client ID", validation_alias="DISCORD_CLIENT_ID")
+    discord_server_id: int | None = Field(None, description="Discord server ID", validation_alias="DISCORD_SERVER_ID")
+    discord_admin_user_id: int | None = Field(
+        None, description="Discord admin user ID", validation_alias="DISCORD_ADMIN_USER_ID"
     )
     discord_admin_user_invited: bool = Field(
         False, description="Whether the admin user has been invited", validation_alias="DISCORD_ADMIN_USER_INVITED"
@@ -143,9 +143,11 @@ class BossSettings(BaseSettings):
     )
 
     # Additional API Keys and Settings
-    cohere_api_key: SecretStr = Field(..., description="Cohere API key", validation_alias="COHERE_API_KEY")
+    cohere_api_key: SecretStr | None = Field(None, description="Cohere API key", validation_alias="COHERE_API_KEY")
     debug_aider: bool = Field(False, description="Enable debug aider", validation_alias="DEBUG_AIDER")
-    firecrawl_api_key: SecretStr = Field(..., description="Firecrawl API key", validation_alias="FIRECRAWL_API_KEY")
+    firecrawl_api_key: SecretStr | None = Field(
+        None, description="Firecrawl API key", validation_alias="FIRECRAWL_API_KEY"
+    )
     langchain_api_key: SecretStr = Field(..., description="LangChain API key", validation_alias="LANGCHAIN_API_KEY")
     langchain_debug_logs: bool = Field(
         False, description="Enable LangChain debug logs", validation_alias="LANGCHAIN_DEBUG_LOGS"
@@ -167,12 +169,14 @@ class BossSettings(BaseSettings):
     langchain_tracing_v2: bool = Field(
         False, description="Enable LangChain tracing v2", validation_alias="LANGCHAIN_TRACING_V2"
     )
-    pinecone_api_key: SecretStr = Field(..., description="Pinecone API key", validation_alias="PINECONE_API_KEY")
+    pinecone_api_key: SecretStr | None = Field(
+        None, description="Pinecone API key", validation_alias="PINECONE_API_KEY"
+    )
     pinecone_env: str = Field("test-env", description="Pinecone environment", validation_alias="PINECONE_ENV")
     pinecone_index: str = Field("test-index", description="Pinecone index name", validation_alias="PINECONE_INDEX")
-    tavily_api_key: SecretStr = Field(..., description="Tavily API key", validation_alias="TAVILY_API_KEY")
-    unstructured_api_key: SecretStr = Field(
-        ..., description="Unstructured API key", validation_alias="UNSTRUCTURED_API_KEY"
+    tavily_api_key: SecretStr | None = Field(None, description="Tavily API key", validation_alias="TAVILY_API_KEY")
+    unstructured_api_key: SecretStr | None = Field(
+        None, description="Unstructured API key", validation_alias="UNSTRUCTURED_API_KEY"
     )
     unstructured_api_url: AnyHttpUrl = Field(
         AnyHttpUrl("http://localhost:8002"), description="Unstructured API URL", validation_alias="UNSTRUCTURED_API_URL"

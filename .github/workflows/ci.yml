@@ -137,6 +137,7 @@ jobs:
 
       - name: Run tests and collect coverage
         run: |
+          pipx install rust-just
           ./scripts/retry -t 2 -- uv run goobctl version
           uv run pre-commit run -a --show-diff-on-failure
           uv run python -c 'import boss_bot'

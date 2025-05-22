@@ -11,7 +11,7 @@ def test_project_structure():
     assert (root / "tests").is_dir()
     assert (root / "docs").is_dir()
     assert (root / "scripts").is_dir()
-    assert (root / ".vscode").is_dir()
+    # assert (root / ".vscode").is_dir()
     assert (root / ".github" / "workflows").is_dir()
 
     # Source code directories

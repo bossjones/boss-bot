@@ -31,6 +31,7 @@ import typer
 from rich.console import Console
 
 import boss_bot
+from boss_bot.__version__ import __version__
 from boss_bot.bot.client import BossBot
 from boss_bot.core.env import BossSettings
 from boss_bot.utils.asynctyper import AsyncTyper
@@ -61,20 +62,20 @@ def load_commands(directory: str = "subcommands"):
 def version_callback(version: bool) -> None:
     """Print the version of boss_bot."""
     if version:
-        rich.print(f"boss_bot version: {boss_bot.__version__}")
+        rich.print(f"boss_bot version: {__version__}")
         raise typer.Exit()
 
 
 @APP.command()
 def version() -> None:
     """Version command"""
-    rich.print(f"boss_bot version: {boss_bot.__version__}")
+    rich.print(f"boss_bot version: {__version__}")
 
 
 @APP.command()
 def deps() -> None:
     """Deps command"""
-    rich.print(f"boss_bot version: {boss_bot.__version__}")
+    rich.print(f"boss_bot version: {__version__}")
     rich.print(f"langchain_version: {importlib_metadata_version('langchain')}")
     rich.print(f"langchain_community_version: {importlib_metadata_version('langchain_community')}")
     rich.print(f"langchain_core_version: {importlib_metadata_version('langchain_core')}")

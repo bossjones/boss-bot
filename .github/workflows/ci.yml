@@ -158,7 +158,7 @@ jobs:
         with:
           flags: "${{ runner.os }},${{ runner.arch }},${{ matrix.python-version }}"
           verbose: true
-          fail_ci_if_error: true
+          fail_ci_if_error: false
           files: ./cov.xml
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

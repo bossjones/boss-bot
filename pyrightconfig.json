@@ -41,6 +41,7 @@
   "reportExplicitAny": "warning",
   "strictGenericNarrowing": true,
   "failOnWarnings": true,
+  "reportPrivateUsage": "none",
 
   "reportCallIssue": "none",
   "reportOptionalMemberAccess": "none",
@@ -67,7 +68,7 @@
       "reportPrivateUsage": false
     },
     {
-      "root": "src/codegen_lab",
+      "root": "src/boss_bot",
       "pythonVersion": "3.12",
       "extraPaths": [
         "src"

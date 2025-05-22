@@ -51,4 +51,4 @@ Patch versions are reserved for bug fixes.
 
 ## Changelog
 
-See [here](changelog.md).
+See [here](../CHANGELOG.md).

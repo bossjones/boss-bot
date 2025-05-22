@@ -1,19 +1,19 @@
 # Basic site information
 # Sets the name of your documentation site that appears in the header
-site_name: Codegen Lab
+site_name: Boss Bot
 # Provides a meta description for SEO purposes
 site_description: AI-powered code generation tooling for efficient software development
 # Specifies the author of the site for metadata
 site_author: Malcolm Jones
 # For GitHub Pages deployment
 # Defines the canonical URL of your documentation site
-site_url: https://bossjones.github.io/codegen-lab/docs
+site_url: https://bossjones.github.io/boss-bot/docs
 
 # Repository information
 # Sets the display name for the repository link in the theme
-repo_name: bossjones/codegen-lab
+repo_name: bossjones/boss-bot
 # URL to your GitHub repository, enabling the "Edit this page" feature
-repo_url: https://github.com/bossjones/codegen-lab
+repo_url: https://github.com/bossjones/boss-bot
 # Path to edit pages on GitHub, appended to repo_url
 edit_uri: edit/main/docs/
 
@@ -25,7 +25,7 @@ use_directory_urls: true
 watch:
   - mkdocs_macro_plugin.py # Watches the macros plugin file
   - docs_templates # Watches template files for documentation
-  - src/codegen_lab # Watches source code for API documentation changes
+  - src/boss_bot # Watches source code for API documentation changes
   - README.md # Watches readme file
   - CHANGELOG.md # Watches changelog file
   - changes/ # Watches changes directory
@@ -38,8 +38,8 @@ theme:
     code: JetBrains Mono # Sets JetBrains Mono as the monospace font for code blocks
 
   # Theme assets
-  logo: images/logo2.png # Sets the logo image for the site header
-  favicon: images/logo2.png # Sets the browser favicon
+  logo: images/logo3.png # Sets the logo image for the site header
+  favicon: images/logo3.png # Sets the browser favicon
 
   # Icon configurations for various UI elements
   icon:
@@ -211,7 +211,7 @@ markdown_extensions:
 extra: # Extra customization
   social: # Social media links
     - icon: fontawesome/brands/github # GitHub icon
-      link: https://github.com/bossjones/codegen-lab # Link to GitHub profile/repo
+      link: https://github.com/bossjones/boss-bot # Link to GitHub profile/repo
 
 # Footer configuration
 copyright: Copyright &copy; 2023 - 2025 Malcolm Jones # Copyright notice in footer
@@ -219,3 +219,11 @@ copyright: Copyright &copy; 2023 - 2025 Malcolm Jones # Copyright notice in foot
 # Additional CSS files to include
 extra_css:
   - css/neoteroi.cards.css
+
+# # Navigation structure
+# nav:
+#   - Home: index.md
+#   - AI Documentation:
+#       - .ai:
+#           - ... | *.md
+#   - ...

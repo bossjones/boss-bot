@@ -26,6 +26,19 @@ from pathlib import Path
 from re import Pattern
 from typing import Annotated, Any, Dict, List, Optional, Set, Tuple, Type, Union
 
+import rich
+import typer
+from rich.console import Console
+
+import boss_bot
+from boss_bot.__version__ import __version__
+from boss_bot.bot.client import BossBot
+from boss_bot.core.env import BossSettings
+from boss_bot.utils.asynctyper import AsyncTyper
+
+# Set up logging
+LOGGER = logging.getLogger(__name__)
+
 APP = AsyncTyper()
 console = Console()
 cprint = console.print
@@ -49,20 +62,20 @@ def load_commands(directory: str = "subcommands"):
 def version_callback(version: bool) -> None:
     """Print the version of boss_bot."""
     if version:
-        rich.print(f"boss_bot version: {boss_bot.__version__}")
+        rich.print(f"boss_bot version: {__version__}")
         raise typer.Exit()
 
 
 @APP.command()
 def version() -> None:
     """Version command"""
-    rich.print(f"boss_bot version: {boss_bot.__version__}")
+    rich.print(f"boss_bot version: {__version__}")
 
 
 @APP.command()
 def deps() -> None:
     """Deps command"""
-    rich.print(f"boss_bot version: {boss_bot.__version__}")
+    rich.print(f"boss_bot version: {__version__}")
     rich.print(f"langchain_version: {importlib_metadata_version('langchain')}")
     rich.print(f"langchain_community_version: {importlib_metadata_version('langchain_community')}")
     rich.print(f"langchain_core_version: {importlib_metadata_version('langchain_core')}")
@@ -95,6 +108,13 @@ def main():
 def entry():
     """Required entry point to enable hydra to work as a console_script."""
     main()  # pylint: disable=no-value-for-parameter
+
+
+async def run_bot():
+    """Run the Discord bot."""
+    settings = BossSettings()
+    bot = BossBot(settings)
+    await bot.start(settings.discord_token)
 
 
 @APP.command()

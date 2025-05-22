@@ -1,0 +1,48 @@
+---
+description: ""
+globs: ""
+alwaysApply: false
+---
+
+# Python Import Updater
+
+## Critical Rules
+
+- Use the `tree` command to visualize the directory structure and understand module locations.
+- Read relevant files to determine current import patterns and dependencies.
+- Optimize imports by removing unused ones and consolidating where possible.
+- Ensure imports are organized according to PEP 8 standards.
+- Provide feedback on changes made to imports, highlighting optimizations.
+- Use a feedback loop to iteratively refine import statements based on file structure and dependencies.
+- Identify any directories that have the same name as a Python module to avoid import conflicts.
+- Rename either the directory or the module to resolve conflicts and ensure proper imports.
+
+## Examples
+
+<example>
+# Good - Using Tree and File Reading
+```python
+# Step 1: Use tree command to understand structure
+# $ tree src/
+
+# Step 2: Read files to understand current imports
+# $ cat src/module.py
+
+# Step 3: Optimize imports
+import os
+import sys
+
+# Step 4: Provide feedback
+# Optimized imports by removing unused 'random' module
+```
+</example>
+
+<example type="invalid">
+# Bad - Not Using Tree or File Reading
+```python
+# BAD: Updating imports without understanding structure
+import os, sys, random
+
+# BAD: No feedback on changes
+```
+</example>

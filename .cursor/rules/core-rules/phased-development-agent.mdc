@@ -1,0 +1,96 @@
+---
+description: "This rule governs the phased development approach. It should be applied whenever: (1) Creating new features or modules, (2) Modifying existing code, (3) Reviewing implementation details, or (4) Planning development tasks. This ensures we stick to the planned development phases and don't implement features prematurely."
+globs: src/**/*.py, tests/**/*.py
+alwaysApply: false
+---
+
+# Phased Development Standards
+
+## Critical Rules
+
+- ALWAYS check the current story file FIRST before implementing any feature
+  * Story files contain the authoritative task list for the current phase
+  * Only implement tasks explicitly listed in the story
+  * Check task status (completed, in progress, deferred)
+  * Verify task belongs to current phase
+  * If a task is marked as deferred, DO NOT implement it
+
+- ALWAYS check the architecture document's phase plan before implementing any feature
+  * Use this as secondary validation after checking story file
+  * Ensure feature aligns with both story and phase plan
+  * If conflict exists between story and phase plan, ask user for clarification
+
+- During MVP/Phase 1:
+  * ONLY implement tasks explicitly listed in the current story
+  * DO NOT add "nice to have" features even if they seem useful
+  * DO NOT implement enhanced versions of MVP features
+  * Keep implementations minimal and focused
+  * If unsure if a feature is too complex for MVP, ask the user
+
+- NEVER implement features from a future phase unless explicitly requested
+
+- Phase 1 (MVP) focuses ONLY on:
+  * Basic project structure and environment
+  * Core download functionality
+  * Basic queue management
+  * Essential error handling
+  * Basic metrics/monitoring
+  * Basic storage with quotas
+
+- When in doubt about which phase a feature belongs to, ASK the user
+- Document any deviations from the phased approach in comments
+
+## Examples
+
+<example>
+# Good - Sticking to MVP Phase
+```python
+class QuotaManager:
+    """Storage quota management."""
+
+    def __init__(self, storage_root: Path, config: QuotaConfig | None = None):
+        self.storage_root = storage_root
+        self.config = config or QuotaConfig()
+
+    def check_quota(self, file_size: int) -> bool:
+        """Basic quota check for MVP."""
+        return self.get_total_size() + file_size <= self.config.max_size
+```
+
+# Good - Documenting Phase Deviation
+```python
+# NOTE: Implementing this Phase 2 feature early per user request in PR #123
+def track_download_progress(self, download_id: str, progress: float):
+    """Track download progress - Phase 2 feature."""
+    self.progress_tracker.update(download_id, progress)
+```
+</example>
+
+<example type="invalid">
+# Bad - Implementing Future Phase Features Without Request
+```python
+class QuotaManager:
+    """Storage quota management."""
+
+    def __init__(self, storage_root: Path):
+        self.storage_root = storage_root
+        # BAD: Implementing Phase 2 cleanup without request
+        self.cleanup_scheduler = CleanupScheduler()
+        self.retention_policy = RetentionPolicy()
+
+    def cleanup_old_files(self):
+        # BAD: This is a Phase 2 feature
+        for file in self.storage_root.glob("**/*"):
+            if self.retention_policy.should_delete(file):
+                file.unlink()
+```
+
+# Bad - Mixing Phases Without Documentation
+```python
+class StorageManager:
+    def __init__(self):
+        self.quota = QuotaManager()  # MVP feature
+        self.audit_logger = AuditLogger()  # BAD: Phase 3 feature
+        self.vector_store = VectorStore()  # BAD: Phase 4 feature
+```
+</example>

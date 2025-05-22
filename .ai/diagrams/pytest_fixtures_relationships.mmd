@@ -1,0 +1,83 @@
+---
+title: Pytest Fixtures Relationship Diagram
+description: Shows the relationships, dependencies, and potential conflicts between pytest fixtures in the boss-bot project
+---
+
+erDiagram
+    mock_env_vars_main ||--|| settings : "provides"
+    mock_env_vars_main ||--|| mock_env_vars_core : "duplicates"
+    mock_env_vars_main {
+        string DISCORD_TOKEN
+        string DISCORD_CLIENT_ID
+        string scope "session"
+        string file "conftest.py"
+    }
+
+    mock_env_vars_core {
+        string DISCORD_TOKEN
+        string DISCORD_CLIENT_ID
+        string scope "function"
+        string file "test_core/conftest.py"
+    }
+
+    settings ||--|| bot : "configures"
+    settings ||--|| queue_manager : "configures"
+    settings ||--|| download_manager : "configures"
+    settings {
+        string discord_token
+        string discord_client_id
+        string scope "function"
+        string file "conftest.py"
+    }
+
+    bot ||--|| ctx : "uses"
+    bot {
+        string instance "BossBot"
+        string scope "function"
+        string file "conftest.py"
+        string duplicate_1 "test_download_cog.py"
+        string duplicate_2 "test_queue_cog.py"
+    }
+
+    mock_bot ||--|| cog : "provides"
+    mock_bot {
+        string instance "Mock"
+        string scope "function"
+        string file "test_downloads.py"
+    }
+
+    queue_manager {
+        int max_queue_size
+        string scope "function"
+        string file "conftest.py"
+    }
+
+    download_manager {
+        int max_concurrent
+        string scope "function"
+        string file "conftest.py"
+    }
+
+    ctx {
+        string instance "Mock"
+        string scope "function"
+        string file "conftest.py"
+    }
+
+    cog {
+        string instance "DownloadCog"
+        string scope "function"
+        string file "test_downloads.py"
+    }
+
+    mock_env ||--|| mock_settings : "provides"
+    mock_env {
+        string env_vars "dict"
+        string scope "function"
+        string file "test_env.py"
+    }
+
+%% Notes about the diagram
+%% mock_env_vars_main: Main environment fixture with session scope
+%% mock_env_vars_core: Duplicate fixture with different scope
+%% bot: Multiple implementations across test files

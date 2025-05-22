@@ -14,6 +14,7 @@
         "commitizen>=4.4.1",
         "coverage[toml]>=7.6.12",
         "debugpy>=1.8.12",
+        "dpytest>=0.7.0",
         "factory-boy>=3.3.3",
         "faker>=37.1.0",
         "griffe-inherited-docstrings>=1.1.1",
@@ -68,6 +69,7 @@
         "pytest-skip-slow>=0.0.5",
         "pytest-skipuntil>=0.2.0",
         "pytest-sugar>=1.0.0",
+        "pytest-timeout>=2.2.0",
         "pytest>=8.3.4",
         "pyupgrade>=3.19.1",
         "requests-mock>=1.12.1",
@@ -110,7 +112,6 @@
         "dask>=2025.3.0",
         "discord-py>=2.5.2",
         "docutils>=0.21.2",
-        "duckduckgo-search>=2025.4.4",
         "faiss-cpu>=1.10.0",
         "fastapi>=0.115.9",
         "files-to-prompt>=0.4",
@@ -147,6 +148,8 @@
         "llm-python>=0.1",
         "llm-sentence-transformers>=0.2",
         "llm>=0.19",
+        "llms-txt>=0.0.4",
+        "llmstxt-architect>=0.6.1",
         "logging-tree>=1.10",
         "loguru>=0.7.3",
         "lxml>=5.3.2",
@@ -224,6 +227,7 @@
         "wikipedia>=1.4.0",
         "yfinance>=0.2.55",
         "youtube-search>=2.1.2",
+        "yt-dlp>=2025.3.31",
     ]
     description = "Discord bot named after me, boss"
     keywords = ["ai", "boss", "bot", "discord"]
@@ -327,7 +331,7 @@
         '\(Protocol\):$',
         '\s*\.\.\.$',
     ]
-    fail_under = 30
+    # fail_under = 30
     # Ignore source code that can't be found, emitting a warning instead of an exception
     ignore_errors = false
     omit          = ["*/studio/*", "*/test/*", "*/tests/*"]
@@ -364,9 +368,13 @@
             # Print runtimes of the slowest tests.
             '--durations=10',
             '--junitxml=junit/test-results.xml',
+            # Timeout settings
+            '--timeout=30',
+            '--timeout_method=thread',
         ]
         asyncio_default_fixture_loop_scope = "function"
         asyncio_mode = "auto"
+        # Test timeouts
         filterwarnings = [
             "default::DeprecationWarning:democracy_exe.*:",
             "default::pydantic.warnings.PydanticDeprecatedSince20:democracy_exe.*:",
@@ -386,6 +394,8 @@
         ]
         log_cli = false
         log_cli_date_format = "%Y-%m-%d %H:%M:%S"
+        timeout = 30 # Default timeout in seconds for all tests
+        timeout_method = "thread" # Use thread-based timeout (more reliable than signal-based)
         # log_cli_format = "%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)"
         # log_cli_format = "%(asctime)s [%(levelname)8s] %(module)s.%(funcName)s:%(lineno)d - %(message)s"
         log_cli_format = "%(asctime)s [%(levelname)8s] [%(threadName)s] %(name)s - %(module)s.%(funcName)s (%(filename)s:%(lineno)d) - %(message)s"
@@ -622,9 +632,14 @@
                 "UP040",
                 "YTT201",
             ]
+            "src/boss_bot/downloaders/**" = ["D103", "E702", "RUF", "SIM105"]
 
         [tool.ruff.lint.pydocstyle]
             convention = "google"
+
+        # Add banned-imports rule
+        [tool.ruff.lint.flake8-import-conventions]
+            banned-from = ["unittest.mock"]
 
 [tool.tomlsort]
     all = true

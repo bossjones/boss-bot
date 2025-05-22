@@ -45,6 +45,8 @@ fi
 
 echo "===== CURRENT VERSION CHECK ====="
 CURRENT_VERSION=$(uv run cz version -p)
+echo "[running] uv run cz version -p"
+echo "Current version: ${CURRENT_VERSION}"
 if [ -z "${CURRENT_VERSION}" ]; then
     echo "❌ Failed to determine current version"
     exit 1
@@ -106,6 +108,7 @@ if [ -n "${PRERELEASE_PHASE}" ]; then
     esac
 fi
 
+echo "[running] uv run cz bump ${PRERELEASE_ARG}"
 uv run cz bump ${PRERELEASE_ARG} || {
     echo "❌ Version bump failed"
     echo "Possible reasons:"
@@ -115,6 +118,7 @@ uv run cz bump ${PRERELEASE_ARG} || {
 }
 
 echo "===== RUNNING PRE-COMMIT HOOKS ====="
+echo "[running] uv run pre-commit run -a --show-diff-on-failure"
 uv run pre-commit run -a --show-diff-on-failure || {
     echo "❌ Pre-commit checks failed - resolve formatting issues and retry"
     echo "Some fixes may have been applied automatically - check git diff"
@@ -123,6 +127,7 @@ uv run pre-commit run -a --show-diff-on-failure || {
 
 echo "===== CHANGE VERIFICATION ====="
 # Verify changes after pre-commit fixes
+echo "[running] git diff --name-only"
 if [ -z "$(git diff --name-only)" ]; then
     echo "❌ No files changed after version bump and pre-commit"
     echo "Check Commitizen configuration and commit history"
@@ -130,7 +135,9 @@ if [ -z "$(git diff --name-only)" ]; then
 fi
 
 echo "===== COMMIT SAFEGUARDS ====="
+echo "[running] git add ."
 git add .
+echo "[running] git diff --cached --quiet"
 if ! git diff --cached --quiet; then
     echo "-- Committing version changes --"
     git commit -m "chore: bump version from ${CURRENT_VERSION} to ${VERSION}"
@@ -159,10 +166,16 @@ if command -v gh >/dev/null; then
         exit 1
     fi
 
+    echo "-- Creating label release --"
+    echo "[running] gh label create release --description \"Label for marking official releases\" --color 28a745 || true"
+    gh label create release --description "Label for marking official releases" --color 28a745 || true
+
+
     echo "-- Creating pull request --"
     PR_TITLE="Prepare for release of ${CURRENT_VERSION} to ${VERSION}"
-    PR_BODY="Release preparation triggered by @$(git config user.name).\n\nOnce merged, create a GitHub release for \`${VERSION}\` to publish."
+    PR_BODY="Release preparation triggered by @$(git config user.name). Once merged, create a GitHub release for '${VERSION}' to publish."
 
+    echo "[running] gh pr create --title \"${PR_TITLE}\" --body \"${PR_BODY}\" --assignee \"@me\" --label \"release\" --fill --base main --head \"${RELEASE_BRANCH}\""
     gh pr create \
         --title "${PR_TITLE}" \
         --body "${PR_BODY}" \
@@ -177,7 +190,7 @@ if command -v gh >/dev/null; then
         }
 else
     echo "⚠️  GitHub CLI not found. Create PR manually:"
-    echo "   https://github.com/bossjones/codegen-lab/compare/${RELEASE_BRANCH}?expand=1"
+    echo "   https://github.com/bossjones/boss-bot/compare/${RELEASE_BRANCH}?expand=1"
 fi
 
 echo "🎉 Release preparation complete with enhanced safeguards!"

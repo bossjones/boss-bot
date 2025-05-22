@@ -144,7 +144,7 @@ examples:
           rule_path.write_text(rule_content)
 
           # Patch the CURSOR_RULES_DIR to point to our test directory
-          monkeypatch.setattr("codegen_lab.prompt_library.CURSOR_RULES_DIR", cursor_rules_dir)
+          monkeypatch.setattr("boss_bot.prompt_library.CURSOR_RULES_DIR", cursor_rules_dir)
 
           # Call the function
           result = read_cursor_rule("test-rule")
@@ -221,7 +221,7 @@ examples:
               os.chdir(self.temp_dir)
 
               # Temporarily patch the CURSOR_RULES_DIR to use a relative path
-              with patch("codegen_lab.prompt_library.CURSOR_RULES_DIR", Path("cursor_rules")):
+              with patch("boss_bot.prompt_library.CURSOR_RULES_DIR", Path("cursor_rules")):
                   # Call the function
                   result = read_cursor_rule("test-rule")
 

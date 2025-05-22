@@ -43,7 +43,7 @@ import typing_extensions  # For advanced type hints
 sys.path.append(str(pathlib.Path.cwd()))
 
 # Import the version from our package
-from codegen_lab import __version__
+from boss_bot import __version__
 
 # Define a regex pattern to match version strings like "1.2.3", "1.2.3.dev4", etc.
 # Groups: (major).(minor).(patch)(prerelease type)(prerelease number)

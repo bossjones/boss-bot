@@ -1,0 +1,198 @@
+---
+description: "This rule governs the migration of pytest fixtures to follow our consolidated pattern. It should be applied whenever: (1) Identifying and removing duplicate fixtures, (2) Updating test files to use consolidated fixtures, (3) Validating fixture migrations, or (4) Documenting fixture changes. This ensures consistent fixture management and prevents fixture duplication."
+globs: tests/**/*.py
+alwaysApply: false
+---
+
+# Pytest Fixture Migration Standards
+
+## Critical Rules
+
+- ALWAYS follow this migration process:
+  1. Identify duplicate fixtures
+  2. Consolidate to conftest.py
+  3. Update test references
+  4. Validate changes
+  5. Document updates
+
+- NEVER migrate fixtures without:
+  * Checking for dependencies
+  * Ensuring proper scoping
+  * Validating test behavior
+  * Updating documentation
+
+- For fixture consolidation:
+  * Move ALL fixture definitions to conftest.py
+  * Add reset_state() methods to stateful fixtures
+  * Implement proper cleanup in fixture teardown
+  * Update fixture dependencies
+  * Add comprehensive docstrings
+
+- When updating test files:
+  * Use new fixture names consistently
+  * Update fixture dependencies
+  * Remove duplicate fixtures
+  * Add migration comments
+  * Preserve test behavior
+
+- For documentation:
+  * Add migration comments in updated files
+  * Update fixture docstrings
+  * Document fixture dependencies
+  * Note any behavior changes
+
+## Migration Steps
+
+1. Fixture Detection:
+   ```python
+   # Check for fixture definitions
+   @pytest.fixture  # Look for these decorators
+   def some_fixture():  # Identify fixture functions
+       pass
+   ```
+
+2. Consolidation Pattern:
+   ```python
+   # In conftest.py
+   @pytest.fixture(scope="function")
+   def fixture_name_test(dependencies) -> Type:
+       """Fixture description.
+
+       Scope: function - explanation
+       Args: list dependencies
+       Returns/Yields: describe return value
+       Cleanup: if needed
+       """
+       # Implementation
+       def reset_state():  # For stateful fixtures
+           pass
+
+       instance.reset_state = reset_state
+       yield instance  # or return for non-cleanup fixtures
+   ```
+
+3. Test File Updates:
+   ```python
+   # Before migration
+   @pytest.fixture
+   def duplicate_fixture():
+       return SomeClass()
+
+   def test_feature(duplicate_fixture):
+       assert duplicate_fixture.works()
+
+   # After migration
+   def test_feature(fixture_name_test):  # Using consolidated fixture
+       assert fixture_name_test.works()
+   ```
+
+4. Migration Comments:
+   ```python
+   # Fixture migrated to conftest.py
+   # Original fixture: duplicate_fixture
+   # New fixture: fixture_name_test
+   # Migration date: YYYY-MM-DD
+   ```
+
+## Examples
+
+<example>
+# Good - Proper Migration
+```python
+# Before (in test_feature.py)
+@pytest.fixture
+def bot():
+    return Bot()
+
+def test_bot(bot):
+    assert bot.ready
+
+# After (in test_feature.py)
+# Fixture migrated to conftest.py as fixture_discord_bot
+def test_bot(fixture_discord_bot):
+    assert fixture_discord_bot.ready
+
+# In conftest.py
+@pytest.fixture(scope="function")
+def fixture_discord_bot(fixture_settings_test: BossSettings) -> Bot:
+    """Provide test bot instance.
+
+    Scope: function - ensures clean bot for each test
+    Args:
+        fixture_settings_test: Test settings
+    Returns: Configured Bot instance
+    """
+    bot = Bot(settings=fixture_settings_test)
+    def reset_state():
+        bot.clear_state()
+    bot.reset_state = reset_state
+    return bot
+```
+</example>
+
+<example type="invalid">
+# Bad - Incorrect Migration
+```python
+# Bad: Keeping duplicate fixture
+@pytest.fixture
+def bot():  # Don't keep local fixtures
+    return Bot()
+
+# Bad: No migration comment
+def test_bot(fixture_discord_bot):
+    assert fixture_discord_bot.ready
+
+# Bad: Incomplete fixture in conftest.py
+@pytest.fixture
+def fixture_discord_bot():  # Missing scope, types, docs
+    return Bot()
+```
+</example>
+
+## Implementation Guide
+
+1. Find Duplicate Fixtures:
+   ```bash
+   # Search for fixture definitions
+   grep -r "@pytest.fixture" tests/
+   ```
+
+2. Analyze Dependencies:
+   ```python
+   # Check fixture usage
+   def test_feature(
+       fixture_a,  # Note dependencies
+       fixture_b
+   ):
+       pass
+   ```
+
+3. Consolidate Fixtures:
+   - Move to conftest.py
+   - Add proper typing
+   - Add documentation
+   - Implement reset_state
+   - Add cleanup if needed
+
+4. Update Tests:
+   - Remove duplicate fixtures
+   - Update fixture references
+   - Add migration comments
+   - Verify test behavior
+
+5. Validate Changes:
+   ```bash
+   # Run affected tests
+   pytest path/to/updated/test_file.py -v
+   ```
+
+## Migration Checklist
+
+1. [ ] Identified all duplicate fixtures
+2. [ ] Consolidated fixtures to conftest.py
+3. [ ] Added proper typing and documentation
+4. [ ] Implemented reset_state methods
+5. [ ] Updated test references
+6. [ ] Added migration comments
+7. [ ] Validated test behavior
+8. [ ] Updated documentation

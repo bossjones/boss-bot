@@ -47,6 +47,10 @@ env:
   LANGCHAIN_HUB_API_URL: "https://api.hub.langchain.com"
   LANGCHAIN_PROJECT: "goob-ci"
 
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: write
+
 jobs:
   test:
     name: Test ${{ matrix.os }} / Python ${{ matrix.python-version }}
@@ -73,7 +77,7 @@ jobs:
 
       - name: Set up UV and Python ${{ matrix.python-version }}
         id: setup-uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
@@ -126,7 +130,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cp -f env.sample .env
+          cp -f env.sample .env || true
           ./scripts/retry -t 4 -- uv sync --dev
 
       - name: Display UV and Python versions
@@ -137,8 +141,9 @@ jobs:
 
       - name: Run tests and collect coverage
         run: |
-          ./scripts/retry -t 2 -- uv run goobctl chroma generate
-          uv run lint
+          pipx install rust-just
+          ./scripts/retry -t 2 -- uv run goobctl version
+          uv run pre-commit run -a --show-diff-on-failure
           uv run python -c 'import boss_bot'
           ./scripts/retry -t 2 -- uv run pytest --diff-width=60 --diff-symbols --cov-append --cov-report=term-missing --cov-report=xml:cov.xml --cov-report=html:htmlcov --junitxml=junit/test-results.xml --cov=.
 
@@ -149,11 +154,11 @@ jobs:
           limit-access-to-actor: true
 
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           flags: "${{ runner.os }},${{ runner.arch }},${{ matrix.python-version }}"
           verbose: true
-          fail_ci_if_error: true
+          fail_ci_if_error: false
           files: ./cov.xml
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

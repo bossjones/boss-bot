@@ -1,0 +1,172 @@
+---
+description: "This rule governs how test modifications should be handled. It should be applied whenever: (1) Tests are failing and need fixes, (2) Framework requirements necessitate test changes, (3) Test patterns need to be updated, or (4) Test coverage needs modification. This ensures we maintain test integrity while adapting to framework needs."
+globs:
+alwaysApply: false
+---
+
+# Test Modification Standards
+
+## Critical Rules
+
+- ALWAYS analyze both test and source implementation before making changes
+  * Read and understand the full test file content
+  * Read and understand the corresponding source implementation
+  * Identify dependencies and imports in both files
+  * Map test assertions to source behavior
+  * Create a mental model of how they interact
+  * NEVER modify either file without reviewing both
+
+- NEVER modify test assertions just to make tests pass
+  * Test assertions define expected behavior
+  * If tests fail, fix the implementation
+  * Only modify assertions if requirements change
+
+- NEVER remove test coverage
+  * Keep detailed assertions
+  * Keep edge case tests
+  * Keep error case tests
+  * Document coverage decisions
+
+- When adapting tests for framework requirements:
+  * Add necessary framework handling
+  * Keep all original assertions
+  * Add new assertions specific to framework requirements
+  * Document why framework-specific changes were needed
+
+- When tests fail, follow this sequence:
+  1. Read BOTH test and source files completely
+  2. Understand why the test is failing
+  3. Check if the test correctly represents requirements
+  4. Fix implementation if test is correct
+  5. Only modify test if requirements were wrong
+  6. Verify changes in both files maintain consistency
+
+- For test modifications, always:
+  * Comment the reason for changes
+  * Update related test documentation
+  * Ensure changes are backward compatible
+  * Verify no coverage is lost
+  * Document the relationship between test and source
+
+## Examples
+
+<example>
+# Good - Complete analysis before changes
+```python
+# First, read and understand the test
+# tests/test_queue.py
+@pytest.mark.asyncio
+async def test_show_queue_with_items(bot, ctx, mocker):
+    """Test showing queue with items."""
+    # Understanding: This test verifies queue display formatting
+    cog = QueueCog(bot)
+
+    # Framework requirement: Get command object for Discord.py
+    command = cog.show_queue.command
+
+    # Original test setup preserved
+    items = [
+        QueueItem(
+            download_id=UUID("12345678-1234-5678-1234-567812345678"),
+            url="https://example.com/test1",
+            user_id=12345,
+            channel_id=67890,
+            status=QueueStatus.QUEUED,
+            created_at=datetime.utcnow(),
+            filename="test1.mp4"
+        )
+    ]
+    bot.queue_manager.get_queue_items = mocker.AsyncMock(return_value=items)
+
+    # Mock user lookup (preserved from original)
+    user = mocker.Mock()
+    user.name = "TestUser"
+    bot.get_user = mocker.Mock(return_value=user)
+
+    # Then, read and understand the source
+    # src/boss_bot/cogs/queue.py
+    """
+    @commands.command(name="queue")
+    async def show_queue(self, ctx: commands.Context, page: int = 1):
+        items = await self.bot.queue_manager.get_queue_items()
+        # Format queue items into embed
+        embed = discord.Embed(title="Download Queue")
+        for item in items:
+            user = self.bot.get_user(item.user_id)
+            embed.description += f"{item.filename} (Added by: {user.name})"
+        await ctx.send(embed=embed)
+    """
+
+    # Now we can make informed changes that respect both implementations
+    await command(cog, ctx)
+
+    # Assertions verify the contract between test and source
+    assert ctx.send.call_count == 1
+    embed = ctx.send.call_args[0][0]
+    assert isinstance(embed, discord.Embed)  # Framework check
+    assert "Download Queue" in embed.title
+    assert "test1.mp4" in embed.description
+    assert "TestUser" in embed.description
+    assert "Page 1/1" in embed.footer.text
+```
+
+# Good - Fixing implementation with full context
+```python
+# First, understand the test requirements
+def test_quota_check():
+    """Test that quota check works correctly."""
+    quota = QuotaManager(max_size=100)
+    assert quota.check_quota(50) is True
+    assert quota.check_quota(150) is False
+
+# Then, understand the current implementation
+"""
+class QuotaManager:
+    def __init__(self, max_size: int):
+        self.max_size = max_size
+
+    def check_quota(self, size: int) -> bool:
+        return size <= self.max_size  # Bug: Doesn't track used space
+"""
+
+# Finally, fix implementation to match test requirements
+class QuotaManager:
+    def __init__(self, max_size: int):
+        self.max_size = max_size
+        self._used = 0
+
+    def check_quota(self, size: int) -> bool:
+        return (self._used + size) <= self.max_size
+```
+</example>
+
+<example type="invalid">
+# Bad - Modifying test without understanding source
+```python
+@pytest.mark.asyncio
+async def test_show_queue_with_items(bot, ctx, mocker):
+    """Test showing queue with items."""
+    cog = QueueCog(bot)
+    command = cog.show_queue.command
+
+    # BAD: Changed test without checking source implementation
+    # Source expects specific QueueItem fields but we didn't check
+    items = [QueueItem(download_id="123", url="test")]
+    bot.queue_manager.get_queue_items.return_value = items
+
+    await command(cog, ctx)
+    assert ctx.send.call_count == 1  # BAD: Lost important assertions
+```
+
+# Bad - Fixing implementation without understanding tests
+```python
+# BAD: Changed implementation without reading tests
+class QuotaManager:
+    def __init__(self, max_size: int):
+        self.max_size = max_size
+
+    def check_quota(self, size: int) -> bool:
+        # Changed behavior without understanding test requirements
+        return size < self.max_size  # Changed <= to < without checking tests
+```
+</example>

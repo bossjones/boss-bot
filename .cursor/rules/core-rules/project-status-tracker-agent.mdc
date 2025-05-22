@@ -1,0 +1,306 @@
+---
+description: "This rule governs project status tracking and reporting, with special focus on .ai directory content. It should be applied whenever: (1) A status check is requested for any content in .ai directory, (2) Progress needs to be evaluated against story/epic files in .ai directory, (3) Checklist generation or updates are needed for .ai content, or (4) Project structure verification involves .ai directory. This rule ensures efficient progress tracking by first inspecting the actual repository state before making recommendations."
+globs: .ai/**/*.md
+alwaysApply: false
+---
+
+# Project Status Tracker Standards
+
+## Critical Rules
+
+- ALWAYS check repository state BEFORE making recommendations:
+  * Use `tree -L 7 -I "*.pyc|__pycache__|.git|.pytest_cache|.ruff_cache|.mypy_cache|.coverage|htmlcov|.venv|.env|*.egg-info|build|dist|node_modules|.DS_Store|images"` to get current structure
+  * Parse tree output to identify existing files and directories
+  * Compare against story requirements to identify gaps
+  * For .ai directory content:
+    * Check story files in .ai/stories/
+    * Check epic files in .ai/epics/
+    * Verify task status against actual implementation
+    * Track phased development compliance
+
+- For each story task verification:
+  1. First check if required files/directories exist
+  2. If files exist, read their contents to verify implementation
+  3. Only mark as incomplete if verification fails or files don't exist
+  4. Update BOTH story AND epic files with completion status
+  5. Track story progress in a .cursor/story-progress.json file
+  6. Verify task is not marked as deferred before tracking
+  7. Check task belongs to current phase before tracking
+  8. For .ai directory stories:
+     * Check task dependencies in story files
+     * Verify phase alignment with PRD
+     * Track implementation evidence
+     * Update related epic files
+
+- When generating status reports:
+  * Use ✅ for completed items
+  * Use 🚧 for in-progress items
+  * Use ❌ for incomplete items
+  * Use 🔄 for items needing review
+  * Use 🚫 for deferred items
+  * Add explanatory notes for partial completions
+  * Include story reference and task IDs
+  * Include phase information for each task
+  * Mark deferred tasks with strikethrough ~~
+  * Follow story status progression: Draft -> In Progress -> Complete
+  * For .ai directory content:
+    * Link to relevant PRD sections
+    * Track phase compliance
+    * Note dependencies between stories
+    * Include implementation evidence
+
+- For each major component, verify:
+  1. Directory structure exists
+  2. Required files are present
+  3. File contents match requirements
+  4. Tests exist and pass
+  5. Documentation is present
+  6. Phase compliance is maintained
+  7. No deferred features are implemented
+  8. For .ai directory:
+     * Story file format compliance
+     * Epic linkage accuracy
+     * Phase markers presence
+     * Task organization
+
+- Status report must include:
+  * Story ID and name
+  * Epic ID and status
+  * Story status (Draft/In Progress/Complete)
+  * Summary of completed work
+  * Outstanding tasks (with phase markers)
+  * Next priority tasks
+  * Relevant constraints
+  * Dependencies between tasks
+  * Story completion percentage
+  * Command history
+  * Phase compliance status
+  * For .ai content:
+    * PRD alignment status
+    * Epic progression
+    * Phase tracking
+    * Implementation evidence
+
+- Story progress tracking:
+  1. After status check, update files:
+     * Mark completed tasks with ✅ in story file
+     * Update task status in epic file
+     * Update task status comments
+     * Add evidence of completion
+     * Record command history
+  2. Generate story progress summary:
+     * Tasks completed vs total
+     * Current blockers
+     * Next actions
+     * Phase status
+  3. Return to story implementation:
+     * Suggest next task to implement
+     * Include relevant file paths
+     * Note any dependencies
+     * Verify phase compliance
+
+- NEVER assume a task is incomplete without checking:
+  * File existence
+  * File contents
+  * Test coverage
+  * Documentation
+  * Story requirements
+  * Phase status
+  * Deferred status
+  * For .ai content:
+    * Story file status
+    * Epic dependencies
+    * Phase markers
+    * Implementation state
+
+## Examples
+
+<example>
+# Good - Proper Status Check Process
+
+```bash
+# 1. Get repository structure
+tree -L 7 -I "*.pyc|__pycache__|.git|.pytest_cache|.ruff_cache|.mypy_cache|.coverage|htmlcov|.venv|.env|*.egg-info|build|dist|node_modules|.DS_Store|images"
+
+# 2. Check specific files
+cat pyproject.toml  # Check package configuration
+cat .pre-commit-config.yaml  # Check dev environment
+cat pytest.ini  # Check test configuration
+
+# 3. Generate status report
+## Story: story-1.story.md - Project Initialization
+## Progress: 15/50 tasks (30% complete)
+
+## ✅ Completed Tasks
+- Basic project structure
+  * src/boss_bot/ directory ✅ (Task 1.1)
+  * tests/ directory ✅ (Task 1.2)
+  * docs/ directory ✅ (Task 1.3)
+
+## 🚧 In Progress
+- Test infrastructure (Task 3)
+  * pytest configuration 🚧
+  * test coverage setup ❌
+
+## ❌ Outstanding Tasks
+- CI/CD Pipeline (Task 5)
+- Documentation (Task 4)
+
+## Next Priority Tasks
+1. Complete Task 3.1: Configure pytest plugins
+   * Path: tests/conftest.py
+   * Dependencies: pyproject.toml configuration
+2. Start Task 3.2: Create test fixtures
+
+## Story Updates
+* Updated story-1.story.md with completion status
+* Added evidence for completed tasks
+* Next focus: Test infrastructure setup
+```
+
+# 4. Update story and epic files
+```markdown
+# Story-1: Project Initialization
+Status: In Progress
+
+## Tasks
+1. Initialize Project Structure
+   - [✅] Create directory layout (Phase 1)
+     * Evidence: Directory structure verified
+     * Command: mkdir -p src/boss_bot/...
+   - [🚧] Configure pytest (Phase 1)
+     * Status: Configuration started
+   - [🚫] ~~Configure cleanup policies~~ (Deferred to future story)
+
+## Command History
+- User: Approve story-1 to start implementation
+- Agent: Created directory structure
+- User: Update status tracker rule
+- Agent: Aligned rules and updated status
+```
+
+# Epic-1: Core Bot Infrastructure
+```markdown
+## Story Progress
+- [🚧] Story 1: Project Initialization
+  * Status: In Progress
+  * Phase 1 tasks: 2/5 complete
+  * Deferred tasks: 3
+- [ ] Story 2: Test Infrastructure
+  * Status: Draft
+  * Dependencies: Story 1
+```
+</example>
+
+<example type="invalid">
+# Bad - Incorrect Status Check
+
+```bash
+# DON'T make assumptions without checking
+## ❌ Incomplete Tasks
+- Project structure (WRONG: Didn't check if it exists)
+- Test setup (WRONG: Didn't verify test files)
+
+# DON'T ignore existing work
+## Next Steps
+- Create project structure (WRONG: May already exist)
+- Set up testing (WRONG: May be partially done)
+
+# DON'T skip verification
+Status: All tasks incomplete (WRONG: No verification performed)
+
+# DON'T forget story context
+Next steps listed without story reference (WRONG)
+No story file updates (WRONG)
+```
+</example>
+
+## Implementation Guide
+
+1. Repository Inspection:
+   ```bash
+   # Get current structure
+   tree -L 7 -I "*.pyc|__pycache__|.git|.pytest_cache|.ruff_cache|.mypy_cache|.coverage|htmlcov|.venv|.env|*.egg-info|build|dist|node_modules|.DS_Store|images"
+   ```
+
+2. File Verification:
+   ```python
+   def verify_task(task_path, requirements, story_id):
+       # Check existence
+       if not Path(task_path).exists():
+           return "❌ Not started"
+
+       # Read contents
+       contents = Path(task_path).read_text()
+
+       # Verify against requirements
+       if meets_requirements(contents, requirements):
+           # Update story progress
+           update_story_progress(story_id, task_path, "complete")
+           return "✅ Complete"
+
+       update_story_progress(story_id, task_path, "in_progress")
+       return "🚧 In progress"
+   ```
+
+3. Story Progress Tracking:
+   ```python
+   def update_story_progress(story_id, task_path, status):
+       """Update story progress file."""
+       progress_file = Path(".cursor/story-progress.json")
+       progress = load_progress(progress_file)
+
+       # Update task status
+       progress[story_id]["tasks"][task_path] = {
+           "status": status,
+           "updated_at": datetime.now(),
+           "evidence": gather_evidence(task_path)
+       }
+
+       # Update story file
+       update_story_file(story_id, task_path, status)
+
+       # Save progress
+       save_progress(progress_file, progress)
+   ```
+
+4. Status Report Generation:
+   ```markdown
+   # Project Status Report for {story_id}
+
+   ## Story Progress: {completed_tasks}/{total_tasks} ({percentage}%)
+
+   ## ✅ Completed Tasks
+   - Task 1 (ID: 1.1)
+     * Evidence: file.py implements X
+     * Coverage: 85%
+
+   ## 🚧 In Progress
+   - Task 2 (ID: 1.2)
+     * Status: Configuration started
+     * Remaining: Need to add X, Y
+
+   ## ❌ Outstanding Tasks
+   - Task 3 (ID: 1.3)
+     * Blocked by: Task 2
+     * Priority: High
+
+   ## Next Steps
+   1. Complete Task 2
+      * File: src/config.py
+      * Story: story-1.story.md
+   2. Start Task 3
+   ```
+
+5. Dependency Tracking:
+   ```mermaid
+   graph TD
+       A[Task 1.1] --> B[Task 1.2]
+       B --> C[Task 1.3]
+       B --> D[Task 2.1]
+
+       style A fill:#90EE90
+       style B fill:#FFB6C1
+       style C fill:#D3D3D3
+       style D fill:#D3D3D3
+   ```

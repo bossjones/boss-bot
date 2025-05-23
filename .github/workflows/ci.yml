@@ -53,7 +53,7 @@ permissions:
 
 jobs:
   test:
-    name: Test ${{ matrix.os }} / Python ${{ matrix.python-version }}
+    name: CI Test ${{ matrix.os }} / Python ${{ matrix.python-version }}
     strategy:
       fail-fast: false
       matrix:
@@ -132,6 +132,8 @@ jobs:
         run: |
           cp -f env.sample .env || true
           ./scripts/retry -t 4 -- uv sync --dev
+          pipx install rust-just
+          ./scripts/retry -t 2 -- uv run goobctl version
 
       - name: Display UV and Python versions
         run: |
@@ -141,8 +143,6 @@ jobs:
 
       - name: Check imports
         run: |
-          pipx install rust-just
-          ./scripts/retry -t 2 -- uv run goobctl version
           uv run pre-commit run -a --show-diff-on-failure
           uv run python -c 'import boss_bot'
 

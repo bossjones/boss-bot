@@ -130,7 +130,7 @@ src/boss_bot/
 │   │   ├── queue.py           # Queue management commands
 │   │   ├── download.py        # Download commands
 │   │   ├── ai.py              # AI workflow commands
-│   │   └── config.py          # Configuration commands
+│   │   └── cli_config.py      # Configuration commands
 │   ├── utils/                  # CLI utilities (new)
 │   │   ├── __init__.py
 │   │   ├── formatters.py      # Rich formatting utilities
@@ -198,7 +198,7 @@ src/boss_bot/
 │   │       └── datadog.py     # Datadog exporter (future)
 │   └── logging/                # Logging configuration (reorganized)
 │       ├── __init__.py
-│       ├── config.py          # Logging setup (from current monitoring/logging.py)
+│       ├── logging_config.py  # Logging setup (from current monitoring/logging.py)
 │       └── formatters.py      # Log formatters (new)
 │
 ├── schemas/                      # 📄 Data Schemas & Validation
@@ -219,13 +219,13 @@ src/boss_bot/
 │   ├── __init__.py
 │   ├── langsmith/              # LangSmith integration
 │   │   ├── __init__.py
-│   │   └── client.py
+│   │   └── langsmith_client.py
 │   ├── anthropic/              # Anthropic API integration
 │   │   ├── __init__.py
-│   │   └── client.py
+│   │   └── anthropic_client.py
 │   ├── openai/                 # OpenAI API integration
 │   │   ├── __init__.py
-│   │   └── client.py
+│   │   └── openai_client.py
 │   └── webhooks/               # Webhook handlers
 │       ├── __init__.py
 │       └── discord_webhook.py
@@ -265,6 +265,9 @@ To avoid module name conflicts with third-party libraries and Python standard li
 - `twitter.py` → Use `twitter_handler.py`
 - `local.py` → Use `local_storage.py`
 - `s3.py` → Use `s3_storage.py`
+- `openai.py` → Use `openai_client.py`
+- `anthropic.py` → Use `anthropic_client.py`
+- `config.py` → Use `settings.py`, `cli_config.py`, `logging_config.py`
 
 ### ✅ **Naming Patterns**
 - **Service-specific**: `{service}_{purpose}.py` (e.g., `discord_integration.py`)
@@ -272,6 +275,7 @@ To avoid module name conflicts with third-party libraries and Python standard li
 - **Backend pattern**: `{type}_storage.py` (e.g., `local_storage.py`)
 - **Health checks**: `{component}_health.py` (e.g., `discord_health.py`)
 - **Purpose suffix**: `{name}_{purpose}.py` (e.g., `discord_webhook.py`)
+- **Client pattern**: `{service}_client.py` (e.g., `openai_client.py`, `anthropic_client.py`)
 
 ### 📋 **Module Conflict Checklist**
 Before creating new modules, check against:
@@ -489,7 +493,9 @@ uv run pytest --collect-only --tb=short
 
 ## Migration Plan
 
-### Phase 1: Foundation Reorganization (Week 1-2)
+Each migration phase will create a dedicated Pull Request for review and testing. This ensures changes are isolated, reviewable, and can be rolled back independently if needed.
+
+### Phase 1: Foundation Reorganization (Week 1-2) - PR #1
 
 #### Step 1.1: Create New Directory Structure
 ```bash
@@ -542,7 +548,7 @@ mv src/boss_bot/storage/validation_manager.py src/boss_bot/storage/managers/vali
 # Move monitoring components
 mv src/boss_bot/monitoring/health_check.py src/boss_bot/monitoring/health/checker.py
 mv src/boss_bot/monitoring/metrics.py src/boss_bot/monitoring/metrics/collector.py
-mv src/boss_bot/monitoring/logging.py src/boss_bot/monitoring/logging/config.py
+mv src/boss_bot/monitoring/logging.py src/boss_bot/monitoring/logging/logging_config.py
 ```
 
 #### Step 1.3: Add Backward Compatibility and Deprecation Warnings
@@ -633,7 +639,7 @@ warnings.warn(
 - Monitor deprecation warnings in logs
 ```
 
-### Phase 2: CLI Expansion (Week 3)
+### Phase 2: CLI Expansion (Week 3) - PR #2
 
 #### Step 2.1: Refactor CLI Structure (Non-Destructive)
 ```bash
@@ -670,7 +676,7 @@ if __name__ == "__main__":
 - `cli/commands/bot.py` - Bot management (start, stop, status, restart)
 - `cli/commands/queue.py` - Queue operations (list, clear, pause, resume)
 - `cli/commands/download.py` - Download management (start, cancel, status)
-- `cli/commands/config.py` - Configuration management (show, set, validate)
+- `cli/commands/cli_config.py` - Configuration management (show, set, validate)
 - `cli/commands/ai.py` - AI workflow commands (analyze, summarize, classify)
 
 #### Step 2.3: CLI Utilities
@@ -678,7 +684,7 @@ if __name__ == "__main__":
 - `cli/utils/validators.py` - Input validation
 - `cli/config/settings.py` - CLI-specific configuration
 
-### Phase 3: AI Integration Foundation (Week 4-5)
+### Phase 3: AI Integration Foundation (Week 4-5) - PR #3
 
 #### Step 3.1: LangChain/LangGraph Setup
 - `ai/agents/content_analyzer.py` - Media content analysis workflows
@@ -687,15 +693,15 @@ if __name__ == "__main__":
 - `ai/prompts/templates.py` - Prompt templates
 
 #### Step 3.2: AI Service Integrations
-- `integrations/langsmith/client.py` - LangSmith tracking
-- `integrations/anthropic/client.py` - Claude API integration
-- `integrations/openai/client.py` - OpenAI API integration
+- `integrations/langsmith/langsmith_client.py` - LangSmith tracking
+- `integrations/anthropic/anthropic_client.py` - Claude API integration
+- `integrations/openai/openai_client.py` - OpenAI API integration
 
 #### Step 3.3: AI-Powered Discord Commands
 - `bot/cogs/ai_commands.py` - AI-powered Discord commands
 - Integration with existing download and queue systems
 
-### Phase 4: Enhanced Monitoring & Storage (Week 6)
+### Phase 4: Enhanced Monitoring & Storage (Week 6) - PR #4
 
 #### Step 4.1: Monitoring Improvements
 - Reorganize health checks into dedicated modules
@@ -708,7 +714,7 @@ if __name__ == "__main__":
 - `storage/models/file_models.py` - File metadata models
 - Prepare for future cloud storage backends (S3, Azure)
 
-### Phase 5: API Layer Foundation (Week 7-8)
+### Phase 5: API Layer Foundation (Week 7-8) - PR #5
 
 #### Step 5.1: REST API Structure
 - `api/routes/downloads.py` - Download management endpoints
@@ -721,7 +727,7 @@ if __name__ == "__main__":
 - API integration tests
 - Authentication and authorization
 
-### Phase 6: Gradual Import Migration (Week 9-10)
+### Phase 6: Gradual Import Migration (Week 9-10) - PR #6
 
 #### Step 6.1: Create Import Migration Script
 ```python
@@ -767,7 +773,7 @@ def verify_migration(file_path: Path) -> bool:
 python -W error::DeprecationWarning -m pytest tests/
 ```
 
-### Phase 7: Deprecation Cleanup (Week 11-12)
+### Phase 7: Deprecation Cleanup (Week 11-12) - PR #7
 
 #### Step 7.1: Final Migration Verification
 - Ensure all imports have been migrated
@@ -802,7 +808,7 @@ rmdir src/boss_bot/downloaders/  # If completely migrated
 - [ ] Ensure all tests pass
 - [ ] Review dependencies and compatibility
 
-### Phase 1: Foundation
+### Phase 1: Foundation (PR #1)
 - [ ] Create new directory structure
 - [ ] Move core components to new locations
 - [ ] Update import statements throughout codebase
@@ -810,8 +816,9 @@ rmdir src/boss_bot/downloaders/  # If completely migrated
 - [ ] Remove duplicate and empty modules
 - [ ] Verify all tests still pass
 - [ ] Update documentation
+- [ ] Create and merge PR #1
 
-### Phase 2: CLI Expansion
+### Phase 2: CLI Expansion (PR #2)
 - [ ] Refactor monolithic CLI to modular structure
 - [ ] Implement bot management subcommands
 - [ ] Implement queue management subcommands
@@ -820,8 +827,9 @@ rmdir src/boss_bot/downloaders/  # If completely migrated
 - [ ] Add Rich formatting utilities
 - [ ] Add input validation utilities
 - [ ] Test all CLI functionality
+- [ ] Create and merge PR #2
 
-### Phase 3: AI Integration
+### Phase 3: AI Integration (PR #3)
 - [ ] Set up LangChain/LangGraph foundation
 - [ ] Implement content analysis agents
 - [ ] Create summarization chains
@@ -830,8 +838,9 @@ rmdir src/boss_bot/downloaders/  # If completely migrated
 - [ ] Integrate AI service clients (LangSmith, Anthropic, OpenAI)
 - [ ] Create AI-powered Discord commands
 - [ ] Test AI functionality end-to-end
+- [ ] Create and merge PR #3
 
-### Phase 4: Monitoring & Storage
+### Phase 4: Monitoring & Storage (PR #4)
 - [ ] Reorganize health check system
 - [ ] Implement AI service health monitoring
 - [ ] Set up structured logging with formatters
@@ -839,8 +848,9 @@ rmdir src/boss_bot/downloaders/  # If completely migrated
 - [ ] Abstract storage backend system
 - [ ] Implement file metadata models
 - [ ] Test monitoring and storage improvements
+- [ ] Create and merge PR #4
 
-### Phase 5: API Layer
+### Phase 5: API Layer (PR #5)
 - [ ] Implement REST API foundation
 - [ ] Create download management endpoints
 - [ ] Create queue management endpoints
@@ -849,6 +859,21 @@ rmdir src/boss_bot/downloaders/  # If completely migrated
 - [ ] Add API documentation (OpenAPI/Swagger)
 - [ ] Create API integration tests
 - [ ] Test API functionality
+- [ ] Create and merge PR #5
+
+### Phase 6: Import Migration (PR #6)
+- [ ] Create import migration script
+- [ ] Migrate imports in batches
+- [ ] Monitor deprecation warnings
+- [ ] Verify all migration paths work
+- [ ] Create and merge PR #6
+
+### Phase 7: Cleanup (PR #7)
+- [ ] Final migration verification
+- [ ] Remove deprecated files
+- [ ] Update documentation
+- [ ] Performance and security review
+- [ ] Create and merge PR #7
 
 ### Post-Migration
 - [ ] Update all documentation
@@ -945,14 +970,16 @@ async def test_langchain_summarization():
 @use_cassette("tests/cassettes/ai/openai/chat_completion.yaml")
 @pytest.mark.asyncio
 async def test_openai_integration():
-    """Test OpenAI API integration."""
+    """Test OpenAI API integration via openai_client.py."""
+    from boss_bot.integrations.openai.openai_client import OpenAIClient
     # Implementation will use recorded responses
     pass
 
 @use_cassette("tests/cassettes/ai/anthropic/claude_completion.yaml")
 @pytest.mark.asyncio
 async def test_anthropic_integration():
-    """Test Anthropic Claude API integration."""
+    """Test Anthropic Claude API integration via anthropic_client.py."""
+    from boss_bot.integrations.anthropic.anthropic_client import AnthropicClient
     # Implementation will use recorded responses
     pass
 ```
@@ -1350,21 +1377,31 @@ tests/
 
 ## Timeline
 
-- **Week 1-2**: Phase 1 (Foundation Reorganization) - *Copy & create wrappers*
-- **Week 3**: Phase 2 (CLI Expansion) - *Modular CLI with backward compatibility*
-- **Week 4-5**: Phase 3 (AI Integration Foundation) - *LangChain/LangGraph setup*
-- **Week 6**: Phase 4 (Enhanced Monitoring & Storage) - *Infrastructure improvements*
-- **Week 7-8**: Phase 5 (API Layer Foundation) - *REST API groundwork*
-- **Week 9-10**: Phase 6 (Gradual Import Migration) - *Update imports incrementally*
-- **Week 11-12**: Phase 7 (Deprecation Cleanup) - *Remove old files after migration*
+Each phase creates a dedicated Pull Request for isolated review and testing:
+
+- **Week 1-2**: Phase 1 (Foundation Reorganization) - *Copy & create wrappers* - **PR #1**
+- **Week 3**: Phase 2 (CLI Expansion) - *Modular CLI with backward compatibility* - **PR #2**
+- **Week 4-5**: Phase 3 (AI Integration Foundation) - *LangChain/LangGraph setup* - **PR #3**
+- **Week 6**: Phase 4 (Enhanced Monitoring & Storage) - *Infrastructure improvements* - **PR #4**
+- **Week 7-8**: Phase 5 (API Layer Foundation) - *REST API groundwork* - **PR #5**
+- **Week 9-10**: Phase 6 (Gradual Import Migration) - *Update imports incrementally* - **PR #6**
+- **Week 11-12**: Phase 7 (Deprecation Cleanup) - *Remove old files after migration* - **PR #7**
 
 Total estimated time: **12 weeks** for complete migration with safe deprecation period.
 
 ### Deprecation Timeline
-- **v1.5.0** (Week 8): All new structure available, deprecation warnings active
-- **v1.6.0** (Week 10): Import migration complete, warnings remain
-- **v1.9.0** (Week 12): Final warning before removal
-- **v2.0.0** (Future): Remove deprecated paths entirely
+- **v1.5.0** (PR #3 merge): AI integration, deprecation warnings active
+- **v1.6.0** (PR #5 merge): API layer complete, warnings remain
+- **v1.9.0** (PR #6 merge): Import migration complete, final warning
+- **v2.0.0** (PR #7 merge): Remove deprecated paths entirely
+
+### Pull Request Strategy
+Each phase will have its own Pull Request to ensure:
+- **Isolated Changes**: Each PR contains only one phase's changes
+- **Independent Review**: Each phase can be reviewed and tested separately
+- **Rollback Safety**: Individual phases can be rolled back without affecting others
+- **Incremental Deployment**: Phases can be deployed incrementally based on stability
+- **Clear Documentation**: Each PR includes phase-specific documentation and tests
 
 ## Common Migration Issues & Solutions
 

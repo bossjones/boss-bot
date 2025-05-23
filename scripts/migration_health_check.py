@@ -30,7 +30,7 @@ def check_imports() -> dict[str, bool]:
         "boss_bot.cli.main",
         "boss_bot.core.downloads.manager",
         "boss_bot.storage.managers.quota_manager",
-        "boss_bot.monitoring.health.checker",
+        "boss_bot.monitoring.health",
     ]
 
     results = {}

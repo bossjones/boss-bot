@@ -13,8 +13,8 @@ warnings.warn(
     stacklevel=2,
 )
 
-# Re-export main CLI function for backward compatibility
-if __name__ == "__main__":
-    from boss_bot.cli.main import main
+# Re-export CLI functions for backward compatibility
+from boss_bot.cli.main import entry, main
 
+if __name__ == "__main__":
     main()

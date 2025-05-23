@@ -3,6 +3,6 @@
 
 from __future__ import annotations
 
-from boss_bot.cli import main
+from boss_bot.cli.main import main
 
 main()

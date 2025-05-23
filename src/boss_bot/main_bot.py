@@ -3,8 +3,8 @@
 import discord
 from discord.ext import commands
 
-from boss_bot.downloaders.base import DownloadManager
-from boss_bot.settings import BossSettings
+from boss_bot.core.downloads.manager import DownloadManager
+from boss_bot.core.env import BossSettings
 
 
 class BossBot(commands.Bot):

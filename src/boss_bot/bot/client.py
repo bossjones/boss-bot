@@ -7,9 +7,9 @@ import discord
 from discord.ext import commands
 
 from boss_bot.bot.bot_help import BossHelpCommand
-from boss_bot.core.core_queue import QueueManager
+from boss_bot.core.downloads.manager import DownloadManager
 from boss_bot.core.env import BossSettings
-from boss_bot.downloaders.base import DownloadManager
+from boss_bot.core.queue.manager import QueueManager
 
 logger = logging.getLogger(__name__)
 

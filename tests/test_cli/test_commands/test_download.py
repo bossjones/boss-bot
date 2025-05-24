@@ -1,6 +1,7 @@
 """Tests for CLI download commands."""
 
 import asyncio
+import re
 from pathlib import Path
 
 import pytest
@@ -9,6 +10,12 @@ from typer.testing import CliRunner
 
 from boss_bot.cli.commands.download import app, validate_twitter_url
 from boss_bot.core.downloads.handlers.base_handler import DownloadResult, MediaMetadata
+
+
+def strip_ansi_codes(text: str) -> str:
+    """Strip ANSI escape sequences from text."""
+    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+    return ansi_escape.sub('', text)
 
 
 class TestValidateTwitterUrl:
@@ -53,16 +60,18 @@ class TestDownloadCommands:
         result = runner.invoke(app, ["info"])
 
         assert result.exit_code == 0
-        assert "BossBot Download Commands" in result.stdout
-        assert "Twitter/X" in result.stdout
-        assert "gallery-dl" in result.stdout
+        clean_stdout = strip_ansi_codes(result.stdout)
+        assert "BossBot Download Commands" in clean_stdout
+        assert "Twitter/X" in clean_stdout
+        assert "gallery-dl" in clean_stdout
 
     def test_twitter_command_invalid_url(self, runner):
         """Test Twitter download with invalid URL."""
         result = runner.invoke(app, ["twitter", "https://youtube.com/watch"])
 
         assert result.exit_code == 2  # typer.BadParameter exit code
-        assert "URL is not a valid Twitter/X URL" in result.stdout
+        clean_stdout = strip_ansi_codes(result.stdout)
+        assert "URL is not a valid Twitter/X URL" in clean_stdout
 
     def test_twitter_command_metadata_only_success(self, runner, mocker):
         """Test Twitter metadata-only command success."""
@@ -92,9 +101,10 @@ class TestDownloadCommands:
         ])
 
         assert result.exit_code == 0
-        assert "Metadata extracted successfully" in result.stdout
-        assert "Test Tweet" in result.stdout
-        assert "Test User" in result.stdout
+        clean_stdout = strip_ansi_codes(result.stdout)
+        assert "Metadata extracted successfully" in clean_stdout
+        assert "Test Tweet" in clean_stdout
+        assert "Test User" in clean_stdout
         mock_handler.get_metadata.assert_called_once()
 
     def test_twitter_command_metadata_only_async(self, runner, mocker):
@@ -127,7 +137,8 @@ class TestDownloadCommands:
         ])
 
         assert result.exit_code == 0
-        assert "Metadata extracted successfully" in result.stdout
+        clean_stdout = strip_ansi_codes(result.stdout)
+        assert "Metadata extracted successfully" in clean_stdout
         mock_asyncio_run.assert_called_once()
 
     def test_twitter_command_metadata_failure(self, runner, mocker):
@@ -147,7 +158,8 @@ class TestDownloadCommands:
         ])
 
         assert result.exit_code == 1
-        assert "Failed to extract metadata" in result.stdout
+        clean_stdout = strip_ansi_codes(result.stdout)
+        assert "Failed to extract metadata" in clean_stdout
 
     def test_twitter_command_download_success(self, runner, mocker, tmp_path):
         """Test Twitter download command success."""
@@ -177,8 +189,9 @@ class TestDownloadCommands:
         ])
 
         assert result.exit_code == 0
-        assert "Download completed successfully" in result.stdout
-        assert "Downloaded 2 files" in result.stdout
+        clean_stdout = strip_ansi_codes(result.stdout)
+        assert "Download completed successfully" in clean_stdout
+        assert "Downloaded 2 files" in clean_stdout
         mock_handler.download.assert_called_once()
 
     def test_twitter_command_download_async_success(self, runner, mocker, tmp_path):
@@ -212,7 +225,8 @@ class TestDownloadCommands:
         ])
 
         assert result.exit_code == 0
-        assert "Download completed successfully" in result.stdout
+        clean_stdout = strip_ansi_codes(result.stdout)
+        assert "Download completed successfully" in clean_stdout
         mock_asyncio_run.assert_called_once()
 
     def test_twitter_command_download_failure(self, runner, mocker):
@@ -238,7 +252,8 @@ class TestDownloadCommands:
         ])
 
         assert result.exit_code == 1
-        assert "Download failed" in result.stdout
+        clean_stdout = strip_ansi_codes(result.stdout)
+        assert "Download failed" in clean_stdout
 
     def test_twitter_command_download_exception(self, runner, mocker):
         """Test Twitter download command with exception."""
@@ -256,7 +271,8 @@ class TestDownloadCommands:
         ])
 
         assert result.exit_code == 1
-        assert "Download failed: Unexpected error" in result.stdout
+        clean_stdout = strip_ansi_codes(result.stdout)
+        assert "Download failed: Unexpected error" in clean_stdout
 
     def test_twitter_command_verbose_output(self, runner, mocker, tmp_path):
         """Test Twitter command with verbose output."""
@@ -283,9 +299,10 @@ class TestDownloadCommands:
         ])
 
         assert result.exit_code == 0
-        assert "Command Output:" in result.stdout
-        assert "gallery-dl verbose output" in result.stdout
-        assert "Metadata:" in result.stdout
+        clean_stdout = strip_ansi_codes(result.stdout)
+        assert "Command Output:" in clean_stdout
+        assert "gallery-dl verbose output" in clean_stdout
+        assert "Metadata:" in clean_stdout
 
     def test_twitter_command_custom_output_dir(self, runner, mocker, tmp_path):
         """Test Twitter command with custom output directory."""
@@ -320,17 +337,19 @@ class TestDownloadCommands:
         result = runner.invoke(app, ["--help"])
 
         assert result.exit_code == 0
-        assert "Download content from various platforms" in result.stdout
-        assert "twitter" in result.stdout
-        assert "info" in result.stdout
+        clean_stdout = strip_ansi_codes(result.stdout)
+        assert "Download content from various platforms" in clean_stdout
+        assert "twitter" in clean_stdout
+        assert "info" in clean_stdout
 
     def test_twitter_command_help(self, runner):
         """Test Twitter command help output."""
         result = runner.invoke(app, ["twitter", "--help"])
 
         assert result.exit_code == 0
-        assert "Download Twitter/X content" in result.stdout
-        assert "--metadata-only" in result.stdout
-        assert "--async" in result.stdout
-        assert "--verbose" in result.stdout
-        assert "--output-dir" in result.stdout
+        clean_stdout = strip_ansi_codes(result.stdout)
+        assert "Download Twitter/X content" in clean_stdout
+        assert "--metadata-only" in clean_stdout
+        assert "--async" in clean_stdout
+        assert "--verbose" in clean_stdout
+        assert "--output-dir" in clean_stdout

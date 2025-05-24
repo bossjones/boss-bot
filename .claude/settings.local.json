@@ -9,7 +9,8 @@
       "Bash(cp:*)",
       "Bash(uv run:*)",
       "Bash(just ci:*)",
-      "Bash(just check-test:*)"
+      "Bash(just check-test:*)",
+      "Bash(rg:*)"
     ],
     "deny": []
   }

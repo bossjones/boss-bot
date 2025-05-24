@@ -70,6 +70,9 @@ class TestDownloadCommands:
         mock_handler_class = mocker.patch('boss_bot.cli.commands.download.TwitterHandler')
         mock_handler = mock_handler_class.return_value
 
+        # Mock both the validation and download handlers
+        mock_handler.supports_url.return_value = True  # For validation
+
         # Mock successful metadata extraction
         mock_metadata = MediaMetadata(
             title="Test Tweet",
@@ -100,6 +103,9 @@ class TestDownloadCommands:
         mock_handler_class = mocker.patch('boss_bot.cli.commands.download.TwitterHandler')
         mock_handler = mock_handler_class.return_value
 
+        # Mock both the validation and download handlers
+        mock_handler.supports_url.return_value = True  # For validation
+
         # Mock asyncio.run and async metadata extraction
         mock_metadata = MediaMetadata(
             title="Test Tweet",
@@ -129,6 +135,9 @@ class TestDownloadCommands:
         # Mock TwitterHandler to raise exception
         mock_handler_class = mocker.patch('boss_bot.cli.commands.download.TwitterHandler')
         mock_handler = mock_handler_class.return_value
+
+        # Mock both the validation and download handlers
+        mock_handler.supports_url.return_value = True  # For validation
         mock_handler.get_metadata.side_effect = Exception("API Error")
 
         result = runner.invoke(app, [
@@ -145,6 +154,9 @@ class TestDownloadCommands:
         # Mock TwitterHandler
         mock_handler_class = mocker.patch('boss_bot.cli.commands.download.TwitterHandler')
         mock_handler = mock_handler_class.return_value
+
+        # Mock both the validation and download handlers
+        mock_handler.supports_url.return_value = True  # For validation
 
         # Mock successful download
         test_files = [tmp_path / "test1.jpg", tmp_path / "test2.mp4"]
@@ -174,6 +186,9 @@ class TestDownloadCommands:
         # Mock TwitterHandler
         mock_handler_class = mocker.patch('boss_bot.cli.commands.download.TwitterHandler')
         mock_handler = mock_handler_class.return_value
+
+        # Mock both the validation and download handlers
+        mock_handler.supports_url.return_value = True  # For validation
 
         # Mock successful async download
         test_files = [tmp_path / "test.jpg"]
@@ -206,6 +221,9 @@ class TestDownloadCommands:
         mock_handler_class = mocker.patch('boss_bot.cli.commands.download.TwitterHandler')
         mock_handler = mock_handler_class.return_value
 
+        # Mock both the validation and download handlers
+        mock_handler.supports_url.return_value = True  # For validation
+
         # Mock failed download
         mock_result = DownloadResult(
             success=False,
@@ -227,6 +245,9 @@ class TestDownloadCommands:
         # Mock TwitterHandler to raise exception
         mock_handler_class = mocker.patch('boss_bot.cli.commands.download.TwitterHandler')
         mock_handler = mock_handler_class.return_value
+
+        # Mock both the validation and download handlers
+        mock_handler.supports_url.return_value = True  # For validation
         mock_handler.download.side_effect = Exception("Unexpected error")
 
         result = runner.invoke(app, [
@@ -242,6 +263,9 @@ class TestDownloadCommands:
         # Mock TwitterHandler
         mock_handler_class = mocker.patch('boss_bot.cli.commands.download.TwitterHandler')
         mock_handler = mock_handler_class.return_value
+
+        # Mock both the validation and download handlers
+        mock_handler.supports_url.return_value = True  # For validation
 
         # Mock successful download with verbose data
         mock_result = DownloadResult(

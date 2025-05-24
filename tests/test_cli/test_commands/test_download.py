@@ -270,6 +270,9 @@ class TestDownloadCommands:
         # Mock TwitterHandler initialization
         mock_handler_class = mocker.patch('boss_bot.cli.commands.download.TwitterHandler')
         mock_handler = mock_handler_class.return_value
+
+        # Mock both the validation and download handlers
+        mock_handler.supports_url.return_value = True  # For validation
         mock_handler.download.return_value = DownloadResult(success=True)
 
         result = runner.invoke(app, [
@@ -278,9 +281,11 @@ class TestDownloadCommands:
             "--output-dir", str(custom_dir)
         ])
 
-        # Verify TwitterHandler was initialized with custom directory
-        mock_handler_class.assert_called_once()
-        call_args = mock_handler_class.call_args
+        # Verify TwitterHandler was called twice (validation + download)
+        assert mock_handler_class.call_count == 2
+
+        # Check the second call (download handler) has custom directory
+        call_args = mock_handler_class.call_args_list[1]  # Second call
         assert call_args[1]['download_dir'] == custom_dir
 
         # Verify directory was created

@@ -24,8 +24,8 @@ check-security:
 
 # check unit tests
 [group('check')]
-check-test numprocesses="auto":
-	uv run pytest --numprocesses={{numprocesses}} {{TESTS}}
+check-test:
+	uv run pytest {{TESTS}}
 
 # check code typing
 [group('check')]

@@ -1675,14 +1675,14 @@ git commit -m "Re-record cassettes with VCR $(uv run python -c 'import vcr; prin
 
 # Check entry points in pyproject.toml:
 [project.scripts]
-goobctl = "boss_bot.cli.main:main"
+bossctl = "boss_bot.cli.main:main"
 boss-bot = "boss_bot.cli.main:main"  # Backward compatibility
 
 # Reinstall in development mode:
 uv pip install -e .
 
 # Test CLI discovery:
-goobctl --help
+bossctl --help
 boss-bot --help
 
 # Debug CLI import issues:
@@ -1702,8 +1702,8 @@ rm -rf .venv
 uv sync
 
 # Verify entry points:
-which goobctl
-goobctl --version
+which bossctl
+bossctl --version
 
 # Alternative: Direct execution
 uv run python -m boss_bot.cli --help
@@ -1764,7 +1764,7 @@ just check-coverage  # Ensure test coverage baseline
 
 # Document current performance baseline:
 time python -m boss_bot --version
-time goobctl --help
+time bossctl --help
 
 # Memory usage baseline:
 /usr/bin/time -v uv run python -c "import boss_bot; print('Import OK')"
@@ -1827,18 +1827,18 @@ just check-test
 # After Phase 2 completion, verify:
 
 # 1. CLI commands discoverable:
-goobctl --help | grep -E "(bot|queue|download|config)"
+bossctl --help | grep -E "(bot|queue|download|config)"
 
 # 2. Subcommands work:
-goobctl bot --help
-goobctl queue --help
-goobctl config --help
+bossctl bot --help
+bossctl queue --help
+bossctl config --help
 
 # 3. Backward compatibility:
 uv run python -c "from boss_bot.cli import main; print('Old CLI import works')"
 
 # 4. CLI performance:
-time goobctl --help  # Should be < 2 seconds
+time bossctl --help  # Should be < 2 seconds
 
 # 5. CLI tests pass:
 pytest tests/test_cli/ -v
@@ -1896,8 +1896,8 @@ print('Bot ready')
 "  # Should be < 3 seconds
 
 # CLI responsiveness:
-time goobctl bot status  # Should be < 1 second
-time goobctl queue list  # Should be < 1 second
+time bossctl bot status  # Should be < 1 second
+time bossctl queue list  # Should be < 1 second
 
 # AI chain performance (with VCR):
 time uv run pytest tests/test_ai/test_chains/test_summarization.py::test_basic_summarization -v
@@ -1953,7 +1953,7 @@ def check_tests() -> bool:
 
 def check_cli() -> bool:
     """Check CLI functionality."""
-    exit_code, _, _ = run_command("goobctl --help")
+    exit_code, _, _ = run_command("bossctl --help")
     return exit_code == 0
 
 def main():
@@ -2216,7 +2216,7 @@ asyncio.run(test_bot())
 " || exit 1
 
 # CLI responsiveness
-timeout 10s goobctl --version || exit 1
+timeout 10s bossctl --version || exit 1
 
 echo "✅ Production health check passed"
 ```

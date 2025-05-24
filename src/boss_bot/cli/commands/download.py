@@ -59,9 +59,9 @@ def download_twitter(
     gallery-dl --no-mtime -v --write-info-json --write-metadata <url>
 
     Examples:
-        goobctl download twitter https://twitter.com/username/status/123456789
-        goobctl download twitter https://x.com/username/status/123456789 --output-dir ./downloads
-        goobctl download twitter https://twitter.com/username --metadata-only
+        bossctl download twitter https://twitter.com/username/status/123456789
+        bossctl download twitter https://x.com/username/status/123456789 --output-dir ./downloads
+        bossctl download twitter https://twitter.com/username --metadata-only
     """
     # Validate URL
     url = validate_twitter_url(url)
@@ -181,9 +181,9 @@ def download_info() -> None:
     console.print()
 
     console.print("[bold]Examples:[/bold]")
-    console.print("  goobctl download twitter https://twitter.com/username/status/123")
-    console.print("  goobctl download twitter https://x.com/username --metadata-only")
-    console.print("  goobctl download twitter <url> --output-dir ./downloads --async")
+    console.print("  bossctl download twitter https://twitter.com/username/status/123")
+    console.print("  bossctl download twitter https://x.com/username --metadata-only")
+    console.print("  bossctl download twitter <url> --output-dir ./downloads --async")
 
 
 # Make the app available for import

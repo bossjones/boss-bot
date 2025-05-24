@@ -14,7 +14,7 @@ Boss-Bot is a Discord bot that enables downloading and managing media files. The
 - Format code: `just format`
 - Full check suite: `just check`
 - Manage dependencies: `just uv-update`
-- Run bot: `goobctl go`
+- Run bot: `bossctl go`
 
 ## Code Architecture
 - `BossBot` (in `src/boss_bot/bot/client.py`) is the main bot class extending discord.ext.commands.Bot
@@ -429,7 +429,7 @@ src/boss_bot/
 
 ### CLI Development
 The CLI (`src/boss_bot/cli/`) provides command-line control of the bot:
-- Main entry point: `goobctl` → `boss_bot.cli.main`
+- Main entry point: `bossctl` → `boss_bot.cli.main`
 - Subcommand structure using Typer with dedicated command modules
 - Rich formatting for console output
 - Commands for bot management, queue operations, AI workflows, and configuration

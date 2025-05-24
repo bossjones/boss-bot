@@ -38,7 +38,7 @@ if ! command -v gh >/dev/null; then
 fi
 
 # Verify authentication
-if ! gh auth status 2>/dev/null; then
+if ! gh auth status -a --hostname github.com 2>/dev/null; then
     echo "❌ GitHub CLI not authenticated"
     exit 1
 fi

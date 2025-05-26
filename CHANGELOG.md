@@ -1,3 +1,17 @@
+## v0.3.0 (2025-05-26)
+
+### Feat
+
+- Enhance CLI download command tests by stripping ANSI codes from output. Added a utility function to remove ANSI escape sequences from command output in the Twitter download command tests, ensuring cleaner assertions and improved readability of test results. Updated multiple test cases to utilize this new function for consistent output validation.
+- Update download commands and testing structure for Twitter functionality. Added new Bash commands for CI checks in settings, simplified the check-test command in `check.just`, and removed outdated minimal tests for Twitter downloads. Enhanced existing tests for Twitter download functionality, ensuring robust validation and improved error handling. Updated test fixtures for better clarity and organization.
+- Enhance testing framework and add comprehensive tests for Twitter download functionality. Introduced new fixtures and organized test files for better structure. Implemented minimal and detailed tests for Twitter download commands, ensuring robust validation of success and failure scenarios. Updated documentation standards for fixtures and improved overall test coverage in the CLI and core download modules.
+- Implement Twitter download handler and enhance download commands. Added support for downloading and extracting metadata from Twitter/X URLs in the new `download.py` CLI commands. Introduced `TwitterHandler` for managing Twitter content downloads, including synchronous and asynchronous operations. Updated `downloads.py` cog to integrate new functionality and improved user feedback during download processes.
+- Enhance CLI download command implementation and documentation. Added detailed descriptions for platform-specific download handlers and command structures in `MIGRATION.md`. Updated `cli/commands/download.py` to support multiple platforms with synchronous and asynchronous operations, improving functionality and user guidance. Modified `ci/cz-release.sh` to ensure GitHub CLI authentication checks specify the hostname, enhancing reliability.
+
+### Fix
+
+- Update GitHub CLI authentication check to specify hostname. Changed the authentication command in the CI script to include the `--hostname github.com` option, ensuring proper authentication checks for GitHub CLI. This improves the reliability of the PR creation safeguards.
+
 ## v0.2.0 (2025-05-24)
 
 ### Feat

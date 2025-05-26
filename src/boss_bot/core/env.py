@@ -98,6 +98,20 @@ class BossSettings(BaseSettings):
     enable_redis: bool = Field(False, description="Whether Redis is enabled", validation_alias="ENABLE_REDIS")
     enable_sentry: bool = Field(False, description="Whether Sentry is enabled", validation_alias="ENABLE_SENTRY")
 
+    # Experimental Download Feature Flags
+    twitter_use_api_client: bool = Field(
+        False, description="Use API-direct client for Twitter downloads", validation_alias="TWITTER_USE_API_CLIENT"
+    )
+    reddit_use_api_client: bool = Field(
+        False, description="Use API-direct client for Reddit downloads", validation_alias="REDDIT_USE_API_CLIENT"
+    )
+    youtube_use_api_client: bool = Field(
+        False, description="Use API-direct client for YouTube downloads", validation_alias="YOUTUBE_USE_API_CLIENT"
+    )
+    download_api_fallback_to_cli: bool = Field(
+        True, description="Fallback to CLI if API client fails", validation_alias="DOWNLOAD_API_FALLBACK_TO_CLI"
+    )
+
     # Service settings
     sentry_dsn: str | None = Field(None, description="Sentry DSN", validation_alias="SENTRY_DSN")
     openai_api_key: SecretStr = Field(..., description="OpenAI API key", validation_alias="OPENAI_API_KEY")

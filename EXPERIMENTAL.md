@@ -538,9 +538,229 @@ export DOWNLOAD_API_FALLBACK_TO_CLI=false
 
 ## Testing Strategy
 
-### VCR/Pytest-Recording Integration
+### pytest-mock and Fixture Patterns
 
-The API-direct approach enables [pytest-recording](https://github.com/kiwicom/pytest-recording) for capturing real API interactions:
+The experimental features use **pytest-mock** and pytest fixtures exclusively, avoiding `unittest.mock` imports. This approach provides better integration with pytest's dependency injection and fixture lifecycle management.
+
+#### Core Testing Principles
+
+1. **Always use `mocker` fixture**: Never import `unittest.mock` directly
+2. **MockerFixture for all mocking**: Use `pytest_mock.MockerFixture` for type safety
+3. **AsyncMock for async methods**: Use `mocker.AsyncMock()` for async operations
+4. **Spec parameter**: Use `spec=` parameter when mocking complex objects
+5. **Function-scoped fixtures**: Use `scope="function"` for test isolation
+6. **Comprehensive docstrings**: Every fixture must document its purpose and dependencies
+
+#### Fixture Documentation Standards
+
+```python
+# tests/conftest.py
+@pytest.fixture(scope="function")
+def fixture_mock_settings_test(mocker: MockerFixture) -> Mock:
+    """Create a mocked BossSettings instance for testing.
+
+    Returns a fully configured mock that simulates the BossSettings
+    class with all experimental feature flags available for configuration.
+
+    Dependencies: pytest-mock
+    """
+    mock_settings = mocker.Mock(spec=BossSettings)
+    mock_settings.twitter_use_api_client = False
+    mock_settings.reddit_use_api_client = False
+    mock_settings.download_api_fallback_to_cli = True
+    return mock_settings
+
+@pytest.fixture(scope="function")
+def fixture_feature_flags_test(fixture_mock_settings_test: Mock) -> DownloadFeatureFlags:
+    """Create DownloadFeatureFlags instance for testing.
+
+    Provides a feature flags instance with configurable mock settings,
+    allowing tests to control feature flag behavior.
+
+    Dependencies: fixture_mock_settings_test
+    """
+    return DownloadFeatureFlags(fixture_mock_settings_test)
+
+@pytest.fixture(scope="function")
+def fixture_mock_async_gallery_dl(mocker: MockerFixture) -> Mock:
+    """Create a mocked AsyncGalleryDL client for testing.
+
+    Returns an async context manager mock that simulates gallery-dl
+    operations without making real network requests.
+
+    Dependencies: pytest-mock
+    """
+    mock_client = mocker.Mock(spec=AsyncGalleryDL)
+    mock_client.__aenter__ = mocker.AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = mocker.AsyncMock(return_value=None)
+    mock_client.download = mocker.AsyncMock()
+    return mock_client
+```
+
+#### pytest-mock Usage Patterns
+
+```python
+# tests/test_strategies/test_twitter_strategy.py
+import pytest
+from pytest_mock import MockerFixture
+from unittest.mock import Mock, AsyncMock
+
+# ✅ CORRECT: Use mocker fixture
+@pytest.mark.asyncio
+async def test_twitter_strategy_cli_mode(
+    mocker: MockerFixture,
+    fixture_feature_flags_test: DownloadFeatureFlags,
+    tmp_path: Path
+):
+    """Test strategy in CLI mode (existing behavior)."""
+    # Configure feature flags for CLI mode
+    fixture_feature_flags_test.settings.twitter_use_api_client = False
+
+    strategy = TwitterDownloadStrategy(fixture_feature_flags_test, tmp_path)
+
+    # Mock the CLI handler method
+    mock_cli_download = mocker.patch.object(
+        strategy.cli_handler,
+        'download',
+        return_value=MediaMetadata(platform="twitter", url="test")
+    )
+
+    # Execute test
+    result = await strategy.download("https://twitter.com/test")
+
+    # Verify CLI handler was called
+    mock_cli_download.assert_called_once_with("https://twitter.com/test")
+    assert result.platform == "twitter"
+
+# ❌ WRONG: Never import unittest.mock directly
+# from unittest.mock import Mock, AsyncMock  # DON'T DO THIS
+```
+
+#### Discord.py Testing Patterns for Experimental Features
+
+When testing Discord cogs that use experimental download strategies:
+
+```python
+# tests/test_cogs/test_experimental_downloads.py
+@pytest.mark.asyncio
+async def test_download_command_with_api_strategy(
+    mocker: MockerFixture,
+    fixture_feature_flags_test: DownloadFeatureFlags
+):
+    """Test download command using experimental API strategy."""
+
+    # Create properly mocked Discord context
+    ctx = mocker.Mock(spec=commands.Context)
+    ctx.send = mocker.AsyncMock()
+    ctx.author = mocker.Mock()
+    ctx.author.id = 12345
+    ctx.channel = mocker.Mock()
+    ctx.channel.id = 67890
+
+    # Configure feature flags for API mode
+    fixture_feature_flags_test.settings.twitter_use_api_client = True
+
+    # Create cog with experimental strategy
+    cog = DownloadCog(fixture_feature_flags_test)
+
+    # Mock the strategy's download method
+    mock_download = mocker.patch.object(
+        cog.strategy,
+        'download',
+        return_value=MediaMetadata(platform="twitter", title="Test")
+    )
+
+    # Test command callback (not direct method call)
+    await cog.download.callback(cog, ctx, "https://twitter.com/test")
+
+    # Verify strategy was called and response sent
+    mock_download.assert_called_once_with("https://twitter.com/test")
+    assert ctx.send.called
+    sent_message = ctx.send.call_args[0][0]
+    assert "downloaded" in sent_message.lower()
+```
+
+#### Error Handling Testing Patterns
+
+```python
+@pytest.mark.asyncio
+async def test_api_fallback_to_cli(
+    mocker: MockerFixture,
+    fixture_feature_flags_test: DownloadFeatureFlags,
+    tmp_path: Path
+):
+    """Test automatic fallback from API to CLI on failure."""
+
+    # Configure for API mode with fallback enabled
+    fixture_feature_flags_test.settings.twitter_use_api_client = True
+    fixture_feature_flags_test.settings.download_api_fallback_to_cli = True
+
+    strategy = TwitterDownloadStrategy(fixture_feature_flags_test, tmp_path)
+
+    # Mock API client to raise exception
+    mock_api_download = mocker.patch.object(
+        strategy,
+        '_download_via_api',
+        side_effect=Exception("API error")
+    )
+
+    # Mock CLI fallback to succeed
+    mock_cli_download = mocker.patch.object(
+        strategy,
+        '_download_via_cli',
+        return_value=MediaMetadata(platform="twitter", download_method="cli")
+    )
+
+    # Execute test
+    result = await strategy.download("https://twitter.com/test")
+
+    # Verify fallback behavior
+    mock_api_download.assert_called_once()
+    mock_cli_download.assert_called_once()
+    assert result.download_method == "cli"
+```
+
+### VCR/pytest-recording Integration
+
+The API-direct approach uses [pytest-recording](https://github.com/kiwicom/pytest-recording) for capturing real API interactions safely:
+
+#### VCR Configuration and Setup
+
+```python
+# tests/conftest.py
+import pytest
+from pytest_recording import vcr
+
+@pytest.fixture(scope="session")
+def vcr_config():
+    """Configure VCR for safe API testing."""
+    return {
+        "record_mode": "once",  # Record once, then replay
+        "match_on": ["method", "scheme", "host", "port", "path", "query"],
+        "filter_headers": [
+            "authorization",
+            "cookie",
+            "x-api-key",
+            "user-agent"  # Remove dynamic user agents
+        ],
+        "filter_query_parameters": [
+            "api_key",
+            "access_token",
+            "client_secret"
+        ],
+        "before_record_request": lambda request: request,
+        "before_record_response": lambda response: response,
+    }
+
+@pytest.fixture(scope="function")
+def vcr_cassette_dir(tmp_path: Path) -> Path:
+    """Provide cassette directory for VCR recordings."""
+    cassette_dir = tmp_path / "cassettes"
+    cassette_dir.mkdir(exist_ok=True)
+    return cassette_dir
+```
+
+#### API Testing with VCR
 
 ```python
 # tests/test_clients/test_aio_gallery_dl.py
@@ -548,100 +768,436 @@ import pytest
 from boss_bot.core.downloads.clients import AsyncGalleryDL
 
 @pytest.mark.asyncio
-@pytest.mark.vcr  # Records real API calls to cassettes
+@pytest.mark.vcr(cassette_library_dir="tests/cassettes")
 async def test_twitter_api_download():
-    """Test API-direct Twitter download with VCR."""
-    async with AsyncGalleryDL() as client:
+    """Test API-direct Twitter download with VCR recording.
+
+    This test records real API interactions on first run,
+    then replays them from cassettes on subsequent runs.
+    """
+    config = {
+        "extractor": {
+            "twitter": {
+                "videos": True,
+                "quoted": True
+            }
+        }
+    }
+
+    async with AsyncGalleryDL(config=config) as client:
         items = []
         async for item in client.download("https://twitter.com/example/status/123"):
             items.append(item)
 
         assert len(items) > 0
         assert items[0]["extractor"] == "twitter"
-
-# tests/test_strategies/test_twitter_strategy.py
-@pytest.mark.asyncio
-async def test_twitter_strategy_cli_mode(mock_settings):
-    """Test strategy in CLI mode (existing behavior)."""
-    mock_settings.twitter_use_api_client = False
-
-    feature_flags = DownloadFeatureFlags(mock_settings)
-    strategy = TwitterDownloadStrategy(feature_flags, Path("/tmp"))
-
-    # Should use CLI handler (existing code path)
-    with patch.object(strategy.cli_handler, 'download') as mock_download:
-        await strategy.download("https://twitter.com/test")
-        mock_download.assert_called_once()
+        assert "url" in items[0]
 
 @pytest.mark.asyncio
-@pytest.mark.vcr  # 🆕 NEW: VCR for API testing
-async def test_twitter_strategy_api_mode(mock_settings):
-    """Test strategy in API mode (new behavior)."""
-    mock_settings.twitter_use_api_client = True
+@pytest.mark.vcr(
+    cassette_library_dir="tests/cassettes",
+    record_mode="new_episodes"  # Allow new recordings
+)
+async def test_gallery_dl_config_loading(tmp_path: Path):
+    """Test configuration loading from file with VCR."""
 
-    feature_flags = DownloadFeatureFlags(mock_settings)
-    strategy = TwitterDownloadStrategy(feature_flags, Path("/tmp"))
+    # Create test config file
+    config_file = tmp_path / "gallery-dl.conf"
+    config_data = {
+        "extractor": {
+            "twitter": {"videos": True},
+            "base-directory": str(tmp_path)
+        }
+    }
 
-    # Should use API client (new code path)
-    result = await strategy.download("https://twitter.com/test")
-    assert result.platform == "twitter"
+    config_file.write_text(json.dumps(config_data))
+
+    # Test with VCR recording
+    async with AsyncGalleryDL(config_file=config_file) as client:
+        # This will be recorded/replayed via VCR
+        metadata = []
+        async for item in client.extract_metadata("https://twitter.com/test"):
+            metadata.append(item)
+            break  # Just test first item
+
+        assert len(metadata) > 0
+        assert metadata[0]["extractor"] == "twitter"
 ```
 
-### Test Structure
+#### VCR Record Modes and Usage
+
+1. **Development Workflow**: Use `--record-mode=all` to create new cassettes
+2. **CI/Testing**: Use `--record-mode=none` to ensure no real API calls
+3. **Updating**: Use `--record-mode=new_episodes` to add new interactions
+
+```bash
+# Record new cassettes (development)
+just check-test "tests/test_clients/" --record-mode=all
+
+# Test with existing cassettes (CI)
+just check-test "tests/test_clients/" --record-mode=none
+
+# Add new test scenarios to existing cassettes
+just check-test "tests/test_clients/" --record-mode=new_episodes
+```
+
+#### Security Considerations for VCR
+
+```python
+# tests/conftest.py - Security filtering
+@pytest.fixture(scope="session")
+def vcr_config():
+    """VCR configuration with security filtering."""
+
+    def filter_request(request):
+        """Remove sensitive data from recorded requests."""
+        # Remove authorization headers
+        if 'authorization' in request.headers:
+            request.headers['authorization'] = '<REDACTED>'
+
+        # Remove API keys from query parameters
+        if hasattr(request, 'query') and request.query:
+            filtered_query = []
+            for param in request.query:
+                if 'api_key' in param[0].lower():
+                    filtered_query.append((param[0], '<REDACTED>'))
+                else:
+                    filtered_query.append(param)
+            request.query = filtered_query
+
+        return request
+
+    def filter_response(response):
+        """Remove sensitive data from recorded responses."""
+        # Don't record error responses that might contain sensitive info
+        if response.get('status', {}).get('code', 200) >= 400:
+            response['body']['string'] = b'<ERROR_RESPONSE_REDACTED>'
+
+        return response
+
+    return {
+        "record_mode": "once",
+        "before_record_request": filter_request,
+        "before_record_response": filter_response,
+        "filter_headers": [
+            "authorization", "cookie", "x-api-key",
+            "x-csrf-token", "session-id"
+        ],
+        "filter_query_parameters": [
+            "api_key", "access_token", "client_secret",
+            "auth_token", "session_token"
+        ]
+    }
+```
+
+### Built-in pytest Fixtures for Experimental Features
+
+```python
+# tests/test_strategies/test_feature_flags.py
+def test_feature_flag_configuration(
+    tmp_path: Path,           # Built-in: temporary directory
+    monkeypatch: pytest.MonkeyPatch,  # Built-in: environment patching
+    caplog: pytest.LogCaptureFixture   # Built-in: log capture
+):
+    """Test feature flag configuration via environment variables."""
+
+    # Use monkeypatch for environment variables (not mocker)
+    monkeypatch.setenv("TWITTER_USE_API_CLIENT", "true")
+    monkeypatch.setenv("DOWNLOAD_API_FALLBACK_TO_CLI", "false")
+
+    # Test configuration loading
+    settings = BossSettings()
+
+    assert settings.twitter_use_api_client is True
+    assert settings.download_api_fallback_to_cli is False
+
+    # Verify logging output
+    with caplog.at_level(logging.INFO):
+        feature_flags = DownloadFeatureFlags(settings)
+        assert feature_flags.use_api_twitter is True
+
+    assert "feature flag" in caplog.text.lower()
+```
+
+### Test Structure and Organization
 
 ```
 tests/test_core/test_downloads/
 ├── test_handlers/           # ✅ Existing CLI handler tests (unchanged)
+│   ├── test_twitter_handler.py    # Keep existing CLI tests
+│   └── test_reddit_handler.py     # Keep existing CLI tests
 ├── test_clients/            # 🆕 NEW: API client tests with VCR
-│   ├── test_aio_gallery_dl.py
-│   ├── test_aio_yt_dlp.py
-│   └── cassettes/          # VCR cassettes for pytest-recording
+│   ├── test_aio_gallery_dl.py     # AsyncGalleryDL client tests
+│   ├── test_aio_yt_dlp.py         # Future: AsyncYtDlp client tests
+│   ├── test_config_models.py      # Pydantic configuration tests
+│   └── cassettes/                 # VCR cassettes for pytest-recording
 │       ├── test_twitter_api_download.yaml
-│       └── test_reddit_api_download.yaml
+│       ├── test_reddit_api_download.yaml
+│       ├── test_config_loading.yaml
+│       └── test_authentication.yaml
 ├── test_strategies/         # 🆕 NEW: Strategy integration tests
-│   ├── test_twitter_strategy.py
-│   └── test_reddit_strategy.py
-└── test_feature_flags/      # 🆕 NEW: Feature flag tests
-    └── test_download_feature_flags.py
+│   ├── test_twitter_strategy.py   # CLI/API switching tests
+│   ├── test_reddit_strategy.py    # Reddit-specific strategy tests
+│   ├── test_base_strategy.py      # Strategy interface tests
+│   └── test_fallback_behavior.py  # API->CLI fallback tests
+├── test_feature_flags/      # 🆕 NEW: Feature flag tests
+│   ├── test_download_feature_flags.py  # Feature flag logic
+│   └── test_environment_config.py      # Environment variable validation
+└── conftest.py              # 🆕 NEW: Experimental test fixtures
 ```
 
-## Migration Path
+#### Test File Patterns and Examples
 
-### Phase 1: Infrastructure Setup
-- [ ] Implement base strategy pattern
-- [ ] Add feature flag configuration
-- [ ] Create base client interfaces
-- [ ] Update environment configuration
+**Client Tests (with VCR)**:
+```python
+# tests/test_core/test_downloads/test_clients/test_aio_gallery_dl.py
+import pytest
+from pytest_mock import MockerFixture
 
-### Phase 2: Twitter API Implementation
-- [ ] Implement `AsyncGalleryDL` client
-- [ ] Create `TwitterDownloadStrategy`
-- [ ] Add comprehensive test coverage with VCR
-- [ ] Test with feature flags disabled (validate no regression)
+class TestAsyncGalleryDL:
+    """Test suite for AsyncGalleryDL client."""
 
-### Phase 3: Reddit API Implementation
-- [ ] Extend `AsyncGalleryDL` for Reddit
-- [ ] Create `RedditDownloadStrategy`
-- [ ] Add Reddit-specific test coverage
-- [ ] Test strategy switching logic
+    @pytest.mark.asyncio
+    @pytest.mark.vcr(cassette_library_dir="tests/cassettes")
+    async def test_download_twitter_with_config(self, tmp_path: Path):
+        """Test downloading Twitter content with custom configuration."""
+        # Test implementation with VCR recording
 
-### Phase 4: YouTube API Implementation
-- [ ] Implement `AsyncYtDlp` client
-- [ ] Create `YouTubeDownloadStrategy`
-- [ ] Add yt-dlp specific configuration models
-- [ ] Test video download scenarios
+    @pytest.mark.asyncio
+    async def test_configuration_merging(
+        self,
+        mocker: MockerFixture,
+        tmp_path: Path
+    ):
+        """Test configuration file and runtime config merging."""
+        # Unit test without VCR (mocked file operations)
 
-### Phase 5: Integration & Rollout
-- [ ] Update Discord cog to use strategies
-- [ ] Update CLI commands to use strategies
-- [ ] Document configuration options
-- [ ] Gradual rollout per platform via environment variables
+    @pytest.mark.asyncio
+    async def test_error_handling(self, mocker: MockerFixture):
+        """Test error handling in gallery-dl operations."""
+        # Mock gallery-dl to raise exceptions
+```
 
-### Phase 6: Advanced Features
-- [ ] Implement caching layer for API responses
-- [ ] Add metrics and monitoring for API vs CLI usage
-- [ ] Performance benchmarking and optimization
-- [ ] Advanced error handling and retry logic
+**Strategy Tests (Mock-heavy)**:
+```python
+# tests/test_core/test_downloads/test_strategies/test_twitter_strategy.py
+import pytest
+from pytest_mock import MockerFixture
+
+class TestTwitterDownloadStrategy:
+    """Test suite for Twitter download strategy."""
+
+    @pytest.mark.asyncio
+    async def test_cli_mode_unchanged(
+        self,
+        mocker: MockerFixture,
+        fixture_feature_flags_test: DownloadFeatureFlags,
+        tmp_path: Path
+    ):
+        """Verify CLI mode uses existing handler (unchanged behavior)."""
+        # Configure for CLI mode
+        fixture_feature_flags_test.settings.twitter_use_api_client = False
+
+        # Test that existing CLI handler is called
+
+    @pytest.mark.asyncio
+    async def test_api_mode_with_fallback(
+        self,
+        mocker: MockerFixture,
+        fixture_feature_flags_test: DownloadFeatureFlags,
+        tmp_path: Path
+    ):
+        """Test API mode with automatic CLI fallback."""
+        # Configure for API mode with fallback
+        fixture_feature_flags_test.settings.twitter_use_api_client = True
+        fixture_feature_flags_test.settings.download_api_fallback_to_cli = True
+
+        # Mock API failure and CLI success
+        # Verify fallback behavior
+```
+
+**Feature Flag Tests**:
+```python
+# tests/test_core/test_downloads/test_feature_flags/test_download_feature_flags.py
+import pytest
+from pytest_mock import MockerFixture
+
+class TestDownloadFeatureFlags:
+    """Test suite for download feature flags."""
+
+    def test_default_configuration(
+        self,
+        fixture_mock_settings_test: Mock
+    ):
+        """Test default feature flag values."""
+        # Verify defaults are conservative (CLI mode)
+
+    def test_environment_override(
+        self,
+        monkeypatch: pytest.MonkeyPatch
+    ):
+        """Test environment variable overrides."""
+        # Use monkeypatch for environment variables
+        # Verify settings pick up environment changes
+
+    def test_feature_flag_properties(
+        self,
+        fixture_mock_settings_test: Mock
+    ):
+        """Test feature flag property logic."""
+        # Test each property method
+        # Verify boolean logic is correct
+```
+
+#### pytest Plugin Integration
+
+**Required pytest plugins** for experimental features:
+```toml
+# pyproject.toml
+[tool.pytest.ini_options]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--vcr-record=none",  # Default to no new recordings in CI
+]
+markers = [
+    "asyncio: mark test as async",
+    "vcr: mark test for VCR recording",
+    "experimental: mark test as experimental feature",
+    "integration: mark test as integration test",
+    "slow: mark test as slow running",
+]
+
+# Test dependencies
+[project.optional-dependencies]
+test = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-mock>=3.10.0",
+    "pytest-recording>=0.13.0",  # VCR integration
+    "pytest-cov>=4.0.0",
+    "pytest-xdist>=3.0.0",      # Parallel test execution
+]
+```
+
+**Running experimental tests**:
+```bash
+# Run all experimental tests (no new recordings)
+just check-test -m "experimental" --vcr-record=none
+
+# Run with new VCR recordings (development only)
+just check-test -m "vcr" --vcr-record=all
+
+# Run strategy tests only (fast, mock-heavy)
+just check-test "tests/test_core/test_downloads/test_strategies/"
+
+# Run client tests with existing cassettes
+just check-test "tests/test_core/test_downloads/test_clients/" --vcr-record=none
+```
+
+#### Async Testing Best Practices
+
+```python
+# ✅ CORRECT: Proper async test setup
+@pytest.mark.asyncio
+async def test_async_download_strategy(
+    mocker: MockerFixture,
+    fixture_feature_flags_test: DownloadFeatureFlags
+):
+    """Test async download strategy with proper setup."""
+
+    # Mock async methods with AsyncMock
+    mock_api_client = mocker.Mock()
+    mock_api_client.__aenter__ = mocker.AsyncMock(return_value=mock_api_client)
+    mock_api_client.__aexit__ = mocker.AsyncMock(return_value=None)
+    mock_api_client.download = mocker.AsyncMock(
+        return_value=async_generator_mock()
+    )
+
+    # Test async behavior
+    strategy = TwitterDownloadStrategy(fixture_feature_flags_test, Path("/tmp"))
+
+    with mocker.patch.object(strategy, 'api_client', mock_api_client):
+        result = await strategy.download("https://twitter.com/test")
+
+    # Verify async calls
+    mock_api_client.__aenter__.assert_called_once()
+    mock_api_client.download.assert_called_once()
+
+async def async_generator_mock():
+    """Helper to create async generator mock."""
+    yield {"extractor": "twitter", "url": "test.jpg"}
+
+# ❌ WRONG: Don't mix sync and async improperly
+def test_sync_calling_async():  # Missing @pytest.mark.asyncio
+    result = await some_async_function()  # This will fail
+```
+
+#### Test Isolation and Cleanup
+
+```python
+# tests/conftest.py
+@pytest.fixture(scope="function", autouse=True)
+def isolate_experimental_tests(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """Isolate experimental tests from each other.
+
+    Ensures each test runs in clean environment with temporary
+    directories and isolated configuration.
+    """
+    # Set clean temporary directory for downloads
+    monkeypatch.setenv("BOSS_BOT_DOWNLOAD_DIR", str(tmp_path / "downloads"))
+
+    # Reset feature flags to defaults
+    monkeypatch.delenv("TWITTER_USE_API_CLIENT", raising=False)
+    monkeypatch.delenv("REDDIT_USE_API_CLIENT", raising=False)
+    monkeypatch.delenv("DOWNLOAD_API_FALLBACK_TO_CLI", raising=False)
+
+    # Create directory structure
+    (tmp_path / "downloads").mkdir()
+    (tmp_path / "cassettes").mkdir()
+
+    yield
+
+    # Cleanup is automatic with tmp_path fixture
+```
+
+## Implementation Roadmap
+
+### Epic 1: Infrastructure Foundation
+- [ ] **Story 1.1**: Implement base strategy pattern interfaces
+- [ ] **Story 1.2**: Add feature flag configuration to BossSettings
+- [ ] **Story 1.3**: Create base client interfaces and abstract classes
+- [ ] **Story 1.4**: Update environment configuration with new settings
+
+### Epic 2: Twitter API Implementation
+- [ ] **Story 2.1**: Implement `AsyncGalleryDL` client with configuration loading
+- [ ] **Story 2.2**: Create `TwitterDownloadStrategy` with CLI/API switching
+- [ ] **Story 2.3**: Add comprehensive test coverage with VCR recording
+- [ ] **Story 2.4**: Validate no regression with feature flags disabled
+
+### Epic 3: Reddit API Implementation
+- [ ] **Story 3.1**: Extend `AsyncGalleryDL` for Reddit-specific features
+- [ ] **Story 3.2**: Create `RedditDownloadStrategy` with authentication
+- [ ] **Story 3.3**: Add Reddit-specific test coverage and cassettes
+- [ ] **Story 3.4**: Test strategy switching logic between platforms
+
+### Epic 4: YouTube API Implementation
+- [ ] **Story 4.1**: Implement `AsyncYtDlp` client for video downloads
+- [ ] **Story 4.2**: Create `YouTubeDownloadStrategy` with quality selection
+- [ ] **Story 4.3**: Add yt-dlp specific configuration models
+- [ ] **Story 4.4**: Test video download scenarios and metadata extraction
+
+### Epic 5: Integration & Rollout
+- [ ] **Story 5.1**: Update Discord cogs to use strategy pattern
+- [ ] **Story 5.2**: Update CLI commands to use strategies
+- [ ] **Story 5.3**: Document configuration options and usage examples
+- [ ] **Story 5.4**: Implement gradual rollout per platform via environment variables
+
+### Epic 6: Advanced Features
+- [ ] **Story 6.1**: Implement caching layer for API responses
+- [ ] **Story 6.2**: Add metrics and monitoring for API vs CLI usage
+- [ ] **Story 6.3**: Performance benchmarking and optimization
+- [ ] **Story 6.4**: Advanced error handling and retry logic
 
 ## Benefits
 

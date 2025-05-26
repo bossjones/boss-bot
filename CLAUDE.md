@@ -14,7 +14,7 @@ Boss-Bot is a Discord bot that enables downloading and managing media files. The
 - Format code: `just format`
 - Full check suite: `just check`
 - Manage dependencies: `just uv-update`
-- Run bot: `bossctl go`
+- Run bot: `goobctl go`
 
 ## Code Architecture
 - `BossBot` (in `src/boss_bot/bot/client.py`) is the main bot class extending discord.ext.commands.Bot
@@ -39,6 +39,24 @@ Boss-Bot is a Discord bot that enables downloading and managing media files. The
 - **Testing**: pytest, pytest-asyncio, dpytest
 - **Storage**: Support for various storage mechanisms
 - **Build System**: Just, uv, ruff
+
+## Platform Handler Implementation Status (Phase 2)
+The project is currently implementing platform-specific download handlers following a modular architecture:
+
+### ✅ Completed Platforms
+- **Twitter/X Handler** (`twitter_handler.py`): Full implementation with gallery-dl integration, metadata extraction, Discord bot integration, and CLI commands
+- **Reddit Handler** (`reddit_handler.py`): Full implementation with gallery-dl integration, subreddit metadata, Discord bot integration, and CLI commands
+
+### 🔄 Planned Platforms
+- **YouTube Handler**: Planned using yt-dlp with multiple fallback strategies
+- **Instagram Handler**: Planned implementation following established patterns
+- **Generic Handler**: Fallback for unsupported platforms
+
+### Handler Architecture
+- **Base Class**: `BaseDownloadHandler` defines abstract interface for all handlers
+- **Platform Detection**: URL pattern matching for automatic handler selection
+- **Integration Points**: Discord cog integration, CLI command structure, comprehensive test coverage
+- **Technology**: Uses gallery-dl for social media platforms, yt-dlp for video platforms
 
 ## Testing Guidelines
 - Use pytest for all tests with proper module organization matching src structure
@@ -308,9 +326,12 @@ src/boss_bot/
 │   │   ├── manager.py          # Download manager
 │   │   ├── handlers/           # Protocol-specific handlers
 │   │   │   ├── __init__.py
-│   │   │   ├── youtube.py      # YouTube handling
-│   │   │   ├── twitter.py      # Twitter/X handling
-│   │   │   └── generic.py      # Generic URL handling
+│   │   │   ├── base_handler.py # Abstract base handler
+│   │   │   ├── twitter_handler.py # Twitter/X handling (✅ implemented)
+│   │   │   ├── reddit_handler.py  # Reddit handling (✅ implemented)
+│   │   │   ├── youtube.py      # YouTube handling (🔄 planned)
+│   │   │   ├── instagram.py    # Instagram handling (🔄 planned)
+│   │   │   └── generic.py      # Generic URL handling (🔄 planned)
 │   │   └── models.py           # Download data models
 │   └── services/               # Core services
 │       ├── __init__.py
@@ -429,7 +450,7 @@ src/boss_bot/
 
 ### CLI Development
 The CLI (`src/boss_bot/cli/`) provides command-line control of the bot:
-- Main entry point: `bossctl` → `boss_bot.cli.main`
+- Main entry point: `goobctl` → `boss_bot.cli.main`
 - Subcommand structure using Typer with dedicated command modules
 - Rich formatting for console output
 - Commands for bot management, queue operations, AI workflows, and configuration

@@ -1163,23 +1163,23 @@ def isolate_experimental_tests(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
 ## Implementation Roadmap
 
-### Epic 1: Infrastructure Foundation
-- [ ] **Story 1.1**: Implement base strategy pattern interfaces
-- [ ] **Story 1.2**: Add feature flag configuration to BossSettings
-- [ ] **Story 1.3**: Create base client interfaces and abstract classes
-- [ ] **Story 1.4**: Update environment configuration with new settings
+### Epic 1: Infrastructure Foundation ✅ COMPLETED
+- [x] **Story 1.1**: Implement base strategy pattern interfaces (`base_strategy.py`)
+- [x] **Story 1.2**: Add feature flag configuration to BossSettings (`feature_flags.py`, updated `env.py`)
+- [x] **Story 1.3**: Create base client interfaces and abstract classes (`aio_gallery_dl.py`, config models)
+- [x] **Story 1.4**: Update environment configuration with new settings
 
-### Epic 2: Twitter API Implementation
-- [ ] **Story 2.1**: Implement `AsyncGalleryDL` client with configuration loading
-- [ ] **Story 2.2**: Create `TwitterDownloadStrategy` with CLI/API switching
-- [ ] **Story 2.3**: Add comprehensive test coverage with VCR recording
-- [ ] **Story 2.4**: Validate no regression with feature flags disabled
+### Epic 2: Twitter API Implementation ✅ COMPLETED
+- [x] **Story 2.1**: Implement `AsyncGalleryDL` client with configuration loading
+- [x] **Story 2.2**: Create `TwitterDownloadStrategy` with CLI/API switching
+- [x] **Story 2.3**: Add comprehensive test coverage with strategy tests
+- [x] **Story 2.4**: Enhanced testability with API client setter/deleter methods
 
-### Epic 3: Reddit API Implementation
-- [ ] **Story 3.1**: Extend `AsyncGalleryDL` for Reddit-specific features
-- [ ] **Story 3.2**: Create `RedditDownloadStrategy` with authentication
-- [ ] **Story 3.3**: Add Reddit-specific test coverage and cassettes
-- [ ] **Story 3.4**: Test strategy switching logic between platforms
+### Epic 3: Reddit API Implementation 🔄 IN PROGRESS
+- [ ] **Story 3.1**: Create `RedditDownloadStrategy` following Twitter strategy pattern
+- [ ] **Story 3.2**: Integrate Reddit handler with strategy pattern
+- [ ] **Story 3.3**: Add Reddit-specific strategy test coverage
+- [ ] **Story 3.4**: Test Reddit strategy switching logic between platforms
 
 ### Epic 4: YouTube API Implementation
 - [ ] **Story 4.1**: Implement `AsyncYtDlp` client for video downloads

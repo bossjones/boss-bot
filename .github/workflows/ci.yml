@@ -133,7 +133,7 @@ jobs:
           cp -f env.sample .env || true
           ./scripts/retry -t 4 -- uv sync --dev
           pipx install rust-just
-          ./scripts/retry -t 2 -- uv run goobctl version
+          ./scripts/retry -t 2 -- uv run bossctl version
 
       - name: Display UV and Python versions
         run: |

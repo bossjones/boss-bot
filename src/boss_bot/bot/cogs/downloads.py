@@ -1,8 +1,11 @@
 """Discord cog for handling downloads."""
 
+from pathlib import Path
+
 from discord.ext import commands
 
 from boss_bot.bot.client import BossBot
+from boss_bot.core.downloads.handlers import TwitterHandler
 
 
 class DownloadCog(commands.Cog):
@@ -11,10 +14,40 @@ class DownloadCog(commands.Cog):
     def __init__(self, bot: BossBot):
         """Initialize the cog."""
         self.bot = bot
+        # Initialize download directory for Twitter handler
+        self.download_dir = Path.cwd() / ".downloads"
+        self.download_dir.mkdir(exist_ok=True, parents=True)
+        self.twitter_handler = TwitterHandler(download_dir=self.download_dir)
 
     @commands.command(name="download")
     async def download(self, ctx: commands.Context, url: str):
-        """Download a video from a URL."""
+        """Download content from various platforms."""
+        # Check if it's a Twitter/X URL and handle directly
+        if self.twitter_handler.supports_url(url):
+            await ctx.send(f"🐦 Downloading Twitter content: {url}")
+
+            try:
+                result = await self.twitter_handler.adownload(url)
+
+                if result.success:
+                    file_count = len(result.files) if result.files else 0
+                    await ctx.send(f"✅ Twitter download completed! Downloaded {file_count} files to `.downloads/`")
+
+                    # Show some files if available
+                    if result.files and file_count <= 3:
+                        file_list = "\n".join([f"📄 {f.name}" for f in result.files[:3]])
+                        await ctx.send(f"Files:\n```\n{file_list}\n```")
+                    elif file_count > 3:
+                        await ctx.send(f"📄 {file_count} files downloaded (too many to list)")
+
+                else:
+                    await ctx.send(f"❌ Twitter download failed: {result.error}")
+
+            except Exception as e:
+                await ctx.send(f"❌ Download error: {e!s}")
+            return
+
+        # Fallback to existing queue-based system for other URLs
         if not self.bot.download_manager.validate_url(url):
             await ctx.send("Invalid URL provided.")
             return
@@ -24,6 +57,38 @@ class DownloadCog(commands.Cog):
             await ctx.send(f"Added {url} to download queue.")
         except Exception as e:
             await ctx.send(str(e))
+
+    @commands.command(name="info")
+    async def info(self, ctx: commands.Context, url: str):
+        """Get metadata information about a URL without downloading."""
+        if self.twitter_handler.supports_url(url):
+            await ctx.send(f"🔍 Getting Twitter metadata: {url}")
+
+            try:
+                metadata = await self.twitter_handler.aget_metadata(url)
+
+                # Build info message
+                info_lines = ["🐦 **Twitter Content Info**"]
+
+                if metadata.title:
+                    info_lines.append(
+                        f"📝 **Content:** {metadata.title[:200]}{'...' if len(metadata.title) > 200 else ''}"
+                    )
+                if metadata.uploader:
+                    info_lines.append(f"👤 **Author:** {metadata.uploader}")
+                if metadata.upload_date:
+                    info_lines.append(f"📅 **Date:** {metadata.upload_date}")
+                if metadata.like_count:
+                    info_lines.append(f"❤️ **Likes:** {metadata.like_count}")
+                if metadata.view_count:
+                    info_lines.append(f"🔄 **Retweets:** {metadata.view_count}")
+
+                await ctx.send("\n".join(info_lines))
+
+            except Exception as e:
+                await ctx.send(f"❌ Failed to get metadata: {e!s}")
+        else:
+            await ctx.send("ℹ️ Metadata extraction currently only supported for Twitter/X URLs")
 
     @commands.command(name="status")
     async def status(self, ctx: commands.Context):

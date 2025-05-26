@@ -240,7 +240,7 @@
     [project.scripts]
         # clctl       = "boss_bot.cli:main"
         # boss-bot = "boss_bot.cli:main"
-        goobctl = 'boss_bot.cli:entry'
+        bossctl = 'boss_bot.cli:entry'
 
     [project.urls]
         "Bug Tracker"   = "https://github.com/bossjones/boss-bot/issues"
@@ -508,6 +508,7 @@
             "F841",
             "N812",
             "PGH003",
+            "RUF001",
             "RUF013",
             "RUF015",
             "RUF022",

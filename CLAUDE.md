@@ -14,7 +14,7 @@ Boss-Bot is a Discord bot that enables downloading and managing media files. The
 - Format code: `just format`
 - Full check suite: `just check`
 - Manage dependencies: `just uv-update`
-- Run bot: `goobctl go`
+- Run bot: `bossctl go`
 
 ## Code Architecture
 - `BossBot` (in `src/boss_bot/bot/client.py`) is the main bot class extending discord.ext.commands.Bot
@@ -51,6 +51,84 @@ Boss-Bot is a Discord bot that enables downloading and managing media files. The
 - Check for proper exception handling and error responses
 - Use skipping with `@pytest.mark.skip_until` for in-progress features
 - Always clean up resources with fixture teardown logic
+
+### Fixture Naming and Organization Conventions
+Based on analysis of existing conftest.py files and .cursor/rules, follow these patterns:
+
+#### Fixture Naming Patterns
+- **Standardized Prefix**: All custom fixtures use `fixture_` prefix (e.g., `fixture_settings_test`, `fixture_bot_test`)
+- **Descriptive Suffixes**: Add context-specific suffixes like `_test`, `_mock`, `_data`
+- **Environment Variables**: Use `fixture_env_vars_test` pattern for environment setup
+- **Bot/Discord**: Use `fixture_discord_bot`, `fixture_mock_bot_test` patterns
+- **Avoid Collisions**: Never create fixtures with generic names like `bot`, `settings`, `client`
+
+#### Conftest.py Organization Structure
+```python
+# Standard organization pattern found in tests/conftest.py:
+
+"""Test configuration and fixtures for boss-bot."""
+
+import pytest
+from unittest.mock import AsyncMock, Mock
+# ... other imports
+
+# ============================================================================
+# Environment and Settings Fixtures
+# ============================================================================
+
+@pytest.fixture(scope="function")
+def fixture_env_vars_test() -> dict[str, str]:
+    """Provide test environment variables."""
+    # Implementation here
+
+# ============================================================================
+# Bot and Discord Fixtures
+# ============================================================================
+
+@pytest.fixture(scope="function")
+def fixture_mock_bot_test(mocker) -> Mock:
+    """Create a mocked BossBot instance for testing."""
+    # Implementation here
+
+# ============================================================================
+# Storage and Manager Fixtures
+# ============================================================================
+
+@pytest.fixture(scope="function")
+def fixture_queue_manager_test(fixture_settings_test) -> QueueManager:
+    """Create QueueManager instance for testing."""
+    # Implementation here
+```
+
+#### Fixture Documentation Standards
+- **Comprehensive Docstrings**: Every fixture must have a docstring explaining its purpose
+- **Type Hints**: All fixtures must include proper return type annotations
+- **Scope Declaration**: Explicitly declare scope (prefer `scope="function"` for isolation)
+- **Dependencies**: Document fixture dependencies in docstring
+
+#### pytest-mock Usage Patterns
+- **Always use `mocker` fixture**: Never import `unittest.mock` directly
+- **AsyncMock for async methods**: Use `mocker.AsyncMock()` for async Discord methods
+- **Spec parameter**: Use `spec=` parameter when mocking complex objects
+```python
+# Correct pattern:
+ctx = mocker.Mock(spec=commands.Context)
+ctx.send = mocker.AsyncMock()
+
+# Never do this:
+from unittest.mock import Mock, AsyncMock
+```
+
+#### Built-in Fixture Usage
+- **tmp_path**: Use for temporary file operations (preferred over custom temp directories)
+- **monkeypatch**: Use for environment variable patching
+- **caplog**: Use for testing logging output
+
+#### Test File Organization
+- Match src directory structure in tests/
+- One test file per source module
+- Use descriptive test function names with `test_` prefix
+- Group related tests in classes when appropriate
 
 ### Discord.py Testing Patterns
 - **Command Testing Approaches**:
@@ -351,7 +429,7 @@ src/boss_bot/
 
 ### CLI Development
 The CLI (`src/boss_bot/cli/`) provides command-line control of the bot:
-- Main entry point: `goobctl` → `boss_bot.cli.main`
+- Main entry point: `bossctl` → `boss_bot.cli.main`
 - Subcommand structure using Typer with dedicated command modules
 - Rich formatting for console output
 - Commands for bot management, queue operations, AI workflows, and configuration

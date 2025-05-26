@@ -673,16 +673,149 @@ if __name__ == "__main__":
 ```
 
 #### Step 2.2: Create CLI Subcommands
+
+##### Core CLI Commands
 - `cli/commands/bot.py` - Bot management (start, stop, status, restart)
 - `cli/commands/queue.py` - Queue operations (list, clear, pause, resume)
-- `cli/commands/download.py` - Download management (start, cancel, status)
+- `cli/commands/download.py` - Download management with platform-specific handlers
 - `cli/commands/cli_config.py` - Configuration management (show, set, validate)
 - `cli/commands/ai.py` - AI workflow commands (analyze, summarize, classify)
 
+##### Download Command Implementation (`cli/commands/download.py`)
+
+The download command supports multiple platforms with both synchronous and asynchronous operations:
+
+**Platform Support Matrix:**
+- **Twitter/X**: `gallery-dl` with metadata extraction
+- **Reddit**: `gallery-dl` with custom config and cookies
+- **YouTube**: `yt-dlp` with fallback strategies and thumbnail conversion
+- **Instagram**: `gallery-dl` with browser cookie extraction
+
+**Command Structure:**
+```python
+# CLI command examples that will be implemented
+@download_app.command("twitter")
+def download_twitter(url: str, async_mode: bool = False):
+    """Download Twitter content using gallery-dl"""
+
+@download_app.command("reddit")
+def download_reddit(url: str, async_mode: bool = False):
+    """Download Reddit content using gallery-dl"""
+
+@download_app.command("youtube")
+def download_youtube(url: str, async_mode: bool = False):
+    """Download YouTube content using yt-dlp with fallback strategies"""
+
+@download_app.command("instagram")
+def download_instagram(url: str, async_mode: bool = False):
+    """Download Instagram content using gallery-dl with browser cookies"""
+```
+
+**Handler Implementation Strategy:**
+```python
+# core/downloads/handlers/ structure
+handlers/
+├── __init__.py
+├── base_handler.py          # Abstract base class for all handlers
+├── twitter_handler.py       # gallery-dl implementation for Twitter
+├── reddit_handler.py        # gallery-dl implementation for Reddit
+├── youtube_handler.py       # yt-dlp implementation with fallback logic
+├── instagram_handler.py     # gallery-dl implementation for Instagram
+└── generic_handler.py       # Fallback for unrecognized URLs
+```
+
+**Base Handler Pattern:**
+```python
+# Abstract base for both sync and async operations
+class BaseDownloadHandler(ABC):
+    @abstractmethod
+    def download(self, url: str, **options) -> DownloadResult:
+        """Synchronous download"""
+        pass
+
+    @abstractmethod
+    async def adownload(self, url: str, **options) -> DownloadResult:
+        """Asynchronous download (prefixed with 'a')"""
+        pass
+
+    @abstractmethod
+    def get_metadata(self, url: str) -> MediaMetadata:
+        """Extract metadata without downloading"""
+        pass
+
+    @abstractmethod
+    async def aget_metadata(self, url: str) -> MediaMetadata:
+        """Async metadata extraction"""
+        pass
+```
+
+**Platform-Specific Configurations:**
+```python
+# Handler configurations based on shell aliases
+TWITTER_CONFIG = {
+    "tool": "gallery-dl",
+    "args": ["--no-mtime", "-v", "--write-info-json", "--write-metadata"]
+}
+
+REDDIT_CONFIG = {
+    "tool": "gallery-dl",
+    "args": ["--config", "~/.gallery-dl.conf", "--no-mtime", "-v",
+             "--write-info-json", "--write-metadata"],
+    "cookies": "~/.config/gallery-dl/wavy-cookies-instagram.txt"
+}
+
+YOUTUBE_CONFIG = {
+    "tool": "yt-dlp",
+    "primary_strategy": "thumbnail_first",  # dl-thumb-fork
+    "fallback_strategies": ["best_quality", "basic_dlp"],  # yt-best-fork, yt-dlp
+    "args": ["-v", "-f", "best", "-n", "--ignore-errors",
+             "--restrict-filenames", "--write-thumbnail", "--no-mtime",
+             "--embed-thumbnail", "--recode-video", "mp4",
+             "--convert-thumbnails", "jpg"],
+    "cookies": "~/Downloads/yt-cookies.txt"
+}
+
+INSTAGRAM_CONFIG = {
+    "tool": "gallery-dl",
+    "args": ["--cookies-from-browser", "Firefox", "--no-mtime",
+             "--user-agent", "Wget/1.21.1", "-v", "--write-info-json",
+             "--write-metadata"]
+}
+```
+
+**MVP Implementation Focus:**
+For Phase 2 MVP, implement basic functionality for each platform:
+- ✅ URL parsing and platform detection
+- ✅ Basic download execution with proper tool selection
+- ✅ Metadata extraction and JSON output
+- ✅ Error handling and fallback strategies (especially for YouTube)
+- ✅ Both sync and async API support
+- 🔄 Advanced features (cookie management, format selection) in later phases
+
 #### Step 2.3: CLI Utilities
-- `cli/utils/formatters.py` - Rich console formatting
-- `cli/utils/validators.py` - Input validation
-- `cli/config/settings.py` - CLI-specific configuration
+- `cli/utils/formatters.py` - Rich console formatting for download progress
+- `cli/utils/validators.py` - URL validation and platform detection
+- `cli/config/settings.py` - CLI-specific configuration for download tools
+
+#### Step 2.4: Download Tool Integration
+**Dependencies and Environment Setup:**
+```python
+# Required external tools (managed via UV dependencies)
+EXTERNAL_TOOLS = {
+    "gallery-dl": "Available in virtual environment via UV",
+    "yt-dlp": "Available in virtual environment via UV",
+    "youtube-dl": "Available in virtual environment via UV"  # fallback
+}
+
+# All tools run within the same virtual environment
+# No pyenv switching required - everything managed by UV
+```
+
+**MVP Testing Strategy:**
+- Mock external tool calls for unit tests
+- VCR cassettes for tool output parsing tests
+- Integration tests with real URLs (limited scope)
+- Platform detection accuracy tests
 
 ### Phase 3: AI Integration Foundation (Week 4-5) - PR #3
 
@@ -1542,14 +1675,14 @@ git commit -m "Re-record cassettes with VCR $(uv run python -c 'import vcr; prin
 
 # Check entry points in pyproject.toml:
 [project.scripts]
-goobctl = "boss_bot.cli.main:main"
+bossctl = "boss_bot.cli.main:main"
 boss-bot = "boss_bot.cli.main:main"  # Backward compatibility
 
 # Reinstall in development mode:
 uv pip install -e .
 
 # Test CLI discovery:
-goobctl --help
+bossctl --help
 boss-bot --help
 
 # Debug CLI import issues:
@@ -1569,8 +1702,8 @@ rm -rf .venv
 uv sync
 
 # Verify entry points:
-which goobctl
-goobctl --version
+which bossctl
+bossctl --version
 
 # Alternative: Direct execution
 uv run python -m boss_bot.cli --help
@@ -1631,7 +1764,7 @@ just check-coverage  # Ensure test coverage baseline
 
 # Document current performance baseline:
 time python -m boss_bot --version
-time goobctl --help
+time bossctl --help
 
 # Memory usage baseline:
 /usr/bin/time -v uv run python -c "import boss_bot; print('Import OK')"
@@ -1694,18 +1827,18 @@ just check-test
 # After Phase 2 completion, verify:
 
 # 1. CLI commands discoverable:
-goobctl --help | grep -E "(bot|queue|download|config)"
+bossctl --help | grep -E "(bot|queue|download|config)"
 
 # 2. Subcommands work:
-goobctl bot --help
-goobctl queue --help
-goobctl config --help
+bossctl bot --help
+bossctl queue --help
+bossctl config --help
 
 # 3. Backward compatibility:
 uv run python -c "from boss_bot.cli import main; print('Old CLI import works')"
 
 # 4. CLI performance:
-time goobctl --help  # Should be < 2 seconds
+time bossctl --help  # Should be < 2 seconds
 
 # 5. CLI tests pass:
 pytest tests/test_cli/ -v
@@ -1763,8 +1896,8 @@ print('Bot ready')
 "  # Should be < 3 seconds
 
 # CLI responsiveness:
-time goobctl bot status  # Should be < 1 second
-time goobctl queue list  # Should be < 1 second
+time bossctl bot status  # Should be < 1 second
+time bossctl queue list  # Should be < 1 second
 
 # AI chain performance (with VCR):
 time uv run pytest tests/test_ai/test_chains/test_summarization.py::test_basic_summarization -v
@@ -1820,7 +1953,7 @@ def check_tests() -> bool:
 
 def check_cli() -> bool:
     """Check CLI functionality."""
-    exit_code, _, _ = run_command("goobctl --help")
+    exit_code, _, _ = run_command("bossctl --help")
     return exit_code == 0
 
 def main():
@@ -2083,7 +2216,7 @@ asyncio.run(test_bot())
 " || exit 1
 
 # CLI responsiveness
-timeout 10s goobctl --version || exit 1
+timeout 10s bossctl --version || exit 1
 
 echo "✅ Production health check passed"
 ```

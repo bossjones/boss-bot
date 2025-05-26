@@ -1,0 +1,75 @@
+{
+    "tweet_id": 1868256259251863704,
+    "retweet_id": 0,
+    "quote_id": 0,
+    "reply_id": 1867624110450520454,
+    "conversation_id": 1867406857561677998,
+    "date": "2024-12-15 11:26:17",
+    "author": {
+        "id": 251084543,
+        "name": "Eminitybaba_",
+        "nick": "Commissioner for Dodo™️",
+        "location": "Konoha",
+        "date": "2011-02-12 12:07:13",
+        "verified": false,
+        "protected": false,
+        "profile_banner": "https://pbs.twimg.com/profile_banners/251084543/1632240617",
+        "profile_image": "https://pbs.twimg.com/profile_images/1837822258770776064/WcFzypid.jpg",
+        "favourites_count": 21833,
+        "followers_count": 73026,
+        "friends_count": 10009,
+        "listed_count": 66,
+        "media_count": 17013,
+        "statuses_count": 423991,
+        "description": "Father | Husband | MBBS | MPH | Anime | Rotarian | Volunteer @SCAF_Nigeria | check my highlights | Crypto enthusiast"
+    },
+    "user": {
+        "id": 251084543,
+        "name": "Eminitybaba_",
+        "nick": "Commissioner for Dodo™️",
+        "location": "Konoha",
+        "date": "2011-02-12 12:07:13",
+        "verified": false,
+        "protected": false,
+        "profile_banner": "https://pbs.twimg.com/profile_banners/251084543/1632240617",
+        "profile_image": "https://pbs.twimg.com/profile_images/1837822258770776064/WcFzypid.jpg",
+        "favourites_count": 21833,
+        "followers_count": 73026,
+        "friends_count": 10009,
+        "listed_count": 66,
+        "media_count": 17013,
+        "statuses_count": 423991,
+        "description": "Father | Husband | MBBS | MPH | Anime | Rotarian | Volunteer @SCAF_Nigeria | check my highlights | Crypto enthusiast"
+    },
+    "lang": "en",
+    "source": "Twitter for iPhone",
+    "sensitive": false,
+    "favorite_count": 121,
+    "quote_count": 1,
+    "reply_count": 0,
+    "retweet_count": 6,
+    "bookmark_count": 21,
+    "view_count": 8326,
+    "mentions": [
+        {
+            "id": 1639554822277054464,
+            "name": "BulljunkSports",
+            "nick": "Cereal Killer"
+        },
+        {
+            "id": 782099455,
+            "name": "jideszn",
+            "nick": "🦉"
+        },
+        {
+            "id": 1115367390,
+            "name": "Nico18douglas",
+            "nick": "Niccolo Jr."
+        }
+    ],
+    "content": "@BulljunkSports @jideszn @Nico18douglas When he sees this 😂😂",
+    "reply_to": "BulljunkSports",
+    "count": 1,
+    "category": "twitter",
+    "subcategory": "tweet"
+}

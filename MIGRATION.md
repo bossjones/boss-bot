@@ -2663,3 +2663,17 @@ This approach maintains consistency with the existing release process while addi
 - Performance maintained or improved
 - Code maintainability significantly improved
 - Documentation completeness: 100%
+
+## Additional Documentation
+
+### Experimental Features
+
+For information about experimental features and future architectural considerations, see [EXPERIMENTAL.md](./EXPERIMENTAL.md). This document covers:
+
+- **API-Direct Download Clients**: Alternative to subprocess-based downloads using gallery-dl/yt-dlp as Python modules
+- **Strategy Pattern Implementation**: Feature-flagged approach for choosing between CLI and API methods
+- **Sync/Async Compatibility**: Handling both synchronous and asynchronous download contexts
+- **pytest-recording Integration**: Enhanced testing capabilities for API interactions
+- **Migration Path**: Detailed implementation phases for experimental features
+
+The experimental features are designed to complement the main migration without disrupting existing functionality. All experimental features are feature-flagged and disabled by default.

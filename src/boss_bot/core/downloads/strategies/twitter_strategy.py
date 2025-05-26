@@ -63,6 +63,16 @@ class TwitterDownloadStrategy(BaseDownloadStrategy):
             self._api_client = AsyncGalleryDL(config=config, download_dir=self.download_dir)
         return self._api_client
 
+    @api_client.setter
+    def api_client(self, value: AsyncGalleryDL | None) -> None:
+        """Set the API client (for testing purposes)."""
+        self._api_client = value
+
+    @api_client.deleter
+    def api_client(self) -> None:
+        """Delete the API client (for testing cleanup)."""
+        self._api_client = None
+
     @property
     def platform_name(self) -> str:
         """Get platform name for this strategy."""

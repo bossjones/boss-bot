@@ -1170,9 +1170,10 @@ As of the latest update, **Phase 2** of the experimental architecture has been s
 **Completed Platform Handlers:**
 - **Twitter Strategy** (`src/boss_bot/core/downloads/strategies/twitter_strategy.py`) - Full CLI/API switching with feature flags
 - **Reddit Strategy** (`src/boss_bot/core/downloads/strategies/reddit_strategy.py`) - Complete implementation with comprehensive test coverage
+- **Instagram Strategy** (`src/boss_bot/core/downloads/strategies/instagram_strategy.py`) - Full CLI/API switching with user-specified preferences (Firefox cookies, Wget/1.21.1 user agent)
 
 **Key Achievements:**
-- ✅ **92% Test Coverage** - Both strategies have comprehensive test suites with 17+ test cases each
+- ✅ **92% Test Coverage** - All three strategies have comprehensive test suites with 17+ test cases each
 - ✅ **Feature Flag Support** - Environment variable-driven configuration for API vs CLI choice
 - ✅ **Fallback Mechanisms** - API failures automatically fallback to CLI when enabled
 - ✅ **Lazy Loading** - API clients are only instantiated when needed
@@ -1189,12 +1190,19 @@ As of the latest update, **Phase 2** of the experimental architecture has been s
 **File Structure Implemented:**
 ```
 src/boss_bot/core/downloads/
+├── handlers/
+│   ├── __init__.py               ✅ Updated with Instagram exports
+│   ├── base_handler.py           ✅ Handler interface
+│   ├── twitter_handler.py        ✅ Complete implementation
+│   ├── reddit_handler.py         ✅ Complete implementation
+│   └── instagram_handler.py      ✅ Complete implementation with user CLI preferences
 ├── strategies/
 │   ├── __init__.py               ✅ Updated with new exports
 │   ├── base_strategy.py          ✅ Strategy interface
 │   ├── twitter_strategy.py       ✅ Complete implementation
-│   └── reddit_strategy.py        ✅ Complete implementation
-├── feature_flags.py              ✅ Feature flag management
+│   ├── reddit_strategy.py        ✅ Complete implementation
+│   └── instagram_strategy.py     ✅ Complete implementation
+├── feature_flags.py              ✅ Feature flag management (updated for Instagram)
 └── clients/
     ├── __init__.py               ✅ Client exports
     ├── aio_gallery_dl.py         ✅ Async gallery-dl wrapper
@@ -1202,7 +1210,14 @@ src/boss_bot/core/downloads/
         └── gallery_dl_config.py  ✅ Configuration models
 ```
 
-**Next Steps**: The foundation is now ready for Epic 4 (YouTube implementation) and Epic 5 (Discord/CLI integration).
+**Next Steps**: With Instagram now complete alongside Twitter and Reddit, the foundation is ready for Epic 4 (YouTube implementation) and Epic 5 (Discord/CLI integration).
+
+**Instagram Implementation Highlights:**
+- ✅ **User CLI Preferences**: Incorporates user's specified gallery-dl command pattern with Firefox cookies and Wget/1.21.1 user agent
+- ✅ **Customizable Options**: CLI command supports `--cookies-browser` and `--user-agent` options for flexibility
+- ✅ **Experimental Status**: Clearly marked as experimental in CLI help and documentation
+- ✅ **Complete Test Coverage**: 17 comprehensive test cases covering all strategy behaviors
+- ✅ **CLI Integration**: Full `bossctl download instagram` command implementation
 
 ## Implementation Roadmap
 
@@ -1223,6 +1238,14 @@ src/boss_bot/core/downloads/
 - [x] **Story 3.2**: Integrate Reddit handler with strategy pattern
 - [x] **Story 3.3**: Add Reddit-specific strategy test coverage
 - [x] **Story 3.4**: Test Reddit strategy switching logic between platforms
+
+### Epic 3.5: Instagram API Implementation ✅ COMPLETED
+- [x] **Story 3.5.1**: Create `InstagramHandler` with user CLI preferences (Firefox cookies, Wget/1.21.1 user agent)
+- [x] **Story 3.5.2**: Implement `InstagramDownloadStrategy` following established strategy pattern
+- [x] **Story 3.5.3**: Add Instagram feature flags to `DownloadFeatureFlags`
+- [x] **Story 3.5.4**: Create comprehensive test suite with 17 test cases
+- [x] **Story 3.5.5**: Add Instagram CLI command with customizable options
+- [x] **Story 3.5.6**: Update documentation and help information
 
 ### Epic 4: YouTube API Implementation
 - [ ] **Story 4.1**: Implement `AsyncYtDlp` client for video downloads

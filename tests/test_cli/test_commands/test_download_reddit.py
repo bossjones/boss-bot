@@ -356,7 +356,8 @@ class TestRedditCommands:
         result = runner.invoke(app, ["reddit", "--help"])
 
         assert result.exit_code == 0
-        assert "Download Reddit content using gallery-dl" in result.stdout
-        assert "--config" in result.stdout
-        assert "--cookies" in result.stdout
-        assert "--metadata-only" in result.stdout
+        clean_stdout = strip_ansi_codes(result.stdout)
+        assert "Download Reddit content using gallery-dl" in clean_stdout
+        assert "--config" in clean_stdout
+        assert "--cookies" in clean_stdout
+        assert "--metadata-only" in clean_stdout

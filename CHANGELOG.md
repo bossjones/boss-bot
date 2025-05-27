@@ -1,3 +1,19 @@
+## v0.4.0 (2025-05-27)
+
+### Feat
+
+- Complete Instagram strategy implementation and update documentation
+- Add Instagram download command and URL validation
+- Add Instagram download handler and strategy with API/CLI support
+- Implement Reddit download strategy with API/CLI choice and comprehensive tests
+- Add setter and deleter for API client in TwitterDownloadStrategy
+- Implement API-direct download strategy for Twitter with fallback to CLI
+- Add Reddit download support to Phase 2 platform implementation
+
+### Refactor
+
+- Update Twitter strategy tests to use pytest-mock and improve type annotations
+
 ## v0.3.0 (2025-05-26)
 
 ### Feat

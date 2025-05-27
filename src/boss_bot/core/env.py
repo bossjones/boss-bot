@@ -82,6 +82,9 @@ class BossSettings(BaseSettings):
         env_nested_delimiter="__",  # Use __ for nested settings
     )
 
+    # Bot settings
+    prefix: str = Field(default="$", description="Command prefix for the Discord bot")
+
     # Discord settings
     discord_token: SecretStr = Field(..., description="Discord bot token", validation_alias="DISCORD_TOKEN")
     discord_client_id: int | None = Field(None, description="Discord client ID", validation_alias="DISCORD_CLIENT_ID")

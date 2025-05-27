@@ -1,5 +1,7 @@
 """Tests for TwitterDownloadStrategy with CLI/API switching."""
 
+# NOTE: NEVER IMPORT FROM from unittest.mock import AsyncMock, MagicMock, patch, USE pytest-mock and mocker fixture instead. if unsure, run uv run pytest --fixtures.
+
 import pytest
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch

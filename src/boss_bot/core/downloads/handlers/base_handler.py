@@ -48,6 +48,33 @@ class MediaMetadata:
     format: str | None = None
     raw_metadata: dict[str, Any] | None = None
 
+    # Additional fields for API-direct support
+    author: str | None = None  # Alternative to uploader (API clients often use 'author')
+    filename: str | None = None  # Downloaded filename
+    filesize: int | None = None  # Alternative to file_size (for API consistency)
+    thumbnail_url: str | None = None  # Alternative to thumbnail (more explicit)
+    download_method: str | None = None  # Track whether downloaded via 'cli' or 'api'
+
+    def __post_init__(self):
+        """Normalize field values after initialization."""
+        # Ensure uploader/author consistency
+        if self.author and not self.uploader:
+            self.uploader = self.author
+        elif self.uploader and not self.author:
+            self.author = self.uploader
+
+        # Ensure filesize/file_size consistency
+        if self.filesize and not self.file_size:
+            self.file_size = self.filesize
+        elif self.file_size and not self.filesize:
+            self.filesize = self.file_size
+
+        # Ensure thumbnail/thumbnail_url consistency
+        if self.thumbnail_url and not self.thumbnail:
+            self.thumbnail = self.thumbnail_url
+        elif self.thumbnail and not self.thumbnail_url:
+            self.thumbnail_url = self.thumbnail
+
 
 class BaseDownloadHandler(ABC):
     """Abstract base class for all download handlers.

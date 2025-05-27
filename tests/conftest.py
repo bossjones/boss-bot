@@ -1,21 +1,25 @@
 """Test configuration and fixtures for Boss-Bot."""
 
 import asyncio
+import copy
+import functools
+import os
+import re
 from collections.abc import AsyncGenerator, Generator
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict, Optional
 
 import pytest
 from discord.ext import commands
 from pydantic import AnyHttpUrl
+from pytest import MonkeyPatch
 from pytest_mock import MockerFixture
+from vcr import filters
 
 from boss_bot.bot.client import BossBot
 from boss_bot.core.env import BossSettings, Environment
 from boss_bot.core.core_queue import QueueManager
 from boss_bot.downloaders.base import DownloadManager
-from pytest import MonkeyPatch
-import os
 
 # --- Test Environment Configuration --- #
 
@@ -279,3 +283,261 @@ def fixture_download_manager(fixture_settings_test: BossSettings) -> DownloadMan
     manager.reset_state()  # Start clean
 
     return manager
+
+
+# --- VCR Configuration for API Testing --- #
+
+# Environment detection
+IS_RUNNING_ON_GITHUB_ACTIONS = bool(os.environ.get("GITHUB_ACTOR"))
+
+# Hosts to ignore during VCR recording
+IGNORE_HOSTS: list[str] = [
+    "api.smith.langchain.com",
+    "localhost",
+    "127.0.0.1",
+    "0.0.0.0",
+]
+
+
+def is_twitter(uri: str) -> bool:
+    """Check if a URI is a Twitter/X URI."""
+    pattern = (
+        r"(?:https?://)?(?:www\.|mobile\.|api\.)?"
+        r"(?:(?:[fv]x)?twitter|(?:fix(?:up|v))?x)\.com"
+    )
+    return bool(re.search(pattern, uri))
+
+
+def is_reddit(uri: str) -> bool:
+    """Check if a URI is a Reddit URI."""
+    patterns = [
+        r"(?:https?://)?(?:\w+\.)?reddit\.com(/r/[^/?#]+(?:/([a-z]+))?)/?(?:\?([^#]*))?(?:$|#)",
+        r"(?:https?://)?(?:\w+\.)?reddit\.com((?:/([a-z]+))?)/?(?:\?([^#]*))?(?:$|#)",
+        r"(?:https?://)?(?:\w+\.)?reddit\.com/u(?:ser)?/([^/?#]+(?:/([a-z]+))?)/?(?:\?([^#]*))?$",
+        r"(?:https?://)?(?:(?:\w+\.)?reddit\.com/(?:(?:r|u|user)/[^/?#]+/comments|gallery)|redd\.it)/([a-z0-9]+)",
+        r"(?:https?://)?((?:i|preview)\.redd\.it|i\.reddituploads\.com)/([^/?#]+)(\?[^#]*)?",
+        r"(?:https?://)?(?:(?:\w+\.)?reddit\.com/(?:(?:r)/([^/?#]+)))/s/([a-zA-Z0-9]{10})",
+    ]
+    return any(bool(re.search(pattern, uri)) for pattern in patterns)
+
+
+def is_youtube(uri: str) -> bool:
+    """Check if a URI is a YouTube URI."""
+    patterns = [
+        r"""(?x)^
+            (?:https?://|//)
+            (?:(?:(?:(?:\w+\.)?[yY][oO][uU][tT][uU][bB][eE](?:-nocookie|kids)?\.com|
+               (?:www\.)?deturl\.com/www\.youtube\.com|
+               (?:www\.)?pwnyoutube\.com|
+               (?:www\.)?hooktube\.com|
+               (?:www\.)?yourepeat\.com|
+               tube\.majestyc\.net|
+               youtube\.googleapis\.com)/
+            (?:.*?\#/)?
+            (?:
+                (?:(?:v|embed|e|shorts|live)/(?!videoseries|live_stream))
+                |(?:
+                    (?:(?:watch|movie)(?:_popup)?(?:\.php)?/?)?
+                    (?:\?|\#!?)
+                    (?:.*?[&;])??
+                    v=
+                )
+            ))
+            |(?:
+               youtu\.be|
+               vid\.plus|
+               zwearz\.com/watch
+            )/
+            |(?:www\.)?cleanvideosearch\.com/media/action/yt/watch\?videoId=
+            )?
+            [0-9A-Za-z_-]{11}
+            (?:\#|$)""",
+        r"^(?:https?://(?:www\.)?youtube\.com)?/(@[a-zA-Z0-9_-]+)",
+        r"^(?:https?://(?:www\.)?youtube\.com)?/(UC[a-zA-Z0-9_-]{22})",
+        r"(?:https?:)?//(?:www\.)?youtube(?:-nocookie)?\.com/(?:embed|v|p)/[0-9A-Za-z_-]{11}",
+        r"(?:https?://)?(?:www\.)?youtube\.com/shorts/[0-9A-Za-z_-]+",
+    ]
+    return any(bool(re.search(pattern, uri, re.VERBOSE)) for pattern in patterns)
+
+
+def is_gallery_dl_platform(uri: str) -> bool:
+    """Check if URI is for a platform supported by gallery-dl."""
+    return any([is_twitter(uri), is_reddit(uri)])
+
+
+def is_yt_dlp_platform(uri: str) -> bool:
+    """Check if URI is for a platform supported by yt-dlp."""
+    return is_youtube(uri)
+
+
+def filter_response(response: dict[str, Any]) -> dict[str, Any]:
+    """Filter the response before recording to remove sensitive data."""
+    if "retry-after" in response.get("headers", {}):
+        response["headers"]["retry-after"] = "0"
+
+    # Standardize rate limiting headers
+    rate_limit_headers = {
+        "x-ratelimit-remaining-requests": "144",
+        "x-ratelimit-remaining-tokens": "143324",
+        "x-request-id": "fake-request-id",
+        "x-rate-limit-remaining": "49",
+        "x-rate-limit-reset": "1735960916",
+    }
+
+    for header, fake_value in rate_limit_headers.items():
+        if header in response.get("headers", {}):
+            response["headers"][header] = fake_value
+
+    # Sanitize cookies
+    if "Set-Cookie" in response.get("headers", {}):
+        response["headers"]["Set-Cookie"] = [
+            "guest_id_marketing=v1%3FAKEBROTHER; Max-Age=63072000; Path=/; Domain=.x.com; Secure",
+            "guest_id_ads=v1%3FAKEBROTHER; Max-Age=63072000; Path=/; Domain=.x.com; Secure",
+            "personalization_id=v1_SUPERFAKE; Max-Age=63072000; Path=/; Domain=.x.com; Secure",
+            "guest_id=v1%3FAKEBROTHER; Max-Age=63072000; Path=/; Domain=.x.com; Secure",
+        ]
+
+    return response
+
+
+def request_matcher(r1: dict[str, Any], r2: dict[str, Any]) -> bool:
+    """Custom matcher to determine if requests are equivalent."""
+    # Direct URI match
+    if r1.uri == r2.uri:
+        return r1.body == r2.body
+
+    # Platform-specific matching
+    if (
+        # Gallery-dl platforms
+        (is_gallery_dl_platform(r1.uri) and is_gallery_dl_platform(r2.uri))
+        # YT-dlp platforms
+        or (is_yt_dlp_platform(r1.uri) and is_yt_dlp_platform(r2.uri))
+    ):
+        return r1.body == r2.body
+
+    return False
+
+
+def filter_request(request: dict[str, Any]) -> dict[str, Any] | None:
+    """Filter the request before recording to remove sensitive data."""
+    # Skip requests to ignored hosts
+    if IGNORE_HOSTS and any(host in request.uri for host in IGNORE_HOSTS):
+        return None
+
+    # Skip login requests
+    if request.path == "/login":
+        return None
+
+    # Handle multipart requests specially
+    if ctype := request.headers.get("Content-Type"):
+        ctype = ctype.decode("utf-8") if isinstance(ctype, bytes) else ctype
+        if "multipart/form-data" in ctype:
+            request.headers = {}
+            return request
+
+    request = copy.deepcopy(request)
+
+    # Clear sensitive headers
+    request.headers = {}
+
+    # Filter sensitive POST data
+    filter_post_data_parameters = [
+        "api-version", "client_id", "client_secret", "code",
+        "username", "password", "api_key", "authorization"
+    ]
+    replacements = [(p, "DUMMY_VALUE") for p in filter_post_data_parameters]
+    filter_function = functools.partial(filters.replace_post_data_parameters, replacements=replacements)
+    request = filter_function(request)
+
+    return request
+
+
+def pytest_recording_configure(config, vcr) -> None:
+    """Configure VCR for pytest-recording."""
+    vcr.register_matcher("request_matcher", request_matcher)
+    vcr.match_on = ["request_matcher"]
+
+
+@pytest.fixture(scope="function")
+def vcr_config() -> dict[str, Any]:
+    """VCR configuration fixture for safe API interaction recording."""
+    return {
+        "filter_headers": [
+            ("authorization", "DUMMY_AUTHORIZATION"),
+            ("x-api-key", "DUMMY_API_KEY"),
+            ("api-key", "DUMMY_API_KEY"),
+            ("cookie", "DUMMY_COOKIE"),
+            ("x-guest-token", "DUMMY_GUEST_TOKEN"),
+            ("x-csrf-token", "DUMMY_CSRF_TOKEN"),
+            ("user-agent", "DUMMY_USER_AGENT"),
+        ],
+        "ignore_localhost": False,
+        "filter_query_parameters": [
+            "api-version",
+            "client_id",
+            "client_secret",
+            "code",
+            "api_key",
+            "access_token",
+            "refresh_token",
+        ],
+        "before_record_request": filter_request,
+        "before_record_response": filter_response,
+        "match_on": ["method", "scheme", "port", "path", "query", "body"],
+        "record_mode": "once",  # Only record if cassette doesn't exist
+        "decode_compressed_response": True,
+    }
+
+
+# VCR utility classes for testing
+class IgnoreOrder:
+    """pytest helper to test equality of lists/tuples ignoring item order."""
+
+    def __init__(self, items: list | tuple, key: Any = None) -> None:
+        self.items = items
+        self.key = key
+
+    def __eq__(self, other: Any) -> bool:
+        return type(other) == type(self.items) and sorted(other, key=self.key) == sorted(self.items, key=self.key)
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.items!r})"
+
+
+class RegexMatcher:
+    """pytest helper to check a string against a regex."""
+
+    def __init__(self, pattern: str, flags: int = 0) -> None:
+        self.regex = re.compile(pattern=pattern, flags=flags)
+
+    def __eq__(self, other: Any) -> bool:
+        return isinstance(other, str) and bool(self.regex.match(other))
+
+    def __repr__(self) -> str:
+        return self.regex.pattern
+
+
+class DictSubSet:
+    """pytest helper to check if a dictionary contains a subset of items."""
+
+    __slots__ = ["items", "_missing", "_differing"]
+
+    def __init__(self, items: dict[Any | str, Any] | None = None, **kwargs: Any) -> None:
+        self.items = {**(items or {}), **kwargs}
+        self._missing: dict[Any, Any] | None = None
+        self._differing: dict[Any, tuple[Any, Any]] | None = None
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, type(self.items)):
+            return False
+        self._missing = {k: v for k, v in self.items.items() if k not in other}
+        self._differing = {k: (v, other[k]) for k, v in self.items.items() if k in other and other[k] != v}
+        return not (self._missing or self._differing)
+
+    def __repr__(self) -> str:
+        msg = repr(self.items)
+        if self._missing:
+            msg += f"\n    # Missing: {self._missing}"
+        if self._differing:
+            msg += f"\n    # Differing: {self._differing}"
+        return msg

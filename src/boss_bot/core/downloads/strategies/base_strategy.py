@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict
 
 if TYPE_CHECKING:
-    from boss_bot.core.downloads.handlers.base_handler import MediaMetadata
+    from boss_bot.core.downloads.handlers.base_handler import DownloadResult, MediaMetadata
 
 
 class BaseDownloadStrategy(abc.ABC):

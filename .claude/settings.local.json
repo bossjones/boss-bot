@@ -11,7 +11,9 @@
       "Bash(just ci:*)",
       "Bash(just check-test:*)",
       "Bash(rg:*)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(just check-type:*)",
+      "Bash(find:*)"
     ],
     "deny": []
   }

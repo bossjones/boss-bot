@@ -108,6 +108,9 @@ class BossSettings(BaseSettings):
     youtube_use_api_client: bool = Field(
         False, description="Use API-direct client for YouTube downloads", validation_alias="YOUTUBE_USE_API_CLIENT"
     )
+    instagram_use_api_client: bool = Field(
+        False, description="Use API-direct client for Instagram downloads", validation_alias="INSTAGRAM_USE_API_CLIENT"
+    )
     download_api_fallback_to_cli: bool = Field(
         True, description="Fallback to CLI if API client fails", validation_alias="DOWNLOAD_API_FALLBACK_TO_CLI"
     )

@@ -29,5 +29,10 @@ check-test:
 
 # check code typing
 [group('check')]
-check-type:
+check-type-mpy:
 	uv run mypy {{SOURCES}} {{TESTS}}
+
+# check code typing
+[group('check')]
+check-type path="src":
+	uv run pyright {{path}}

@@ -41,6 +41,7 @@
         "mkdocs-towncrier>=0.1.4",
         "mkdocs>=1.6.1",
         "mkdocstrings[python]>=0.29.1",
+        "mypy>=1.15.0",
         "nbconvert>=7.16.6",
         "nbqa>=1.9.1",
         "neoteroi-mkdocs>=1.1.0",
@@ -798,3 +799,144 @@
 [tool.uv.sources]
     cursor-rules-mcp-server = { workspace = true }
     pytest-freezegun        = { git = "https://github.com/bossjones/pytest-freezegun" }
+
+    # [tool.mypy]
+    #     disallow_any_generics = true
+    #     disallow_untyped_defs = true
+    #     follow_imports        = "silent"
+    #     no_implicit_reexport  = true
+    #     plugins               = ['pydantic.mypy']
+    #     warn_redundant_casts  = true
+    #     warn_unused_ignores   = true
+
+    # [tool.pydantic-mypy]
+    #     init_forbid_extra             = true
+    #     init_typed                    = true
+    #     warn_required_dynamic_aliases = true
+
+
+[tool.mypy]
+    # Specifies which files/directories mypy should analyze (only src directory)
+    files = ["src"]
+    # Requires all function definitions to have type annotations
+    disallow_untyped_defs = true
+    # Disallows importing Any from modules that don't have type stubs
+    disallow_any_unimported = true
+    # Prevents mypy from inferring Optional types when None is a default value
+    no_implicit_optional = true
+    # Enables type checking for functions without type annotations
+    check_untyped_defs = true
+    # Disables warnings when functions return Any type
+    warn_return_any = false
+    # Warns about unnecessary # type: ignore comments
+    warn_unused_ignores = true
+    # Display the codes needed for # type: ignore[code] annotations.
+    # Shows specific error codes that can be used in type: ignore comments
+    show_error_codes = true
+    # Regex pattern defining directories/files to exclude from type checking
+    exclude = '''(?x)(
+    ^tasks/    # anything under tasks directory
+    | ^typings/? # typings directory or typings file
+    | ^\.venv/   # .venv directory
+    | ^contrib/  # contrib directory
+    | ^scripts/  # scripts directory
+    | ^venv/     # venv directory
+)'''
+
+    # Enable optional errors.
+    # List of additional error codes to enable beyond the default set
+    enable_error_code = [
+        # Requires error codes to be specified in type: ignore comments
+        "ignore-without-code",
+        # Detects redundant expressions that don't affect program behavior
+        "redundant-expr",
+        # Warns about unnecessary explicit self parameter type annotations
+        "redundant-self",
+        # Warns when using bool() in boolean contexts unnecessarily
+        "truthy-bool",
+        # Warns when checking truthiness of collections that are always truthy
+        "truthy-iterable",
+        # Warns about awaitable expressions that aren't awaited
+        "unused-awaitable",
+    ]
+
+    # The following list of codes are globally ignored, do not add to this list
+    # List of error codes to disable/suppress globally
+    disable_error_code = [
+        # annotation-unchecked are 'warning notes', not errors and won't cause mypy to fail
+        # but it does create a lot of noise in the CI mypy step.
+        # https://mypy-lang.blogspot.com/2022/11/mypy-0990-released.html
+        # Suppresses errors when importing modules without type stubs
+        "import-untyped",
+        # Suppresses warnings about unchecked type annotations
+        "annotation-unchecked",
+        # Suppresses assignment compatibility errors
+        "assignment",
+        # Suppresses attribute access errors
+        "attr-defined",
+        # Suppresses function call argument errors
+        "call-arg",
+        # Suppresses errors about missing type information
+        "has-type",
+        # Suppresses import-related errors
+        "import",
+        # Suppresses miscellaneous type checking errors
+        "misc",
+        # Suppresses undefined name errors
+        "name-defined",
+        # Suppresses operator usage errors
+        "operator",
+        # Suppresses type variable related errors
+        "type-var",
+        # Suppresses variable annotation errors
+        "var-annotated",
+        # Suppresses union attribute access errors
+        "union-attr",
+        # Suppresses return type errors
+        "return",
+    ]
+
+    # Causes mypy to treat arguments with a None default value as having an implicit Optional type.
+    # Controls how mypy handles imports - "skip" means don't follow imports for type checking
+    follow_imports = "skip"
+    # Warns about casting an expression to its inferred type.
+    # Warns when casting to a type that mypy already inferred
+    warn_redundant_casts = true
+
+    # Causes mypy to suppress errors caused by not being able to fully infer the types of global and class variables.
+    # Allows redefining variables with different types in the same scope
+    allow_redefinition = true
+    # Enables strict handling of Optional types (prevents None-related errors)
+    strict_optional = true
+    # Warns about code that can never be executed
+    warn_unreachable = true
+    # Enables checking of partially typed functions in local scopes
+    local_partial_types = true
+    # Loads the Pydantic plugin for better Pydantic model type checking
+    plugins = ["pydantic.mypy"]
+
+[tool.pydantic-mypy]
+    # NOTE: https://docs.pydantic.dev/latest/integrations/mypy/#configuring-the-plugin
+    # See https://docs.pydantic.dev/latest/integrations/mypy/#mypy-plugin-capabilities for the effects of these options.
+    # Prevents Pydantic models from accepting extra fields during initialization
+    init_forbid_extra = true
+    # Enables type checking for Pydantic model __init__ methods
+    init_typed = true
+    # Warns about required dynamic aliases in Pydantic models
+    warn_required_dynamic_aliases = true
+
+    # By default, imported values to a module are treated as exported and mypy allows other modules to import them.
+    # This flag changes the behavior to not re-export unless the item is imported using from-as or is included in __all__.
+    # Note this is always treated as enabled for stub files. For example:
+    # Prevents implicit re-exporting of imported names (requires explicit __all__ or from-as imports)
+    no_implicit_reexport = true
+
+    # Ignores all non-fatal errors.
+    # Suppresses all mypy errors (useful for gradual typing adoption)
+    ignore_errors = true
+    # Ignores errors from missing type stubs for imported modules
+    ignore_missing_imports = true
+    # Controls import following behavior - "skip" means don't analyze imported modules
+    follow_imports = "skip"
+    # Enables strict Optional type handling for Pydantic plugin
+    strict_optional = true

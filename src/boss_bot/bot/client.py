@@ -184,7 +184,7 @@ class BossBot(commands.Bot):
             else:
                 await ctx.send("An error occurred while processing your command. Please try again later.")
 
-    async def on_error(self, event_method: str, *args, **kwargs):
+    async def on_error(self, event_method: str, *args: Any, **kwargs: Any):
         """Handle non-command errors."""
         logger.error(f"Error in {event_method}", exc_info=True)
 

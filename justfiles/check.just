@@ -32,7 +32,8 @@ check-test TESTS="tests":
 # check code typing
 [group('check')]
 check-type-mpy:
-	uv run mypy {{SOURCES}} {{TESTS}}
+	uv run mypy --config-file=pyproject.toml --html-report typingcov --cobertura-xml-report typingcov_cobertura --xml-report typingcov_xml --txt-report typingcov_txt .
+	open typingcov/index.html
 
 # # check code typing
 # [group('check')]

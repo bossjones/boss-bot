@@ -4,8 +4,9 @@
 
 import pytest
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
 from pytest_mock import MockerFixture
+from typing import Any, Dict
+from collections.abc import AsyncGenerator, Generator
 
 from boss_bot.core.downloads.feature_flags import DownloadFeatureFlags
 from boss_bot.core.downloads.handlers.base_handler import MediaMetadata
@@ -16,29 +17,29 @@ class TestTwitterDownloadStrategy:
     """Test TwitterDownloadStrategy functionality."""
 
     @pytest.fixture
-    def mock_settings(self):
+    def mock_settings(self, mocker: MockerFixture) -> Any:
         """Mock settings for feature flags."""
-        settings = MagicMock()
+        settings = mocker.Mock()
         settings.twitter_use_api_client = False
         settings.download_api_fallback_to_cli = True
         return settings
 
     @pytest.fixture
-    def feature_flags(self, mock_settings):
+    def feature_flags(self, mock_settings: Any) -> DownloadFeatureFlags:
         """Feature flags instance."""
         return DownloadFeatureFlags(mock_settings)
 
     @pytest.fixture
-    def temp_download_dir(self, tmp_path) -> Path:
+    def temp_download_dir(self, tmp_path: Path) -> Path:
         """Temporary download directory."""
         return tmp_path / "downloads"
 
     @pytest.fixture
-    def strategy(self, feature_flags, temp_download_dir):
+    def strategy(self, feature_flags: DownloadFeatureFlags, temp_download_dir: Path) -> TwitterDownloadStrategy:
         """TwitterDownloadStrategy instance."""
         return TwitterDownloadStrategy(feature_flags, temp_download_dir)
 
-    def test_strategy_initialization(self, strategy, feature_flags, temp_download_dir):
+    def test_strategy_initialization(self, strategy: TwitterDownloadStrategy, feature_flags: DownloadFeatureFlags, temp_download_dir: Path) -> None:
         """Test strategy initialization."""
         assert strategy.feature_flags is feature_flags
         assert strategy.download_dir == temp_download_dir
@@ -46,7 +47,7 @@ class TestTwitterDownloadStrategy:
         assert strategy._api_client is None  # Lazy loaded
         assert strategy.platform_name == "twitter"
 
-    def test_supports_url(self, strategy):
+    def test_supports_url(self, strategy: TwitterDownloadStrategy) -> None:
         """Test URL support checking."""
         # Test supported URLs
         assert strategy.supports_url("https://twitter.com/user/status/123") is True
@@ -58,22 +59,21 @@ class TestTwitterDownloadStrategy:
         assert strategy.supports_url("https://reddit.com/r/test") is False
         assert strategy.supports_url("invalid-url") is False
 
-    def test_api_client_lazy_loading(self, strategy):
+    def test_api_client_lazy_loading(self, strategy: TwitterDownloadStrategy, mocker: MockerFixture) -> None:
         """Test API client is lazy loaded."""
         assert strategy._api_client is None
 
         # Access api_client property
-        with patch('boss_bot.core.downloads.clients.AsyncGalleryDL') as mock_client_class:
-            mock_client = MagicMock()
-            mock_client_class.return_value = mock_client
+        mock_client = mocker.Mock()
+        mock_client_class = mocker.patch('boss_bot.core.downloads.clients.AsyncGalleryDL', return_value=mock_client)
 
-            client = strategy.api_client
+        client = strategy.api_client
 
-            assert client is mock_client
-            assert strategy._api_client is mock_client
-            mock_client_class.assert_called_once()
+        assert client is mock_client
+        assert strategy._api_client is mock_client
+        mock_client_class.assert_called_once()
 
-    def test_repr(self, strategy):
+    def test_repr(self, strategy: TwitterDownloadStrategy) -> None:
         """Test string representation."""
         repr_str = repr(strategy)
         assert "TwitterDownloadStrategy" in repr_str
@@ -86,30 +86,30 @@ class TestTwitterDownloadStrategyCLIMode:
     """Test TwitterDownloadStrategy in CLI mode."""
 
     @pytest.fixture
-    def mock_settings(self):
+    def mock_settings(self, mocker: MockerFixture) -> Any:
         """Mock settings with CLI mode enabled."""
-        settings = MagicMock()
+        settings = mocker.Mock()
         settings.twitter_use_api_client = False  # CLI mode
         settings.download_api_fallback_to_cli = True
         return settings
 
     @pytest.fixture
-    def feature_flags(self, mock_settings):
+    def feature_flags(self, mock_settings: Any) -> DownloadFeatureFlags:
         """Feature flags instance."""
         return DownloadFeatureFlags(mock_settings)
 
     @pytest.fixture
-    def temp_download_dir(self, tmp_path) -> Path:
+    def temp_download_dir(self, tmp_path: Path) -> Path:
         """Temporary download directory."""
         return tmp_path / "downloads"
 
     @pytest.fixture
-    def strategy(self, feature_flags, temp_download_dir):
+    def strategy(self, feature_flags: DownloadFeatureFlags, temp_download_dir: Path) -> TwitterDownloadStrategy:
         """TwitterDownloadStrategy instance."""
         return TwitterDownloadStrategy(feature_flags, temp_download_dir)
 
     @pytest.mark.asyncio
-    async def test_download_cli_mode(self, strategy, mocker: MockerFixture):
+    async def test_download_cli_mode(self, strategy: TwitterDownloadStrategy, mocker: MockerFixture) -> None:
         """Test download in CLI mode (existing behavior)."""
         url = "https://twitter.com/test/status/123"
         expected_metadata = MediaMetadata(
@@ -133,7 +133,7 @@ class TestTwitterDownloadStrategyCLIMode:
         strategy.cli_handler.download.assert_called_once_with(url)
 
     @pytest.mark.asyncio
-    async def test_get_metadata_cli_mode(self, strategy, mocker: MockerFixture):
+    async def test_get_metadata_cli_mode(self, strategy: TwitterDownloadStrategy, mocker: MockerFixture) -> None:
         """Test metadata extraction in CLI mode."""
         url = "https://twitter.com/test/status/123"
         expected_metadata = MediaMetadata(
@@ -156,7 +156,7 @@ class TestTwitterDownloadStrategyCLIMode:
         strategy.cli_handler.get_metadata.assert_called_once_with(url)
 
     @pytest.mark.asyncio
-    async def test_download_unsupported_url(self, strategy):
+    async def test_download_unsupported_url(self, strategy: TwitterDownloadStrategy) -> None:
         """Test download with unsupported URL."""
         url = "https://youtube.com/watch?v=123"
 
@@ -164,7 +164,7 @@ class TestTwitterDownloadStrategyCLIMode:
             await strategy.download(url)
 
     @pytest.mark.asyncio
-    async def test_get_metadata_unsupported_url(self, strategy):
+    async def test_get_metadata_unsupported_url(self, strategy: TwitterDownloadStrategy) -> None:
         """Test metadata extraction with unsupported URL."""
         url = "https://youtube.com/watch?v=123"
 
@@ -176,36 +176,36 @@ class TestTwitterDownloadStrategyAPIMode:
     """Test TwitterDownloadStrategy in API mode."""
 
     @pytest.fixture
-    def mock_settings(self):
+    def mock_settings(self, mocker: MockerFixture) -> Any:
         """Mock settings with API mode enabled."""
-        settings = MagicMock()
+        settings = mocker.Mock()
         settings.twitter_use_api_client = True  # API mode
         settings.download_api_fallback_to_cli = False  # No fallback
         return settings
 
     @pytest.fixture
-    def feature_flags(self, mock_settings):
+    def feature_flags(self, mock_settings: Any) -> DownloadFeatureFlags:
         """Feature flags instance."""
         return DownloadFeatureFlags(mock_settings)
 
     @pytest.fixture
-    def temp_download_dir(self, tmp_path) -> Path:
+    def temp_download_dir(self, tmp_path: Path) -> Path:
         """Temporary download directory."""
         return tmp_path / "downloads"
 
     @pytest.fixture
-    def strategy(self, feature_flags, temp_download_dir):
+    def strategy(self, feature_flags: DownloadFeatureFlags, temp_download_dir: Path) -> TwitterDownloadStrategy:
         """TwitterDownloadStrategy instance."""
         return TwitterDownloadStrategy(feature_flags, temp_download_dir)
 
     @pytest.mark.asyncio
     @pytest.mark.vcr
-    async def test_download_api_mode(self, strategy, mocker: MockerFixture):
+    async def test_download_api_mode(self, strategy: TwitterDownloadStrategy, mocker: MockerFixture) -> None:
         """Test download in API mode (new behavior)."""
         url = "https://x.com/test/status/1868256259251863704"
 
         # Mock API client
-        mock_client = AsyncMock()
+        mock_client = mocker.AsyncMock()
         mock_download_result = {
             "title": "Mock Tweet Content",
             "uploader": "test_user",
@@ -216,12 +216,12 @@ class TestTwitterDownloadStrategyAPIMode:
             "like_count": 42,
         }
 
-        async def mock_download_generator(url, **kwargs):
+        async def mock_download_generator(url: str, **kwargs: dict[str, Any]) -> AsyncGenerator[dict[str, Any], None]:
             yield mock_download_result
 
         mock_client.download = mock_download_generator
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=None)
+        mock_client.__aenter__ = mocker.AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = mocker.AsyncMock(return_value=None)
 
         # Mock the api_client property
         mocker.patch.object(strategy, 'api_client', mock_client)
@@ -238,12 +238,12 @@ class TestTwitterDownloadStrategyAPIMode:
 
     @pytest.mark.asyncio
     @pytest.mark.vcr
-    async def test_get_metadata_api_mode(self, strategy, mocker: MockerFixture):
+    async def test_get_metadata_api_mode(self, strategy: TwitterDownloadStrategy, mocker: MockerFixture) -> None:
         """Test metadata extraction in API mode."""
         url = "https://x.com/test/status/1868256259251863704"
 
         # Mock API client
-        mock_client = AsyncMock()
+        mock_client = mocker.AsyncMock()
         mock_metadata_result = {
             "title": "Mock Tweet Metadata",
             "uploader": "metadata_user",
@@ -252,12 +252,12 @@ class TestTwitterDownloadStrategyAPIMode:
             "view_count": 1000,
         }
 
-        async def mock_extract_metadata_generator(url, **kwargs):
+        async def mock_extract_metadata_generator(url: str, **kwargs: dict[str, Any]) -> AsyncGenerator[dict[str, Any], None]:
             yield mock_metadata_result
 
         mock_client.extract_metadata = mock_extract_metadata_generator
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=None)
+        mock_client.__aenter__ = mocker.AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = mocker.AsyncMock(return_value=None)
 
         # Mock the api_client property
         mocker.patch.object(strategy, 'api_client', mock_client)
@@ -273,20 +273,20 @@ class TestTwitterDownloadStrategyAPIMode:
         assert result.download_method == "api"
 
     @pytest.mark.asyncio
-    async def test_download_api_mode_no_results(self, strategy, mocker: MockerFixture):
+    async def test_download_api_mode_no_results(self, strategy: TwitterDownloadStrategy, mocker: MockerFixture) -> None:
         """Test download in API mode with no results."""
         url = "https://x.com/test/status/123"
 
         # Mock API client with no results
-        mock_client = AsyncMock()
+        mock_client = mocker.AsyncMock()
 
-        async def mock_download_generator(url, **kwargs):
+        async def mock_download_generator(url: str, **kwargs: dict[str, Any]) -> AsyncGenerator[dict[str, Any], None]:
             return
             yield  # Never reached
 
         mock_client.download = mock_download_generator
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=None)
+        mock_client.__aenter__ = mocker.AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = mocker.AsyncMock(return_value=None)
 
         # Mock the api_client property
         mocker.patch.object(strategy, 'api_client', mock_client)
@@ -295,20 +295,20 @@ class TestTwitterDownloadStrategyAPIMode:
             await strategy.download(url)
 
     @pytest.mark.asyncio
-    async def test_get_metadata_api_mode_no_results(self, strategy, mocker: MockerFixture):
+    async def test_get_metadata_api_mode_no_results(self, strategy: TwitterDownloadStrategy, mocker: MockerFixture) -> None:
         """Test metadata extraction in API mode with no results."""
         url = "https://x.com/test/status/123"
 
         # Mock API client with no results
-        mock_client = AsyncMock()
+        mock_client = mocker.AsyncMock()
 
-        async def mock_extract_metadata_generator(url, **kwargs):
+        async def mock_extract_metadata_generator(url: str, **kwargs: dict[str, Any]) -> AsyncGenerator[dict[str, Any], None]:
             return
             yield  # Never reached
 
         mock_client.extract_metadata = mock_extract_metadata_generator
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=None)
+        mock_client.__aenter__ = mocker.AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = mocker.AsyncMock(return_value=None)
 
         # Mock the api_client property
         mocker.patch.object(strategy, 'api_client', mock_client)
@@ -321,30 +321,30 @@ class TestTwitterDownloadStrategyFallback:
     """Test TwitterDownloadStrategy fallback from API to CLI."""
 
     @pytest.fixture
-    def mock_settings(self):
+    def mock_settings(self, mocker: MockerFixture) -> Any:
         """Mock settings with API mode and fallback enabled."""
-        settings = MagicMock()
+        settings = mocker.Mock()
         settings.twitter_use_api_client = True  # API mode
         settings.download_api_fallback_to_cli = True  # Fallback enabled
         return settings
 
     @pytest.fixture
-    def feature_flags(self, mock_settings):
+    def feature_flags(self, mock_settings: Any) -> DownloadFeatureFlags:
         """Feature flags instance."""
         return DownloadFeatureFlags(mock_settings)
 
     @pytest.fixture
-    def temp_download_dir(self, tmp_path) -> Path:
+    def temp_download_dir(self, tmp_path: Path) -> Path:
         """Temporary download directory."""
         return tmp_path / "downloads"
 
     @pytest.fixture
-    def strategy(self, feature_flags, temp_download_dir):
+    def strategy(self, feature_flags: DownloadFeatureFlags, temp_download_dir: Path) -> TwitterDownloadStrategy:
         """TwitterDownloadStrategy instance."""
         return TwitterDownloadStrategy(feature_flags, temp_download_dir)
 
     @pytest.mark.asyncio
-    async def test_download_api_failure_fallback_to_cli(self, strategy, mocker: MockerFixture):
+    async def test_download_api_failure_fallback_to_cli(self, strategy: TwitterDownloadStrategy, mocker: MockerFixture) -> None:
         """Test API failure fallback to CLI."""
         url = "https://twitter.com/test/status/123"
         expected_metadata = MediaMetadata(
@@ -355,9 +355,9 @@ class TestTwitterDownloadStrategyFallback:
         )
 
         # Mock API client to raise exception
-        mock_client = AsyncMock()
-        mock_client.__aenter__ = AsyncMock(side_effect=Exception("API Error"))
-        mock_client.__aexit__ = AsyncMock(return_value=None)
+        mock_client = mocker.AsyncMock()
+        mock_client.__aenter__ = mocker.AsyncMock(side_effect=Exception("API Error"))
+        mock_client.__aexit__ = mocker.AsyncMock(return_value=None)
         mocker.patch.object(strategy, 'api_client', mock_client)
 
         # Mock CLI handler to succeed
@@ -374,7 +374,7 @@ class TestTwitterDownloadStrategyFallback:
         strategy.cli_handler.download.assert_called_once_with(url)
 
     @pytest.mark.asyncio
-    async def test_get_metadata_api_failure_fallback_to_cli(self, strategy, mocker: MockerFixture):
+    async def test_get_metadata_api_failure_fallback_to_cli(self, strategy: TwitterDownloadStrategy, mocker: MockerFixture) -> None:
         """Test API metadata failure fallback to CLI."""
         url = "https://twitter.com/test/status/123"
         expected_metadata = MediaMetadata(
@@ -384,9 +384,9 @@ class TestTwitterDownloadStrategyFallback:
         )
 
         # Mock API client to raise exception
-        mock_client = AsyncMock()
-        mock_client.__aenter__ = AsyncMock(side_effect=Exception("API Error"))
-        mock_client.__aexit__ = AsyncMock(return_value=None)
+        mock_client = mocker.AsyncMock()
+        mock_client.__aenter__ = mocker.AsyncMock(side_effect=Exception("API Error"))
+        mock_client.__aexit__ = mocker.AsyncMock(return_value=None)
         mocker.patch.object(strategy, 'api_client', mock_client)
 
         # Mock CLI handler to succeed
@@ -403,7 +403,7 @@ class TestTwitterDownloadStrategyFallback:
         strategy.cli_handler.get_metadata.assert_called_once_with(url)
 
     @pytest.mark.asyncio
-    async def test_download_api_failure_no_fallback(self, strategy, mocker: MockerFixture):
+    async def test_download_api_failure_no_fallback(self, strategy: TwitterDownloadStrategy, mocker: MockerFixture) -> None:
         """Test API failure with no fallback (should raise)."""
         # Disable fallback
         strategy.feature_flags.settings.download_api_fallback_to_cli = False
@@ -411,9 +411,9 @@ class TestTwitterDownloadStrategyFallback:
         url = "https://twitter.com/test/status/123"
 
         # Mock API client to raise exception
-        mock_client = AsyncMock()
-        mock_client.__aenter__ = AsyncMock(side_effect=Exception("API Error"))
-        mock_client.__aexit__ = AsyncMock(return_value=None)
+        mock_client = mocker.AsyncMock()
+        mock_client.__aenter__ = mocker.AsyncMock(side_effect=Exception("API Error"))
+        mock_client.__aexit__ = mocker.AsyncMock(return_value=None)
         mocker.patch.object(strategy, 'api_client', mock_client)
 
         # Should raise the original exception
@@ -425,13 +425,13 @@ class TestTwitterDownloadStrategyConversion:
     """Test API response to MediaMetadata conversion."""
 
     @pytest.fixture
-    def strategy(self):
+    def strategy(self, mocker: MockerFixture) -> TwitterDownloadStrategy:
         """TwitterDownloadStrategy instance."""
-        settings = MagicMock()
+        settings = mocker.Mock()
         feature_flags = DownloadFeatureFlags(settings)
         return TwitterDownloadStrategy(feature_flags, Path("/tmp"))
 
-    def test_convert_api_response_basic(self, strategy):
+    def test_convert_api_response_basic(self, strategy: TwitterDownloadStrategy) -> None:
         """Test basic API response conversion."""
         api_response = {
             "title": "Test Tweet",
@@ -453,7 +453,7 @@ class TestTwitterDownloadStrategyConversion:
         assert result.platform == "twitter"
         assert result.download_method == "api"
 
-    def test_convert_api_response_with_dict_author(self, strategy):
+    def test_convert_api_response_with_dict_author(self, strategy: TwitterDownloadStrategy) -> None:
         """Test API response conversion with dict author."""
         api_response = {
             "title": "Test Tweet",
@@ -467,7 +467,7 @@ class TestTwitterDownloadStrategyConversion:
         assert result.author == "test_user"
         assert result.uploader == "test_user"
 
-    def test_convert_api_response_missing_filename(self, strategy):
+    def test_convert_api_response_missing_filename(self, strategy: TwitterDownloadStrategy) -> None:
         """Test API response conversion with missing filename."""
         api_response = {
             "title": "Test Tweet",
@@ -480,7 +480,7 @@ class TestTwitterDownloadStrategyConversion:
 
         assert result.filename == "media.jpg"  # Extracted from URL
 
-    def test_convert_api_response_all_fields(self, strategy):
+    def test_convert_api_response_all_fields(self, strategy: TwitterDownloadStrategy) -> None:
         """Test API response conversion with all fields."""
         api_response = {
             "title": "Complete Tweet",

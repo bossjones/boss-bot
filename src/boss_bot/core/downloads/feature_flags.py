@@ -54,6 +54,15 @@ class DownloadFeatureFlags:
         return getattr(self.settings, "youtube_use_api_client", False)
 
     @property
+    def use_api_instagram(self) -> bool:
+        """Use API-direct approach for Instagram downloads.
+
+        Returns:
+            True if API-direct Instagram downloads are enabled
+        """
+        return getattr(self.settings, "instagram_use_api_client", False)
+
+    @property
     def api_fallback_to_cli(self) -> bool:
         """Fallback to CLI if API fails.
 
@@ -79,6 +88,8 @@ class DownloadFeatureFlags:
             return self.use_api_reddit
         elif platform_lower == "youtube":
             return self.use_api_youtube
+        elif platform_lower == "instagram":
+            return self.use_api_instagram
         else:
             logger.warning(f"Unknown platform for API check: {platform}")
             return False
@@ -93,6 +104,7 @@ class DownloadFeatureFlags:
             "twitter_api": self.use_api_twitter,
             "reddit_api": self.use_api_reddit,
             "youtube_api": self.use_api_youtube,
+            "instagram_api": self.use_api_instagram,
             "api_fallback": self.api_fallback_to_cli,
         }
 

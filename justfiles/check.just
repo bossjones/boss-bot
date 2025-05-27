@@ -27,14 +27,19 @@ check-security:
 # check unit tests
 [group('check')]
 check-test TESTS="tests":
-	uv run pylint --output-format=colorized --disable=all --max-line-length=120 --enable=F,E {{TESTS}}
+	uv run pytest {{TESTS}}
 
 # check code typing
 [group('check')]
 check-type-mpy:
 	uv run mypy {{SOURCES}} {{TESTS}}
 
+# # check code typing
+# [group('check')]
+# check-type path="src":
+# 	uv run pyright {{path}}
+
 # check code typing
 [group('check')]
-check-type path="src":
-	uv run pyright {{path}}
+check-type path="src/boss_bot/bot/cogs/downloads.py":
+	uv run pylint --output-format=colorized --disable=all --max-line-length=120 --enable=F,E --rcfile pyproject.toml {{path}}

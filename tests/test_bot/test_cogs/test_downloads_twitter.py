@@ -5,6 +5,7 @@ from discord.ext import commands
 from pathlib import Path
 
 from boss_bot.bot.cogs.downloads import DownloadCog
+from pytest_mock import MockerFixture
 
 
 class TestDownloadsCogTwitter:

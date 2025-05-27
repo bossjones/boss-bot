@@ -28,7 +28,7 @@ watch:
   - src/boss_bot # Watches source code for API documentation changes
   - README.md # Watches readme file
   - CHANGELOG.md # Watches changelog file
-  - changes/ # Watches changes directory
+  # - changes/ # Watches changes directory
   - scripts/docs # Watches documentation scripts
 
 # Theme configuration

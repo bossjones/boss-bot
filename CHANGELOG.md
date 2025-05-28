@@ -1,3 +1,19 @@
+## v0.6.0 (2025-05-28)
+
+### Feat
+
+- Add fetch command for downloading media from URLs
+- Add show_configs command to display gallery-dl and yt-dlp configurations
+- Update mkdocs configuration and enhance bot command error handling
+- Update settings.local.json to enhance web fetch capabilities
+- Enhance bot functionality and improve async handling
+- Complete all epics of strategy pattern implementation with production integration
+- Implement strategy pattern for download operations across platforms
+
+### Fix
+
+- Update bot setup hook method for consistency
+
 ## v0.5.0 (2025-05-28)
 
 ### Feat

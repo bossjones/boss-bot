@@ -302,6 +302,140 @@ bossctl download reddit https://reddit.com/r/pics/comments/abc123/title/
 bossctl download strategies
 ```
 
+## Download System Architecture
+
+The following diagram illustrates how to invoke each downloader and the complete flow from user interaction to final output:
+
+```mermaid
+graph TD
+    %% Entry Points
+    A[Discord User] -->|$download URL| B[Discord Bot]
+    C[CLI User] -->|bossctl download platform URL| D[CLI Commands]
+
+    %% Discord Flow
+    B --> E[DownloadCog.download()]
+    E --> F{URL Supported by Strategy?}
+    F -->|Yes| G[Get Strategy for URL]
+    F -->|No| H[Fallback to Queue System]
+
+    %% CLI Flow
+    D --> I[CLI Platform Commands]
+    I --> J[twitter/reddit/instagram/youtube]
+    J --> K[Get Strategy for Platform]
+
+    %% Strategy Selection
+    G --> L[Strategy Pattern Router]
+    K --> L
+    L --> M{Platform Type?}
+    M -->|Twitter/X| N[TwitterDownloadStrategy]
+    M -->|Reddit| O[RedditDownloadStrategy]
+    M -->|Instagram| P[InstagramDownloadStrategy]
+    M -->|YouTube| Q[YouTubeDownloadStrategy]
+
+    %% Feature Flag Decision
+    N --> R{TWITTER_USE_API_CLIENT?}
+    O --> S{REDDIT_USE_API_CLIENT?}
+    P --> T{INSTAGRAM_USE_API_CLIENT?}
+    Q --> U{YOUTUBE_USE_API_CLIENT?}
+
+    %% API Path
+    R -->|true| V[API-Direct Mode 🚀]
+    S -->|true| W[API-Direct Mode 🚀]
+    T -->|true| X[API-Direct Mode 🚀]
+    U -->|true| Y[API-Direct Mode 🚀]
+
+    %% CLI Path
+    R -->|false| Z[CLI Mode 🖥️]
+    S -->|false| AA[CLI Mode 🖥️]
+    T -->|false| BB[CLI Mode 🖥️]
+    U -->|false| CC[CLI Mode 🖥️]
+
+    %% API Implementation
+    V --> DD[AsyncGalleryDL Client]
+    W --> DD
+    X --> DD
+    Y --> EE[AsyncYtDlp Client]
+
+    %% CLI Implementation
+    Z --> FF[TwitterHandler subprocess]
+    AA --> GG[RedditHandler subprocess]
+    BB --> HH[InstagramHandler subprocess]
+    CC --> II[YouTubeHandler subprocess]
+
+    %% API Execution
+    DD --> JJ[gallery-dl Python API]
+    EE --> KK[yt-dlp Python API]
+    JJ --> LL{Success?}
+    KK --> LL
+
+    %% CLI Execution
+    FF --> MM[gallery-dl CLI]
+    GG --> MM
+    HH --> MM
+    II --> NN[yt-dlp CLI]
+    MM --> OO{Success?}
+    NN --> OO
+
+    %% Fallback Logic
+    LL -->|API Error + Fallback Enabled| PP{DOWNLOAD_API_FALLBACK_TO_CLI?}
+    PP -->|true| QQ[Fallback to CLI Mode]
+    PP -->|false| RR[Return API Error]
+    QQ --> MM
+    QQ --> NN
+
+    %% Success Paths
+    LL -->|Success| SS[Convert API Response to MediaMetadata]
+    OO -->|Success| TT[Convert CLI Result to MediaMetadata]
+
+    %% Return Results
+    SS --> UU[Return MediaMetadata]
+    TT --> UU
+    RR --> VV[Return Error]
+    OO -->|CLI Error| VV
+
+    %% Queue System (Fallback)
+    H --> WW[QueueManager.add_to_queue()]
+    WW --> XX[Create QueueItem]
+    XX --> YY[Add to Download Queue]
+    YY --> ZZ[DownloadManager processes queue]
+
+    %% Final Output
+    UU --> AAA{Invocation Method?}
+    AAA -->|Discord| BBB[Send Discord Message with Results]
+    AAA -->|CLI| CCC[Rich Console Output with Progress]
+    VV --> AAA
+
+    %% Configuration Sources
+    DDD[Environment Variables] --> EEE[FeatureFlags]
+    EEE --> R
+    EEE --> S
+    EEE --> T
+    EEE --> U
+    EEE --> PP
+
+    %% Styling
+    classDef apiMode fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef cliMode fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef strategy fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
+    classDef error fill:#ffebee,stroke:#c62828,stroke-width:2px
+    classDef queue fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+
+    class V,W,X,Y,DD,EE,JJ,KK,SS apiMode
+    class Z,AA,BB,CC,FF,GG,HH,II,MM,NN,TT cliMode
+    class N,O,P,Q,L strategy
+    class RR,VV error
+    class H,WW,XX,YY,ZZ queue
+```
+
+### Architecture Key Features
+
+- **Dual Entry Points**: Both Discord commands and CLI commands lead to the same strategy pattern
+- **Platform-Specific Strategies**: Each platform (Twitter, Reddit, Instagram, YouTube) has its own strategy implementation
+- **Feature Flag Control**: Environment variables determine whether to use API-direct or CLI modes
+- **Automatic Fallback**: API failures can automatically fall back to CLI when `DOWNLOAD_API_FALLBACK_TO_CLI=true`
+- **Queue System Fallback**: Unsupported URLs fall back to the legacy queue-based download system
+- **Unified Output**: Both Discord and CLI provide structured output using the same MediaMetadata format
+
 ## Best Practices
 
 1. **Start with CLI**: Use CLI mode for production until API mode is well-tested

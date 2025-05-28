@@ -1,3 +1,28 @@
+## v0.7.0 (2025-05-28)
+
+### Feat
+
+- Enhance documentation for download system architecture
+- Add comprehensive documentation for download system integration
+- Introduce aio_gallery_dl_utils for asynchronous gallery-dl operations
+- Add setup_config command for gallery-dl configuration management
+- Enhance CLI configuration management and validation
+- Add VSCode launch configuration for debugging and testing
+- Update CLI entry point and enhance documentation
+- Update settings.local.json to include new command
+- Expand gallery-dl configuration with new extractor options
+- Add fix-vcr command to improve VCR management
+- Enhance documentation and testing setup for VCR integration
+- Add VCR integration tests for Twitter/X downloads
+
+### Fix
+
+- Comment out output assertion in AsyncGalleryDL tests
+
+### Refactor
+
+- Simplify flow diagram in downloaders.md
+
 ## v0.6.0 (2025-05-28)
 
 ### Feat

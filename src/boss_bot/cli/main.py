@@ -325,6 +325,222 @@ def _mask_sensitive_config(config_data: dict) -> dict:
     return masked_config
 
 
+@APP.command()
+def fetch(
+    urls: list[str] = typer.Argument(..., help="One or more URLs to download"),
+    output_dir: str = typer.Option("./downloads", "--output", "-o", help="Output directory for downloads"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose output"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Show what would be downloaded without actually downloading"),
+) -> None:
+    """Download media from URLs using appropriate API client (gallery-dl or yt-dlp)"""
+    import asyncio
+    from pathlib import Path
+
+    # Ensure output directory exists
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    cprint("\n[bold blue]BossBot Media Downloader (API Mode)[/bold blue]", style="bold blue")
+    cprint("=" * 60, style="blue")
+    cprint(f"📁 Output directory: {output_path.absolute()}")
+    cprint(f"🔗 URLs to process: {len(urls)}")
+
+    if dry_run:
+        cprint("[yellow]🏃 DRY RUN MODE - No actual downloads will occur[/yellow]")
+
+    cprint("")
+
+    # Run the async download process
+    asyncio.run(_download_urls_async(urls, output_path, verbose, dry_run))
+
+
+async def _download_urls_async(urls: list[str], output_dir: Path, verbose: bool, dry_run: bool) -> None:
+    """Async function to handle URL downloads."""
+    from boss_bot.core.downloads.clients.aio_gallery_dl import AsyncGalleryDL
+    from boss_bot.core.downloads.clients.aio_yt_dlp import AsyncYtDlp
+    from boss_bot.core.env import BossSettings
+
+    settings = BossSettings()
+    success_count = 0
+    failed_count = 0
+
+    for i, url in enumerate(urls, 1):
+        cprint(f"\n[bold green]Processing URL {i}/{len(urls)}[/bold green]")
+        cprint(f"🔗 {url}")
+
+        # Determine which tool to use based on URL patterns
+        tool, reason = _determine_download_tool(url)
+
+        if dry_run:
+            cprint(f"[yellow]Would use {tool}: {reason}[/yellow]")
+            continue
+
+        cprint(f"🔧 Using {tool}: {reason}")
+
+        try:
+            if tool == "yt-dlp":
+                async with AsyncYtDlp(output_dir=output_dir) as yt_dlp_client:
+                    success = await _download_with_ytdlp_api(yt_dlp_client, url, output_dir, verbose)
+            else:  # gallery-dl
+                async with AsyncGalleryDL(output_dir=output_dir) as gallery_dl_client:
+                    success = await _download_with_gallery_dl_api(gallery_dl_client, url, output_dir, verbose)
+
+            if success:
+                success_count += 1
+                cprint(f"[green]✅ Successfully downloaded from {url}[/green]")
+            else:
+                failed_count += 1
+                cprint(f"[red]❌ Failed to download from {url}[/red]")
+
+        except Exception as e:
+            failed_count += 1
+            cprint(f"[red]❌ Error downloading {url}: {e}[/red]")
+            if verbose:
+                import traceback
+
+                cprint(f"[dim red]{traceback.format_exc()}[/dim red]")
+
+    # Summary
+    cprint("\n[bold blue]Download Summary[/bold blue]")
+    cprint("-" * 20, style="blue")
+    cprint(f"[green]✅ Successful: {success_count}[/green]")
+    cprint(f"[red]❌ Failed: {failed_count}[/red]")
+    cprint(f"📁 Files saved to: {output_dir.absolute()}")
+
+
+def _determine_download_tool(url: str) -> tuple[str, str]:
+    """Determine which download tool to use based on URL patterns.
+
+    Args:
+        url: The URL to analyze
+
+    Returns:
+        Tuple of (tool_name, reason)
+    """
+    import re
+
+    url_lower = url.lower()
+
+    # YouTube and video platforms - use yt-dlp
+    youtube_patterns = [
+        r"youtube\.com",
+        r"youtu\.be",
+        r"youtube-nocookie\.com",
+        r"twitch\.tv",
+        r"vimeo\.com",
+        r"dailymotion\.com",
+        r"tiktok\.com",
+        r"vm\.tiktok\.com",
+    ]
+
+    for pattern in youtube_patterns:
+        if re.search(pattern, url_lower):
+            return "yt-dlp", f"Video platform detected ({pattern.replace(r'\.', '.')})"
+
+    # Platforms typically better handled by gallery-dl
+    gallery_dl_patterns = [
+        r"twitter\.com",
+        r"x\.com",
+        r"instagram\.com",
+        r"reddit\.com",
+        r"imgur\.com",
+        r"deviantart\.com",
+        r"artstation\.com",
+        r"pixiv\.net",
+        r"danbooru\.donmai\.us",
+        r"gelbooru\.com",
+        r"pinterest\.com",
+        r"tumblr\.com",
+    ]
+
+    for pattern in gallery_dl_patterns:
+        if re.search(pattern, url_lower):
+            return "gallery-dl", f"Gallery platform detected ({pattern.replace(r'\.', '.')})"
+
+    # Default to yt-dlp for unknown URLs as it has broader support
+    return "yt-dlp", "Unknown platform, defaulting to yt-dlp"
+
+
+async def _download_with_ytdlp_api(client: AsyncYtDlp, url: str, output_dir: Path, verbose: bool) -> bool:
+    """Download using yt-dlp API client.
+
+    Args:
+        client: AsyncYtDlp client instance
+        url: URL to download
+        output_dir: Output directory
+        verbose: Enable verbose output
+
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        if verbose:
+            cprint(f"[dim]Using yt-dlp API client for {url}[/dim]")
+
+        # Configure download options
+        options = {
+            "outtmpl": str(output_dir / "%(uploader)s - %(title)s.%(ext)s"),
+            "writeinfojson": True,
+            "embed_metadata": True,
+        }
+
+        # Perform download - the download method returns an AsyncIterator
+        download_successful = False
+        async for result in client.download(url, **options):
+            if verbose:
+                cprint(f"[dim]Download result: {result}[/dim]")
+            download_successful = True  # If we get any result, consider it successful
+
+        return download_successful
+
+    except Exception as e:
+        cprint(f"[red]❌ yt-dlp API error: {e}[/red]")
+        if verbose:
+            import traceback
+
+            cprint(f"[dim red]{traceback.format_exc()}[/dim red]")
+        return False
+
+
+async def _download_with_gallery_dl_api(client: AsyncGalleryDL, url: str, output_dir: Path, verbose: bool) -> bool:
+    """Download using gallery-dl API client.
+
+    Args:
+        client: AsyncGalleryDL client instance
+        url: URL to download
+        output_dir: Output directory
+        verbose: Enable verbose output
+
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        if verbose:
+            cprint(f"[dim]Using gallery-dl API client for {url}[/dim]")
+
+        # Configure download options as keyword arguments
+        options = {
+            "base_directory": str(output_dir),
+        }
+
+        # Perform download - the download method returns an AsyncIterator
+        download_successful = False
+        async for result in client.download(url, **options):
+            if verbose:
+                cprint(f"[dim]Download result: {result}[/dim]")
+            download_successful = True  # If we get any result, consider it successful
+
+        return download_successful
+
+    except Exception as e:
+        cprint(f"[red]❌ gallery-dl API error: {e}[/red]")
+        if verbose:
+            import traceback
+
+            cprint(f"[dim red]{traceback.format_exc()}[/dim red]")
+        return False
+
+
 def main():
     APP()
     load_commands()

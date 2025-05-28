@@ -17,7 +17,8 @@
       "WebFetch(domain:dpytest.readthedocs.io)",
       "WebFetch(domain:docs.anthropic.com)",
       "Bash(timeout 10 uv run:*)",
-      "WebFetch(domain:discordpy.readthedocs.io)"
+      "WebFetch(domain:discordpy.readthedocs.io)",
+      "Bash(gh pr list:*)"
     ],
     "deny": []
   }

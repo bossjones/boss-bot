@@ -1,3 +1,21 @@
+## v0.5.0 (2025-05-28)
+
+### Feat
+
+- Implement comprehensive dpytest tests for QueueCog with TDD principles
+- Add direct command testing for DownloadCog functionality
+- Enhance testing framework and add integration tests for DownloadCog
+- Update pyright configuration and enhance BossBot client initialization
+- Add comprehensive documentation for Boss-Bot architecture and development workflow
+- Add comprehensive documentation for AI-assisted development and project structure
+- Add new command files for enhanced project context and TDD workflow
+- Enhance download capabilities with YouTube and Instagram support
+- Implement YouTube download handler and strategy with API/CLI support
+
+### Refactor
+
+- Rename and restructure QueueCog for improved clarity and functionality
+
 ## v0.4.0 (2025-05-27)
 
 ### Feat

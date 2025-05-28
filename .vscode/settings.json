@@ -136,6 +136,15 @@
   "python.languageServer": "Pylance",
   "python.pythonPath": "${workspaceFolder}/.venv/bin/python",
   "python.terminal.activateEnvInCurrentTerminal": true,
+  "vsicons.associations.files": [
+    {
+      "extensions": [
+        "just",
+      ],
+      "format": "svg",
+      "icon": "Makefile",
+    },
+  ],
   "workbench.editorAssociations": {
     "*.mdc": "default",
   },

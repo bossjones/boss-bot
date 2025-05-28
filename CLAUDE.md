@@ -40,23 +40,131 @@ Boss-Bot is a Discord bot that enables downloading and managing media files. The
 - **Storage**: Support for various storage mechanisms
 - **Build System**: Just, uv, ruff
 
-## Platform Handler Implementation Status (Phase 2)
-The project is currently implementing platform-specific download handlers following a modular architecture:
+## Epic 5: Strategy Pattern Integration ✅ COMPLETED
+The project has successfully implemented the experimental strategy pattern architecture for download operations, providing both CLI and API-direct modes with feature flag control.
 
-### ✅ Completed Platforms
-- **Twitter/X Handler** (`twitter_handler.py`): Full implementation with gallery-dl integration, metadata extraction, Discord bot integration, and CLI commands
-- **Reddit Handler** (`reddit_handler.py`): Full implementation with gallery-dl integration, subreddit metadata, Discord bot integration, and CLI commands
+### ✅ Completed Platforms & Strategies
+- **Twitter/X Strategy** (`twitter_strategy.py`): Full CLI/API switching with feature flags, comprehensive test coverage
+- **Reddit Strategy** (`reddit_strategy.py`): Complete implementation with API-direct support and fallback mechanisms
+- **Instagram Strategy** (`instagram_strategy.py`): Full implementation with user CLI preferences (Firefox cookies, Wget/1.21.1 user agent)
+- **YouTube Strategy** (`youtube_strategy.py`): Complete yt-dlp integration with quality selection and comprehensive metadata support
 
-### 🔄 Planned Platforms
-- **YouTube Handler**: Planned using yt-dlp with multiple fallback strategies
-- **Instagram Handler**: Planned implementation following established patterns
-- **Generic Handler**: Fallback for unsupported platforms
+### Strategy Architecture (EXPERIMENTAL.md Epic 5)
+- **Base Strategy**: `BaseDownloadStrategy` defines abstract interface for all download strategies
+- **Feature Flag Control**: Environment variable-driven configuration for API vs CLI choice
+- **Platform Detection**: URL pattern matching for automatic strategy selection
+- **Integration Points**: Discord cog integration ✅, CLI command integration ✅, comprehensive test coverage ✅
+- **Technology**: Uses gallery-dl/yt-dlp APIs directly (API mode) or subprocess calls (CLI mode)
+- **Fallback System**: API failures automatically fallback to CLI when enabled
 
-### Handler Architecture
-- **Base Class**: `BaseDownloadHandler` defines abstract interface for all handlers
-- **Platform Detection**: URL pattern matching for automatic handler selection
-- **Integration Points**: Discord cog integration, CLI command structure, comprehensive test coverage
-- **Technology**: Uses gallery-dl for social media platforms, yt-dlp for video platforms
+### Epic 5 Implementation Status
+- ✅ **Story 5.1**: Discord cogs updated to use strategy pattern (`src/boss_bot/bot/cogs/downloads.py`)
+- ✅ **Story 5.2**: CLI commands updated to use strategies (`src/boss_bot/cli/commands/download.py`)
+- ✅ **Story 5.3**: Configuration documentation and usage examples (this section)
+- ✅ **Story 5.4**: Gradual rollout via environment variables (feature flags system)
+
+## Configuration Options & Usage Examples
+
+### Environment Variables for Strategy Control
+Control download strategy behavior using these environment variables:
+
+```bash
+# Feature Flags - Enable API-direct mode per platform
+export TWITTER_USE_API_CLIENT=true          # Enable API-direct for Twitter/X
+export REDDIT_USE_API_CLIENT=true           # Enable API-direct for Reddit
+export INSTAGRAM_USE_API_CLIENT=true        # Enable API-direct for Instagram
+export YOUTUBE_USE_API_CLIENT=true          # Enable API-direct for YouTube
+
+# Fallback Control
+export DOWNLOAD_API_FALLBACK_TO_CLI=true    # Auto-fallback to CLI on API errors (recommended)
+
+# Download Configuration
+export BOSS_BOT_DOWNLOAD_DIR="./downloads"  # Download directory (default: .downloads/)
+```
+
+### Discord Bot Usage
+The Discord bot automatically uses the strategy pattern with feature flag support:
+
+```
+# Basic download command (uses strategy pattern automatically)
+$download https://twitter.com/user/status/123456789
+
+# Get metadata without downloading
+$info https://reddit.com/r/pics/comments/abc123/title/
+
+# Check current strategy configuration
+$strategies
+
+# View download status
+$status
+```
+
+### CLI Usage Examples
+The CLI commands now use the strategy pattern with enhanced features:
+
+```bash
+# Twitter/X downloads with strategy pattern
+bossctl download twitter https://twitter.com/user/status/123456789
+bossctl download twitter https://x.com/user --metadata-only
+
+# Reddit downloads with config support
+bossctl download reddit https://reddit.com/r/pics/comments/abc123/title/
+bossctl download reddit <url> --cookies cookies.txt --config custom.json
+
+# Instagram downloads with experimental features
+bossctl download instagram https://instagram.com/p/ABC123/
+bossctl download instagram <url> --cookies-browser Chrome --user-agent "Custom Agent"
+
+# YouTube downloads with quality control
+bossctl download youtube https://youtube.com/watch?v=VIDEO_ID --quality 720p
+bossctl download youtube <url> --audio-only
+
+# Show strategy configuration
+bossctl download strategies
+
+# Show platform info
+bossctl download info
+```
+
+### Strategy Status Messages
+Both Discord and CLI interfaces show the current strategy mode:
+
+- 🚀 **API-Direct Mode**: Using experimental direct API integration
+- 🖥️ **CLI Mode**: Using stable subprocess-based approach (default)
+- 🔄 **Auto-Fallback**: API failures automatically fallback to CLI when enabled
+
+### Gradual Rollout Configuration
+Enable experimental features gradually per platform:
+
+```bash
+# Conservative rollout - Enable one platform at a time
+export TWITTER_USE_API_CLIENT=true
+export DOWNLOAD_API_FALLBACK_TO_CLI=true
+
+# Aggressive rollout - Enable all platforms
+export TWITTER_USE_API_CLIENT=true
+export REDDIT_USE_API_CLIENT=true
+export INSTAGRAM_USE_API_CLIENT=true
+export YOUTUBE_USE_API_CLIENT=true
+export DOWNLOAD_API_FALLBACK_TO_CLI=false  # No fallback for testing
+```
+
+### Configuration Validation
+The system validates configuration at startup:
+
+```python
+from boss_bot.core.env import BossSettings
+from boss_bot.core.downloads.feature_flags import DownloadFeatureFlags
+
+# Settings are validated via Pydantic
+settings = BossSettings()
+feature_flags = DownloadFeatureFlags(settings)
+
+# Check strategy status
+info = feature_flags.get_strategy_info()
+print(f"Twitter API enabled: {info['twitter_api']}")
+print(f"Fallback enabled: {info['api_fallback']}")
+```
 
 ## Testing Guidelines
 - Use pytest for all tests with proper module organization matching src structure

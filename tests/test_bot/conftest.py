@@ -24,8 +24,8 @@ async def fixture_bot_test(fixture_settings_test: BossSettings) -> AsyncGenerato
     Returns: Configured BossBot instance
     Cleanup: Automatically closes bot after each test
     """
-    bot = BossBot()
-    await bot._async_setup_hook()
+    bot = BossBot(settings=fixture_settings_test)
+    await bot.setup_hook()
     dpytest.configure(bot)
     yield bot
     # Teardown

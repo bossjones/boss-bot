@@ -111,25 +111,34 @@ class TestTwitterDownloadStrategyCLIMode:
     @pytest.mark.asyncio
     async def test_download_cli_mode(self, strategy: TwitterDownloadStrategy, mocker: MockerFixture) -> None:
         """Test download in CLI mode (existing behavior)."""
+        from boss_bot.core.downloads.handlers.base_handler import DownloadResult
+        from pathlib import Path as PathType
+
         url = "https://twitter.com/test/status/123"
-        expected_metadata = MediaMetadata(
-            title="Test Tweet",
-            url=url,
-            platform="twitter",
-            download_method="cli"
+
+        # Create DownloadResult that the handler would actually return
+        mock_download_result = DownloadResult(
+            success=True,
+            files=[PathType("test_tweet.jpg")],
+            metadata={"title": "Test Tweet", "uploader": "TestUser"}
         )
 
         # Mock the CLI handler download method
         mocker.patch.object(
             strategy.cli_handler,
             'download',
-            return_value=expected_metadata
+            return_value=mock_download_result
         )
 
         result = await strategy.download(url)
 
-        # Should use CLI handler
-        assert result is expected_metadata
+        # Verify result is converted MediaMetadata with expected fields
+        assert isinstance(result, MediaMetadata)
+        assert result.title == "Test Tweet"
+        assert result.uploader == "TestUser"
+        assert result.platform == "twitter"
+        assert result.download_method == "cli"
+        assert result.files == ["test_tweet.jpg"]
         strategy.cli_handler.download.assert_called_once_with(url)
 
     @pytest.mark.asyncio
@@ -346,12 +355,16 @@ class TestTwitterDownloadStrategyFallback:
     @pytest.mark.asyncio
     async def test_download_api_failure_fallback_to_cli(self, strategy: TwitterDownloadStrategy, mocker: MockerFixture) -> None:
         """Test API failure fallback to CLI."""
+        from boss_bot.core.downloads.handlers.base_handler import DownloadResult
+        from pathlib import Path as PathType
+
         url = "https://twitter.com/test/status/123"
-        expected_metadata = MediaMetadata(
-            title="CLI Fallback Tweet",
-            url=url,
-            platform="twitter",
-            download_method="cli"
+
+        # Create DownloadResult that the CLI handler would return
+        mock_download_result = DownloadResult(
+            success=True,
+            files=[PathType("fallback_tweet.jpg")],
+            metadata={"title": "CLI Fallback Tweet", "uploader": "TestUser"}
         )
 
         # Mock API client to raise exception
@@ -364,13 +377,18 @@ class TestTwitterDownloadStrategyFallback:
         mocker.patch.object(
             strategy.cli_handler,
             'download',
-            return_value=expected_metadata
+            return_value=mock_download_result
         )
 
         result = await strategy.download(url)
 
-        # Should fallback to CLI handler
-        assert result is expected_metadata
+        # Verify result is converted MediaMetadata with expected fields
+        assert isinstance(result, MediaMetadata)
+        assert result.title == "CLI Fallback Tweet"
+        assert result.uploader == "TestUser"
+        assert result.platform == "twitter"
+        assert result.download_method == "cli"
+        assert result.files == ["fallback_tweet.jpg"]
         strategy.cli_handler.download.assert_called_once_with(url)
 
     @pytest.mark.asyncio

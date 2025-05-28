@@ -162,15 +162,25 @@ class TestRedditDownloadStrategy:
         sample_reddit_metadata: MediaMetadata,
     ):
         """Test download in CLI mode (existing behavior)."""
+        from boss_bot.core.downloads.handlers.base_handler import DownloadResult
+        from pathlib import Path as PathType
+
         strategy = RedditDownloadStrategy(feature_flags_cli_mode, tmp_path)
 
+        # Create DownloadResult with MediaMetadata
+        mock_download_result = DownloadResult(
+            success=True,
+            files=[PathType("test_file.jpg")],
+            metadata={"title": sample_reddit_metadata.title, "uploader": sample_reddit_metadata.uploader}
+        )
+
         # Mock the CLI handler
-        mock_download = mocker.patch.object(strategy.cli_handler, "download", return_value=sample_reddit_metadata)
+        mock_download = mocker.patch.object(strategy.cli_handler, "download", return_value=mock_download_result)
         mocker.patch.object(strategy.cli_handler, "supports_url", return_value=True)
 
         # Mock asyncio.get_event_loop and run_in_executor
         mock_loop = mocker.Mock()
-        mock_loop.run_in_executor = mocker.AsyncMock(return_value=sample_reddit_metadata)
+        mock_loop.run_in_executor = mocker.AsyncMock(return_value=mock_download_result)
         mocker.patch("asyncio.get_event_loop", return_value=mock_loop)
 
         # Execute download
@@ -179,7 +189,13 @@ class TestRedditDownloadStrategy:
 
         # Verify CLI handler was called
         mock_loop.run_in_executor.assert_called_once_with(None, strategy.cli_handler.download, url)
-        assert result is sample_reddit_metadata
+
+        # Verify result is converted MediaMetadata with expected fields
+        assert isinstance(result, MediaMetadata)
+        assert result.title == sample_reddit_metadata.title
+        assert result.uploader == sample_reddit_metadata.uploader
+        assert result.platform == "reddit"
+        assert result.download_method == "cli"
 
     @pytest.mark.asyncio
     async def test_download_api_mode(

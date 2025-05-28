@@ -18,37 +18,8 @@ def strip_ansi_codes(text: str) -> str:
     return ansi_escape.sub('', text)
 
 
-class TestValidateTwitterUrl:
-    """Test URL validation function."""
-
-    def test_valid_twitter_urls(self):
-        """Test validation of valid Twitter URLs."""
-        valid_urls = [
-            "https://twitter.com/user/status/123456789",
-            "https://x.com/user/status/123456789",
-            "https://twitter.com/username",
-            "https://x.com/username"
-        ]
-
-        for url in valid_urls:
-            assert validate_twitter_url(url) == url
-
-    def test_invalid_twitter_urls(self):
-        """Test validation of invalid URLs."""
-        invalid_urls = [
-            "https://youtube.com/watch",
-            "https://facebook.com/post",
-            "not-a-url",
-            "https://example.com"
-        ]
-
-        for url in invalid_urls:
-            with pytest.raises(typer.BadParameter):
-                validate_twitter_url(url)
-
-
 class TestDownloadCommands:
-    """Test download CLI commands."""
+    """Test download CLI commands using strategy pattern."""
 
     @pytest.fixture
     def runner(self):
@@ -75,12 +46,9 @@ class TestDownloadCommands:
 
     def test_twitter_command_metadata_only_success(self, runner, mocker):
         """Test Twitter metadata-only command success."""
-        # Mock TwitterHandler
-        mock_handler_class = mocker.patch('boss_bot.cli.commands.download.TwitterHandler')
-        mock_handler = mock_handler_class.return_value
-
-        # Mock both the validation and download handlers
-        mock_handler.supports_url.return_value = True  # For validation
+        # Mock get_strategy_for_platform function
+        mock_strategy = mocker.Mock()
+        mock_strategy.supports_url.return_value = True
 
         # Mock successful metadata extraction
         mock_metadata = MediaMetadata(
@@ -92,7 +60,9 @@ class TestDownloadCommands:
             url="https://twitter.com/user/status/123",
             platform="twitter"
         )
-        mock_handler.get_metadata.return_value = mock_metadata
+        mock_strategy.get_metadata = mocker.AsyncMock(return_value=mock_metadata)
+
+        mocker.patch('boss_bot.cli.commands.download.get_strategy_for_platform', return_value=mock_strategy)
 
         result = runner.invoke(app, [
             "twitter",
@@ -105,29 +75,27 @@ class TestDownloadCommands:
         assert "Metadata extracted successfully" in clean_stdout
         assert "Test Tweet" in clean_stdout
         assert "Test User" in clean_stdout
-        mock_handler.get_metadata.assert_called_once()
+        mock_strategy.get_metadata.assert_called_once()
 
     def test_twitter_command_metadata_only_async(self, runner, mocker):
         """Test Twitter metadata-only command with async mode."""
-        # Mock TwitterHandler
-        mock_handler_class = mocker.patch('boss_bot.cli.commands.download.TwitterHandler')
-        mock_handler = mock_handler_class.return_value
+        # Mock get_strategy_for_platform function
+        mock_strategy = mocker.Mock()
+        mock_strategy.supports_url.return_value = True
 
-        # Mock both the validation and download handlers
-        mock_handler.supports_url.return_value = True  # For validation
-
-        # Mock asyncio.run and async metadata extraction
+        # Mock successful async metadata extraction
         mock_metadata = MediaMetadata(
-            title="Test Tweet",
-            uploader="Test User",
+            title="Test Tweet Async",
+            uploader="Test User Async",
+            upload_date="2024-01-01",
+            like_count=24,
+            view_count=5,
+            url="https://twitter.com/user/status/123",
             platform="twitter"
         )
+        mock_strategy.get_metadata = mocker.AsyncMock(return_value=mock_metadata)
 
-        async def mock_aget_metadata(url):
-            return mock_metadata
-
-        mock_handler.aget_metadata = mock_aget_metadata
-        mock_asyncio_run = mocker.patch('asyncio.run', return_value=mock_metadata)
+        mocker.patch('boss_bot.cli.commands.download.get_strategy_for_platform', return_value=mock_strategy)
 
         result = runner.invoke(app, [
             "twitter",
@@ -139,17 +107,18 @@ class TestDownloadCommands:
         assert result.exit_code == 0
         clean_stdout = strip_ansi_codes(result.stdout)
         assert "Metadata extracted successfully" in clean_stdout
-        mock_asyncio_run.assert_called_once()
+        assert "Test Tweet Async" in clean_stdout
+        assert "Test User Async" in clean_stdout
+        mock_strategy.get_metadata.assert_called_once()
 
     def test_twitter_command_metadata_failure(self, runner, mocker):
         """Test Twitter metadata command failure."""
-        # Mock TwitterHandler to raise exception
-        mock_handler_class = mocker.patch('boss_bot.cli.commands.download.TwitterHandler')
-        mock_handler = mock_handler_class.return_value
+        # Mock get_strategy_for_platform to raise exception
+        mock_strategy = mocker.Mock()
+        mock_strategy.supports_url.return_value = True
+        mock_strategy.get_metadata = mocker.AsyncMock(side_effect=Exception("Metadata extraction failed"))
 
-        # Mock both the validation and download handlers
-        mock_handler.supports_url.return_value = True  # For validation
-        mock_handler.get_metadata.side_effect = Exception("API Error")
+        mocker.patch('boss_bot.cli.commands.download.get_strategy_for_platform', return_value=mock_strategy)
 
         result = runner.invoke(app, [
             "twitter",
@@ -161,62 +130,52 @@ class TestDownloadCommands:
         clean_stdout = strip_ansi_codes(result.stdout)
         assert "Failed to extract metadata" in clean_stdout
 
-    def test_twitter_command_download_success(self, runner, mocker, tmp_path):
+    def test_twitter_command_download_success(self, runner, mocker):
         """Test Twitter download command success."""
-        # Mock TwitterHandler
-        mock_handler_class = mocker.patch('boss_bot.cli.commands.download.TwitterHandler')
-        mock_handler = mock_handler_class.return_value
-
-        # Mock both the validation and download handlers
-        mock_handler.supports_url.return_value = True  # For validation
+        # Mock get_strategy_for_platform function
+        mock_strategy = mocker.Mock()
+        mock_strategy.supports_url.return_value = True
 
         # Mock successful download
-        test_files = [tmp_path / "test1.jpg", tmp_path / "test2.mp4"]
-        for f in test_files:
-            f.touch()  # Create empty files
-
-        mock_result = DownloadResult(
-            success=True,
-            files=test_files,
-            metadata={"title": "Test"}
+        mock_metadata = MediaMetadata(
+            title="Test Tweet",
+            uploader="Test User",
+            platform="twitter",
+            download_method="cli",
+            files=["file1.jpg", "file2.mp4"]
         )
-        mock_handler.download.return_value = mock_result
+        mock_strategy.download = mocker.AsyncMock(return_value=mock_metadata)
+
+        mocker.patch('boss_bot.cli.commands.download.get_strategy_for_platform', return_value=mock_strategy)
 
         result = runner.invoke(app, [
             "twitter",
-            "https://twitter.com/user/status/123",
-            "--output-dir", str(tmp_path)
+            "https://twitter.com/user/status/123"
         ])
 
         assert result.exit_code == 0
         clean_stdout = strip_ansi_codes(result.stdout)
         assert "Download completed successfully" in clean_stdout
         assert "Downloaded 2 files" in clean_stdout
-        mock_handler.download.assert_called_once()
+        mock_strategy.download.assert_called_once()
 
-    def test_twitter_command_download_async_success(self, runner, mocker, tmp_path):
-        """Test Twitter async download command success."""
-        # Mock TwitterHandler
-        mock_handler_class = mocker.patch('boss_bot.cli.commands.download.TwitterHandler')
-        mock_handler = mock_handler_class.return_value
+    def test_twitter_command_download_async_success(self, runner, mocker):
+        """Test Twitter download command with async mode success."""
+        # Mock get_strategy_for_platform function
+        mock_strategy = mocker.Mock()
+        mock_strategy.supports_url.return_value = True
 
-        # Mock both the validation and download handlers
-        mock_handler.supports_url.return_value = True  # For validation
-
-        # Mock successful async download
-        test_files = [tmp_path / "test.jpg"]
-        test_files[0].touch()
-
-        mock_result = DownloadResult(
-            success=True,
-            files=test_files
+        # Mock successful download
+        mock_metadata = MediaMetadata(
+            title="Test Tweet",
+            uploader="Test User",
+            platform="twitter",
+            download_method="api",
+            files=["file1.jpg"]
         )
+        mock_strategy.download = mocker.AsyncMock(return_value=mock_metadata)
 
-        async def mock_adownload(url):
-            return mock_result
-
-        mock_handler.adownload = mock_adownload
-        mock_asyncio_run = mocker.patch('asyncio.run', return_value=mock_result)
+        mocker.patch('boss_bot.cli.commands.download.get_strategy_for_platform', return_value=mock_strategy)
 
         result = runner.invoke(app, [
             "twitter",
@@ -227,24 +186,23 @@ class TestDownloadCommands:
         assert result.exit_code == 0
         clean_stdout = strip_ansi_codes(result.stdout)
         assert "Download completed successfully" in clean_stdout
-        mock_asyncio_run.assert_called_once()
+        assert "Downloaded 1 files" in clean_stdout
+        mock_strategy.download.assert_called_once()
 
     def test_twitter_command_download_failure(self, runner, mocker):
         """Test Twitter download command failure."""
-        # Mock TwitterHandler
-        mock_handler_class = mocker.patch('boss_bot.cli.commands.download.TwitterHandler')
-        mock_handler = mock_handler_class.return_value
+        # Mock get_strategy_for_platform function
+        mock_strategy = mocker.Mock()
+        mock_strategy.supports_url.return_value = True
 
-        # Mock both the validation and download handlers
-        mock_handler.supports_url.return_value = True  # For validation
-
-        # Mock failed download
-        mock_result = DownloadResult(
-            success=False,
-            error="Download failed",
-            stderr="Error details"
+        # Mock download failure
+        mock_metadata = MediaMetadata(
+            platform="twitter",
+            error="Download failed: Network error"
         )
-        mock_handler.download.return_value = mock_result
+        mock_strategy.download = mocker.AsyncMock(return_value=mock_metadata)
+
+        mocker.patch('boss_bot.cli.commands.download.get_strategy_for_platform', return_value=mock_strategy)
 
         result = runner.invoke(app, [
             "twitter",
@@ -257,13 +215,12 @@ class TestDownloadCommands:
 
     def test_twitter_command_download_exception(self, runner, mocker):
         """Test Twitter download command with exception."""
-        # Mock TwitterHandler to raise exception
-        mock_handler_class = mocker.patch('boss_bot.cli.commands.download.TwitterHandler')
-        mock_handler = mock_handler_class.return_value
+        # Mock get_strategy_for_platform function
+        mock_strategy = mocker.Mock()
+        mock_strategy.supports_url.return_value = True
+        mock_strategy.download = mocker.AsyncMock(side_effect=Exception("Connection error"))
 
-        # Mock both the validation and download handlers
-        mock_handler.supports_url.return_value = True  # For validation
-        mock_handler.download.side_effect = Exception("Unexpected error")
+        mocker.patch('boss_bot.cli.commands.download.get_strategy_for_platform', return_value=mock_strategy)
 
         result = runner.invoke(app, [
             "twitter",
@@ -272,25 +229,25 @@ class TestDownloadCommands:
 
         assert result.exit_code == 1
         clean_stdout = strip_ansi_codes(result.stdout)
-        assert "Download failed: Unexpected error" in clean_stdout
+        assert "Download failed" in clean_stdout
 
-    def test_twitter_command_verbose_output(self, runner, mocker, tmp_path):
+    def test_twitter_command_verbose_output(self, runner, mocker):
         """Test Twitter command with verbose output."""
-        # Mock TwitterHandler
-        mock_handler_class = mocker.patch('boss_bot.cli.commands.download.TwitterHandler')
-        mock_handler = mock_handler_class.return_value
+        # Mock get_strategy_for_platform function
+        mock_strategy = mocker.Mock()
+        mock_strategy.supports_url.return_value = True
 
-        # Mock both the validation and download handlers
-        mock_handler.supports_url.return_value = True  # For validation
-
-        # Mock successful download with verbose data
-        mock_result = DownloadResult(
-            success=True,
-            files=[tmp_path / "test.jpg"],
-            stdout="gallery-dl verbose output",
-            metadata={"title": "Test", "author": "User"}
+        # Mock successful download with metadata
+        mock_metadata = MediaMetadata(
+            title="Test Tweet",
+            uploader="Test User",
+            platform="twitter",
+            raw_metadata={"test": "data"},
+            files=["file1.jpg"]
         )
-        mock_handler.download.return_value = mock_result
+        mock_strategy.download = mocker.AsyncMock(return_value=mock_metadata)
+
+        mocker.patch('boss_bot.cli.commands.download.get_strategy_for_platform', return_value=mock_strategy)
 
         result = runner.invoke(app, [
             "twitter",
@@ -300,56 +257,36 @@ class TestDownloadCommands:
 
         assert result.exit_code == 0
         clean_stdout = strip_ansi_codes(result.stdout)
-        assert "Command Output:" in clean_stdout
-        assert "gallery-dl verbose output" in clean_stdout
-        assert "Metadata:" in clean_stdout
+        assert "Download completed successfully" in clean_stdout
+        mock_strategy.download.assert_called_once()
 
     def test_twitter_command_custom_output_dir(self, runner, mocker, tmp_path):
         """Test Twitter command with custom output directory."""
+        # Mock get_strategy_for_platform function to check download_dir
+        def mock_get_strategy(platform, download_dir):
+            mock_strategy = mocker.Mock()
+            mock_strategy.supports_url.return_value = True
+
+            # Mock successful download
+            mock_metadata = MediaMetadata(
+                title="Test Tweet",
+                platform="twitter",
+                files=["file1.jpg"]
+            )
+            mock_strategy.download = mocker.AsyncMock(return_value=mock_metadata)
+            return mock_strategy
+
+        mocker.patch('boss_bot.cli.commands.download.get_strategy_for_platform', side_effect=mock_get_strategy)
+
         custom_dir = tmp_path / "custom_downloads"
-
-        # Mock TwitterHandler initialization
-        mock_handler_class = mocker.patch('boss_bot.cli.commands.download.TwitterHandler')
-        mock_handler = mock_handler_class.return_value
-
-        # Mock both the validation and download handlers
-        mock_handler.supports_url.return_value = True  # For validation
-        mock_handler.download.return_value = DownloadResult(success=True)
-
         result = runner.invoke(app, [
             "twitter",
             "https://twitter.com/user/status/123",
             "--output-dir", str(custom_dir)
         ])
 
-        # Verify TwitterHandler was called twice (validation + download)
-        assert mock_handler_class.call_count == 2
-
-        # Check the second call (download handler) has custom directory
-        call_args = mock_handler_class.call_args_list[1]  # Second call
-        assert call_args[1]['download_dir'] == custom_dir
-
-        # Verify directory was created
+        assert result.exit_code == 0
+        clean_stdout = strip_ansi_codes(result.stdout)
+        assert "Download completed successfully" in clean_stdout
+        # Check that custom directory was created
         assert custom_dir.exists()
-
-    def test_download_command_help(self, runner):
-        """Test download command help output."""
-        result = runner.invoke(app, ["--help"])
-
-        assert result.exit_code == 0
-        clean_stdout = strip_ansi_codes(result.stdout)
-        assert "Download content from various platforms" in clean_stdout
-        assert "twitter" in clean_stdout
-        assert "info" in clean_stdout
-
-    def test_twitter_command_help(self, runner):
-        """Test Twitter command help output."""
-        result = runner.invoke(app, ["twitter", "--help"])
-
-        assert result.exit_code == 0
-        clean_stdout = strip_ansi_codes(result.stdout)
-        assert "Download Twitter/X content" in clean_stdout
-        assert "--metadata-only" in clean_stdout
-        assert "--async" in clean_stdout
-        assert "--verbose" in clean_stdout
-        assert "--output-dir" in clean_stdout

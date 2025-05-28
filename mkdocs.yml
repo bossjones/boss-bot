@@ -28,8 +28,8 @@ watch:
   - src/boss_bot # Watches source code for API documentation changes
   - README.md # Watches readme file
   - CHANGELOG.md # Watches changelog file
-  # - changes/ # Watches changes directory
   - scripts/docs # Watches documentation scripts
+  # - docs/people.yml # Watches contributor data file
 
 # Theme configuration
 theme:
@@ -38,8 +38,8 @@ theme:
     code: JetBrains Mono # Sets JetBrains Mono as the monospace font for code blocks
 
   # Theme assets
-  logo: images/logo3.png # Sets the logo image for the site header
-  favicon: images/logo3.png # Sets the browser favicon
+  logo: images/logo.jpg # Sets the logo image for the site header
+  favicon: images/logo.jpg # Sets the browser favicon
 
   # Icon configurations for various UI elements
   icon:
@@ -97,13 +97,15 @@ theme:
     # - search.share          # Enables sharing search results
     # - content.action.edit   # Enables edit button for pages
     # - navigation.tabs       # Enables navigation tabs at the top
-    # - navigation.indexes    # Enables section index pages
+    - navigation.indexes    # Enables section index pages
+    - navigation.sections    # Enables section index pages
     # - navigation.top        # Enables back-to-top button
 
 # Plugin configuration
 plugins:
   - autorefs # Enables automatic cross-references, recommended by mkdocstrings. Automatically link across pages in MkDocs.
   - awesome-pages # Enables better page organization and navigation https://github.com/lukasgeiter/mkdocs-awesome-pages-plugin
+  - meta
   # - blog                  # Blog plugin is commented out (would enable blog features)
   - git-revision-date-localized: # Adds last updated dates to pages
       enable_creation_date: true # Shows creation date along with last updated
@@ -153,9 +155,123 @@ plugins:
             extensions:
               - griffe_inherited_docstrings # Supports inherited docstrings
 
+  - blog:
+      authors_profiles: true
+      blog_dir: til
+      post_url_format: "{slug}"
+      categories: true
+      categories_allowed:
+        # Core Content Types (no changes - these are distinct)
+        - tutorial
+        - guide
+        - documentation
+        - case-study
+        - best-practice
+        - reference
+        - example
+        - how-to
+
+        # Development Areas (consolidate these)
+        - web-development
+        - api-design
+        - architecture
+        - testing-and-quality  # Combines testing, debugging, performance
+        - security             # Keep separate due to importance
+        - data-engineering     # Combines databases with data operations
+        - devops               # Consolidates devops, ci-cd, deployment
+        - version-control
+
+        # AI/ML (consolidate these)
+        - ai-foundations       # Core AI concepts
+        - llm-engineering      # Combines llm, prompt-engineering, code-generation
+        - ai-agent-workflows   # Combines ai-agents, workflow, automation
+        - ai-ethics            # Keep separate due to importance
+        - ai-tools
+
+
+        # Concepts & General (consolidate these)
+        - development
+        - development-practices # General development and programming
+        - frontend-development  # Consolidates frontend, accessibility
+        - backend-development   # Backend and infrastructure
+        - career-and-community  # Professional development topics
+  - tags: # Enables tags for categorizing content
+      tags_allowed:
+        # Languages
+        - python
+        - javascript
+        - typescript
+        - css
+        - html
+        - yaml
+        - json
+        - markdown
+        - sql
+        - bash
+        - rust
+        - go
+
+        # Frameworks & Libraries
+        - react
+        - vue
+        - angular
+        - django
+        - flask
+        - fastapi
+        - express
+        - next-js
+        - svelte
+        - tailwind
+
+        # Tools
+        - git
+        - docker
+        - kubernetes
+        - mkdocs
+        - github-actions
+        - pytest
+        - jest
+        - webpack
+        - vite
+        - jupyter
+
+        # Databases
+        - postgresql
+        - mysql
+        - sqlite
+        - mongodb
+        - redis
+        - duckdb
+
+        # Cloud & Hosting
+        - aws
+        - azure
+        - gcp
+        - netlify
+        - vercel
+        - heroku
+        - fly-io
+
+        # AI-specific
+        - openai
+        - langchain
+        - anthropic
+        - mistral
+        - llama
+        - stable-diffusion
+
+        #
+        - cursor
+        - agentic-workflows
+        - llm-rules
+        - prompt-engineering-advanced
+        - ai-agent-workflows
+        - ai-ethics
+        - ai-tools
+        - ai-foundations
+        - llm-engineering
+
   - search # Enables search functionality
-  - tags # Enables tags for categorizing content
-  # - ezlinks               # Easy links plugin (commented out)
   - coverage: # Adds test coverage reporting
       page_path: coverage # Path for coverage pages
       html_report_dir: htmlcov # Directory for HTML coverage reports
@@ -219,11 +335,3 @@ copyright: Copyright &copy; 2023 - 2025 Malcolm Jones # Copyright notice in foot
 # Additional CSS files to include
 extra_css:
   - css/neoteroi.cards.css
-
-# # Navigation structure
-# nav:
-#   - Home: index.md
-#   - AI Documentation:
-#       - .ai:
-#           - ... | *.md
-#   - ...

@@ -49,7 +49,7 @@ jobs:
       # Update with your API URL if using a hosted instance of Langsmith.
       LANGCHAIN_HUB_API_URL: "https://api.hub.langchain.com"
       LANGCHAIN_HUB_API_KEY: ${{ secrets.LANGCHAIN_API_KEY }}
-      LANGCHAIN_PROJECT: "goob-ci-upgrade"
+      LANGCHAIN_PROJECT: "boss-bot-ci-upgrade"
       BOSS_BOT_CONFIG_DISCORD_TOKEN: "foo"
       BOSS_BOT_CONFIG_OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     steps:

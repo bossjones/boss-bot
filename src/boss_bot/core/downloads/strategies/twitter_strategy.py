@@ -165,7 +165,10 @@ class TwitterDownloadStrategy(BaseDownloadStrategy):
         """
         # ✅ Call existing handler in executor to maintain async interface
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, self.cli_handler.download, url, **kwargs)
+        download_result = await loop.run_in_executor(None, self.cli_handler.download, url, **kwargs)
+
+        # Convert DownloadResult to MediaMetadata
+        return self._convert_download_result_to_metadata(download_result, url)
 
     async def _get_metadata_via_cli(self, url: str, **kwargs: Any) -> MediaMetadata:
         """Use existing CLI handler for metadata (unchanged).
@@ -224,6 +227,46 @@ class TwitterDownloadStrategy(BaseDownloadStrategy):
 
             # Convert first metadata item to MediaMetadata
             return self._convert_api_response_to_metadata(metadata_items[0], url)
+
+    def _convert_download_result_to_metadata(self, download_result: DownloadResult, url: str) -> MediaMetadata:
+        """Convert DownloadResult to MediaMetadata format.
+
+        Args:
+            download_result: Result from handler download
+            url: Original URL
+
+        Returns:
+            MediaMetadata with download information
+        """
+        from boss_bot.core.downloads.handlers.base_handler import MediaMetadata
+
+        if not download_result.success:
+            return MediaMetadata(url=url, platform="twitter", download_method="cli", error=download_result.error)
+
+        # Extract metadata from files if available
+        metadata_dict = download_result.metadata or {}
+
+        # Build MediaMetadata with file information
+        return MediaMetadata(
+            title=metadata_dict.get("title"),
+            description=metadata_dict.get("description"),
+            uploader=metadata_dict.get("uploader") or metadata_dict.get("author"),
+            upload_date=metadata_dict.get("upload_date"),
+            duration=metadata_dict.get("duration"),
+            view_count=metadata_dict.get("view_count"),
+            like_count=metadata_dict.get("like_count"),
+            comment_count=metadata_dict.get("comment_count"),
+            url=url,
+            thumbnail=metadata_dict.get("thumbnail"),
+            platform="twitter",
+            file_size=metadata_dict.get("file_size"),
+            format=metadata_dict.get("format"),
+            tags=metadata_dict.get("tags"),
+            raw_metadata=metadata_dict,
+            download_method="cli",
+            filename=str(download_result.files[0]) if download_result.files else None,
+            files=[str(f) for f in download_result.files] if download_result.files else [],
+        )
 
     def _convert_api_response_to_metadata(self, api_response: dict, url: str) -> MediaMetadata:
         """Convert API response to MediaMetadata format.

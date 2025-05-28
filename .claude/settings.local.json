@@ -15,7 +15,10 @@
       "Bash(just check-type:*)",
       "Bash(find:*)",
       "WebFetch(domain:dpytest.readthedocs.io)",
-      "WebFetch(domain:docs.anthropic.com)"
+      "WebFetch(domain:docs.anthropic.com)",
+      "Bash(timeout 10 uv run:*)",
+      "WebFetch(domain:discordpy.readthedocs.io)",
+      "Bash(gh pr list:*)"
     ],
     "deny": []
   }

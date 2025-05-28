@@ -57,6 +57,7 @@ class MediaMetadata:
     thumbnail_url: str | None = None  # Alternative to thumbnail (more explicit)
     download_method: str | None = None  # Track whether downloaded via 'cli' or 'api'
     error: str | None = None  # Error message if metadata extraction failed
+    files: list[str] | None = None  # Downloaded file paths (for compatibility with CLI)
 
     def __post_init__(self):
         """Normalize field values after initialization."""

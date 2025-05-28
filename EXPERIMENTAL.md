@@ -1257,11 +1257,11 @@ src/boss_bot/core/downloads/
 - [x] **Story 4.5**: Create complete test suite with 44+ test cases covering all functionality
 - [x] **Story 4.6**: Add support for quality selection (360p-4K), audio-only downloads, and metadata fields
 
-### Epic 5: Integration & Rollout
-- [ ] **Story 5.1**: Update Discord cogs to use strategy pattern
-- [ ] **Story 5.2**: Update CLI commands to use strategies
-- [ ] **Story 5.3**: Document configuration options and usage examples
-- [ ] **Story 5.4**: Implement gradual rollout per platform via environment variables
+### Epic 5: Integration & Rollout ✅ COMPLETED
+- [x] **Story 5.1**: Update Discord cogs to use strategy pattern
+- [x] **Story 5.2**: Update CLI commands to use strategies
+- [x] **Story 5.3**: Document configuration options and usage examples
+- [x] **Story 5.4**: Implement gradual rollout per platform via environment variables
 
 ### Epic 6: Advanced Features
 - [ ] **Story 6.1**: Implement caching layer for API responses

@@ -30,7 +30,8 @@
       "mcp__mcp-server-gallery-dl__fetch_gallery_dl_documentation",
       "mcp__mcp-server-gallery-dl__search_gallery_dl_documentation",
       "mcp__mcp-server-gallery-dl__search_gallery_dl_code",
-      "mcp__mcp-server-gallery-dl__fetch_generic_url_content"
+      "mcp__mcp-server-gallery-dl__fetch_generic_url_content",
+      "Bash(gh pr create:*)"
     ],
     "deny": []
   },

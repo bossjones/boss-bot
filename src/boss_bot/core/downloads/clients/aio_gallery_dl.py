@@ -17,20 +17,10 @@ from typing import Any, Dict, List, Optional, Union
 
 import aiofiles
 
+from boss_bot.core.downloads.clients.aio_gallery_dl_utils import get_default_gallery_dl_config_locations
 from boss_bot.core.downloads.clients.config import GalleryDLConfig
 
 logger = logging.getLogger(__name__)
-
-
-def get_default_gallery_dl_config_locations() -> list[Path]:
-    """Get default gallery-dl config locations."""
-    return [
-        Path.home() / ".config" / "gallery-dl" / "config.json",
-        Path.home() / ".gallery-dl.conf",
-        Path.cwd() / "gallery-dl.conf",
-        Path("/etc/gallery-dl.conf"),
-        Path("/etc/gallery-dl/config.json"),
-    ]
 
 
 class AsyncGalleryDL:

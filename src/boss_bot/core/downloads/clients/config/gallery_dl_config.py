@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field, SecretStr, field_validator
+
+from boss_bot.core.downloads.clients.aio_gallery_dl_utils import get_default_gallery_dl_config_locations
+
+logger = logging.getLogger(__name__)
 
 
 class TwitterConfig(BaseModel):
@@ -208,6 +213,70 @@ class GalleryDLConfig(BaseModel):
     def from_dict(cls, config_dict: dict[str, Any]) -> GalleryDLConfig:
         """Create configuration from dictionary."""
         return cls(**config_dict)
+
+    @classmethod
+    def from_file(cls, override_config: str | Path | None = None) -> GalleryDLConfig:
+        """Create configuration from file.
+
+        Args:
+            override_config: Optional path to configuration file. If not provided,
+                           searches for config in default gallery-dl locations.
+
+        Returns:
+            GalleryDLConfig instance loaded from file.
+
+        Raises:
+            FileNotFoundError: If no configuration file is found.
+            ValueError: If configuration file contains invalid JSON or data.
+        """
+        import json
+
+        from boss_bot.core.downloads.clients.aio_gallery_dl_utils import get_default_gallery_dl_config_locations
+
+        config_path: Path | None = None
+        config_data: dict[str, Any] = {}
+
+        if override_config:
+            # Use provided config path
+            config_path = Path(override_config)
+            if not config_path.exists():
+                raise FileNotFoundError(f"Configuration file not found: {config_path}")
+        else:
+            # Search default locations
+            config_locations = get_default_gallery_dl_config_locations()
+            for potential_path in config_locations:
+                if potential_path.exists():
+                    config_path = potential_path
+                    break
+
+            if not config_path:
+                # Return default configuration if no file found
+                logger.info("No gallery-dl configuration file found in default locations. Using defaults.")
+                return cls()
+
+        try:
+            with open(config_path, encoding="utf-8") as f:
+                content = f.read().strip()
+
+            if not content:
+                logger.warning(f"Configuration file is empty: {config_path}. Using defaults.")
+                return cls()
+
+            try:
+                config_data = json.loads(content)
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Invalid JSON in configuration file {config_path}: {e}") from e
+
+            if not isinstance(config_data, dict):
+                raise ValueError(f"Configuration must be a JSON object, got {type(config_data).__name__}")
+
+            logger.info(f"Loaded gallery-dl configuration from: {config_path}")
+            return cls.from_dict(config_data)
+
+        except Exception as e:
+            if isinstance(e, (FileNotFoundError, ValueError)):
+                raise
+            raise ValueError(f"Error reading configuration file {config_path}: {e}") from e
 
     def to_dict(self) -> dict[str, Any]:
         """Convert configuration to dictionary."""

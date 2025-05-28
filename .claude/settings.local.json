@@ -18,7 +18,10 @@
       "WebFetch(domain:docs.anthropic.com)",
       "Bash(timeout 10 uv run:*)",
       "WebFetch(domain:discordpy.readthedocs.io)",
-      "Bash(gh pr list:*)"
+      "Bash(gh pr list:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(just test-vcr:*)",
+      "Bash(chmod:*)"
     ],
     "deny": []
   }

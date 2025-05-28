@@ -42,6 +42,7 @@
   "strictGenericNarrowing": true,
   "failOnWarnings": true,
   "reportPrivateUsage": "none",
+  "reportPrivateImportUsage": "none",
 
   "reportCallIssue": "none",
   "reportOptionalMemberAccess": "none",

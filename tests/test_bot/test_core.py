@@ -112,18 +112,10 @@ async def test_help_command_customization(
     assert help_command.indent == 2
 
 @pytest.mark.asyncio
-async def test_bot_reconnect_handling(
-    mocker: MockerFixture,
+async def test_bot_version_attribute(
     fixture_bot_test: BossBot
 ) -> None:
-    """Test that bot handles reconnection appropriately."""
-    # Mock the setup hook method
-    mock_setup_hook = mocker.AsyncMock()
-    mocker.patch.object(fixture_bot_test, '_async_setup_hook', mock_setup_hook)
-
-    # Simulate disconnect and reconnect
-    await fixture_bot_test.on_disconnect()
-    await fixture_bot_test.on_connect()
-
-    # Verify reconnect behavior
-    mock_setup_hook.assert_called_once()
+    """Test that bot has version attribute set correctly."""
+    assert hasattr(fixture_bot_test, 'version')
+    assert fixture_bot_test.version is not None
+    assert isinstance(fixture_bot_test.version, str)

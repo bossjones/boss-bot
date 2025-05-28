@@ -33,17 +33,19 @@ async def fixture_bot_test(fixture_settings_test: BossSettings) -> AsyncGenerato
 
 
 @pytest.fixture(scope="function")
-def fixture_mock_bot_test(mocker: MockerFixture) -> BossBot:
+def fixture_mock_bot_test(mocker: MockerFixture, fixture_settings_test: BossSettings) -> BossBot:
     """Create a mocked bot instance for testing.
 
     Scope: function - ensures clean mock for each test
     Args:
         mocker: PyTest mock fixture
+        fixture_settings_test: Test settings fixture
     Returns: Mocked BossBot instance with configured managers
     """
     bot = mocker.Mock(spec=BossBot)
     bot.download_manager = mocker.Mock()
     bot.queue_manager = mocker.Mock()
+    bot.settings = fixture_settings_test
     return bot
 
 @pytest.fixture(scope="function")

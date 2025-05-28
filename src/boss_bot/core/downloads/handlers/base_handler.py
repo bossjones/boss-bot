@@ -41,11 +41,13 @@ class MediaMetadata:
     duration: float | None = None
     view_count: int | None = None
     like_count: int | None = None
+    comment_count: int | None = None
     url: str | None = None
     thumbnail: str | None = None
     platform: str | None = None
     file_size: int | None = None
     format: str | None = None
+    tags: list[str] | None = None
     raw_metadata: dict[str, Any] | None = None
 
     # Additional fields for API-direct support
@@ -54,6 +56,7 @@ class MediaMetadata:
     filesize: int | None = None  # Alternative to file_size (for API consistency)
     thumbnail_url: str | None = None  # Alternative to thumbnail (more explicit)
     download_method: str | None = None  # Track whether downloaded via 'cli' or 'api'
+    error: str | None = None  # Error message if metadata extraction failed
 
     def __post_init__(self):
         """Normalize field values after initialization."""

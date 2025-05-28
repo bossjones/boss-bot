@@ -24,7 +24,8 @@ from importlib import import_module, metadata
 from importlib.metadata import version as importlib_metadata_version
 from pathlib import Path
 from re import Pattern
-from typing import Annotated, Any, Dict, List, Optional, Set, Tuple, Type, Union
+from types import FrameType
+from typing import Annotated, Any, Dict, List, NoReturn, Optional, Set, Tuple, Type, Union
 
 import rich
 import typer
@@ -118,7 +119,7 @@ async def run_bot():
     """Run the Discord bot."""
     settings = BossSettings()
     bot = BossBot(settings)
-    await bot.start(settings.discord_token)
+    await bot.start(settings.discord_token.get_secret_value())
 
 
 @APP.command()
@@ -128,7 +129,16 @@ def go() -> None:
     asyncio.run(run_bot())
 
 
-def handle_sigterm(signo, frame):
+def handle_sigterm(signo: int, frame: FrameType | None) -> NoReturn:
+    """Handle SIGTERM signal by exiting with the appropriate status code.
+
+    Args:
+        signo: The signal number received
+        frame: The current stack frame (may be None)
+
+    Returns:
+        Never returns, always exits
+    """
     sys.exit(128 + signo)  # this will raise SystemExit and cause atexit to be called
 
 

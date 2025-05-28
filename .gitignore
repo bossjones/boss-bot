@@ -181,7 +181,7 @@ venv/
 .ruff_cache/
 .mypy_cache/
 .pytest_cache/
-.vscode/settings.json
+# .vscode/settings.json
 .hypothesis/
 .tox/
 *,cover
@@ -296,7 +296,7 @@ monkeytype.sqlite3
 
 stubs
 colorization_release_v2.caffemodel
-.vscode/settings.json
+# .vscode/settings.json
 gallery-dl
 youtube-dl
 machine_learning_with_python/settings_test.toml
@@ -386,3 +386,7 @@ bin/taplo
 Justfile.bak
 pyproject.toml.diff
 pyproject.toml.new
+
+typingcov_cobertura/
+typingcov_txt/
+typingcov_xml/

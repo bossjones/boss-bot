@@ -10,7 +10,12 @@
       "Bash(uv run:*)",
       "Bash(just ci:*)",
       "Bash(just check-test:*)",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "Bash(sed:*)",
+      "Bash(just check-type:*)",
+      "Bash(find:*)",
+      "WebFetch(domain:dpytest.readthedocs.io)",
+      "WebFetch(domain:docs.anthropic.com)"
     ],
     "deny": []
   }

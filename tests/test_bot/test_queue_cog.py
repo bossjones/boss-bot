@@ -4,7 +4,7 @@ from discord.ext import commands
 from pytest_mock import MockerFixture
 
 from boss_bot.bot.client import BossBot
-from boss_bot.bot.cogs.task_queue import QueueCog
+from boss_bot.bot.cogs.queue import QueueCog
 
 
 @pytest.mark.asyncio

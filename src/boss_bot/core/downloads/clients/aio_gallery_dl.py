@@ -22,11 +22,27 @@ from boss_bot.core.downloads.clients.config import GalleryDLConfig
 logger = logging.getLogger(__name__)
 
 
+def get_default_gallery_dl_config_locations() -> list[Path]:
+    """Get default gallery-dl config locations."""
+    return [
+        Path.home() / ".config" / "gallery-dl" / "config.json",
+        Path.home() / ".gallery-dl.conf",
+        Path.cwd() / "gallery-dl.conf",
+        Path("/etc/gallery-dl.conf"),
+        Path("/etc/gallery-dl/config.json"),
+    ]
+
+
 class AsyncGalleryDL:
     """Asynchronous wrapper around gallery-dl.
 
     This class provides an async interface to gallery-dl operations,
     running them in a thread pool to avoid blocking the event loop.
+
+    Configuration is loaded using gallery-dl's native config.load() function
+    for maximum compatibility and automatic handling of all config file formats
+    and locations. The loaded config is stored in self._gdl_config and used
+    throughout the async operations in a thread-safe manner.
     """
 
     def __init__(
@@ -34,8 +50,9 @@ class AsyncGalleryDL:
         config: dict[str, Any] | None = None,
         config_file: Path | None = None,
         cookies_file: Path | None = None,
-        cookies_from_browser: str | None = None,
+        cookies_from_browser: str | None = "Firefox",
         download_dir: Path | None = None,
+        mtime: bool = False,
         **kwargs: Any,
     ):
         """Initialize AsyncGalleryDL client.
@@ -53,6 +70,7 @@ class AsyncGalleryDL:
         self.download_dir = download_dir or Path("./downloads")
         self._executor: ThreadPoolExecutor | None = None
         self._gallery_dl_config: GalleryDLConfig | None = None
+        self._gdl_config: dict[str, Any] = {}  # Store gallery-dl's loaded config
 
         # Apply cookie settings
         if cookies_file:
@@ -80,39 +98,77 @@ class AsyncGalleryDL:
             self._executor.shutdown(wait=True)
 
     async def _load_configuration(self) -> None:
-        """Load and merge configuration from file and instance settings."""
+        """Load and merge configuration using gallery-dl's native config loading."""
+
+        def _load_config_sync() -> dict[str, Any]:
+            """Synchronously load configuration using gallery-dl's config.load."""
+            try:
+                from gallery_dl import config as gdl_config
+
+                # Clear any existing configuration to ensure clean state
+                gdl_config.clear()
+
+                # Load from default locations (similar to gallery-dl's behavior)
+                config_files = None
+                if self.config_file and self.config_file.exists():
+                    # If we have a specific config file, use it
+                    config_files = [str(self.config_file)]
+
+                # Load configuration using gallery-dl's native loader
+                gdl_config.load(files=config_files)
+
+                # Get the loaded configuration
+                loaded_config = gdl_config._config.copy() if gdl_config._config else {}
+
+                # Merge with instance config (highest priority)
+                if self.config:
+                    # Use gallery-dl's utility function for proper merging
+                    from gallery_dl import util
+
+                    util.combine_dict(loaded_config, self.config)
+
+                return loaded_config
+
+            except ImportError as e:
+                logger.error(f"gallery-dl is not available: {e}")
+                return self.config or {}
+            except Exception as e:
+                logger.error(f"Error loading gallery-dl configuration: {e}")
+                return self.config or {}
+
         try:
-            # Start with default configuration
-            self._gallery_dl_config = GalleryDLConfig()
+            # Run config loading in executor to avoid blocking
+            if not self._executor:
+                raise RuntimeError("AsyncGalleryDL not initialized properly")
 
-            # Load configuration file if it exists
-            if self.config_file.exists():
-                try:
-                    async with aiofiles.open(self.config_file, encoding="utf-8") as f:
-                        file_content = await f.read()
-                        file_config = json.loads(file_content)
+            loop = asyncio.get_event_loop()
+            self._gdl_config = await loop.run_in_executor(self._executor, _load_config_sync)
 
-                    # Merge file config with default
-                    self._gallery_dl_config = self._gallery_dl_config.merge_with(file_config)
-                    logger.debug(f"Loaded gallery-dl config from {self.config_file}")
-                except Exception as e:
-                    logger.error(f"Error loading gallery-dl config from {self.config_file}: {e}")
-                    # Continue with default config
-
-            # Merge with instance config (highest priority)
-            if self.config:
-                self._gallery_dl_config = self._gallery_dl_config.merge_with(self.config)
+            # Also create GalleryDLConfig for validation/compatibility
+            try:
+                self._gallery_dl_config = (
+                    GalleryDLConfig.from_dict(self._gdl_config) if self._gdl_config else GalleryDLConfig()
+                )
+            except Exception as e:
+                logger.warning(f"Could not validate config with GalleryDLConfig: {e}")
+                self._gallery_dl_config = GalleryDLConfig()
 
             logger.debug("Gallery-dl configuration loaded successfully")
         except Exception as e:
             logger.error(f"Error initializing gallery-dl configuration: {e}")
             # Fall back to minimal configuration
+            self._gdl_config = self.config or {}
             self._gallery_dl_config = GalleryDLConfig()
 
     def _get_effective_config(self) -> dict[str, Any]:
         """Get the effective configuration dictionary."""
-        if self._gallery_dl_config:
+        # Return the gallery-dl native config if available
+        if self._gdl_config:
+            return self._gdl_config
+        # Fallback to GalleryDLConfig if available
+        elif self._gallery_dl_config:
             return self._gallery_dl_config.to_dict()
+        # Final fallback to instance config
         return self.config
 
     async def extract_metadata(self, url: str, **options: Any) -> AsyncIterator[dict[str, Any]]:
@@ -130,19 +186,29 @@ class AsyncGalleryDL:
             """Synchronous metadata extraction."""
             try:
                 import gallery_dl
-                from gallery_dl import config, extractor
+                from gallery_dl import config as gdl_config
+                from gallery_dl import extractor
 
-                # Apply configuration
-                effective_config = self._get_effective_config()
+                # Apply configuration in a thread-safe way
+                effective_config = self._get_effective_config().copy()
 
                 # Merge additional options into config before loading
                 if options:
-                    # Merge options into the effective config
+                    # Merge options into the effective config copy
                     if "extractor" not in effective_config:
                         effective_config["extractor"] = {}
                     effective_config["extractor"].update(options)
 
-                config.load(effective_config)
+                # Clear and load configuration for this thread
+                gdl_config.clear()
+
+                # Load using the config dict directly instead of files
+                # This is safer for thread isolation
+                if effective_config:
+                    # Use gallery-dl's internal combine_dict to merge into the global config
+                    from gallery_dl import util
+
+                    util.combine_dict(gdl_config._config, effective_config)
 
                 # Find and create extractor
                 extr = extractor.find(url)
@@ -191,19 +257,29 @@ class AsyncGalleryDL:
             """Synchronous download operation."""
             try:
                 import gallery_dl
-                from gallery_dl import config, job
+                from gallery_dl import config as gdl_config
+                from gallery_dl import job
 
-                # Apply configuration
-                effective_config = self._get_effective_config()
+                # Apply configuration in a thread-safe way
+                effective_config = self._get_effective_config().copy()
 
                 # Merge additional options into config before loading
                 if options:
-                    # Merge options into the effective config
+                    # Merge options into the effective config copy
                     if "extractor" not in effective_config:
                         effective_config["extractor"] = {}
                     effective_config["extractor"].update(options)
 
-                config.load(effective_config)
+                # Clear and load configuration for this thread
+                gdl_config.clear()
+
+                # Load using the config dict directly instead of files
+                # This is safer for thread isolation
+                if effective_config:
+                    # Use gallery-dl's internal combine_dict to merge into the global config
+                    from gallery_dl import util
+
+                    util.combine_dict(gdl_config._config, effective_config)
 
                 # Ensure download directory exists
                 self.download_dir.mkdir(parents=True, exist_ok=True)
@@ -280,7 +356,19 @@ class AsyncGalleryDL:
                 import gallery_dl
                 from gallery_dl import extractor
 
-                return [name for name in extractor._modules]
+                # Try different ways to get extractor names
+                if hasattr(extractor, "modules") and isinstance(extractor.modules, list):
+                    return extractor.modules
+                elif hasattr(extractor, "_modules"):
+                    return [name for name in extractor._modules]
+                else:
+                    # Fallback: get all extractor classes
+                    extractors = []
+                    for name in dir(extractor):
+                        obj = getattr(extractor, name)
+                        if isinstance(obj, type) and hasattr(obj, "pattern") and name.endswith("Extractor"):
+                            extractors.append(name.replace("Extractor", "").lower())
+                    return extractors
             except ImportError as e:
                 raise RuntimeError(f"gallery-dl is not available: {e}") from e
 

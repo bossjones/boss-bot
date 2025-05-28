@@ -29,13 +29,13 @@ class TwitterConfig(BaseModel):
 class InstagramConfig(BaseModel):
     """Instagram extractor configuration."""
 
-    cookies: str | dict[str, str] | list[str] | None = None
+    cookies: str | dict[str, str] | list[str] | None = ["firefox"]
     sleep_request: float | str = Field(default="6.0-12.0", alias="sleep-request")
 
     # Advanced options
     api: str = Field(default="rest", description="API mode: rest, graphql")
-    cursor: bool = Field(default=True, description="Use cursor pagination")
-    include: str | list[str] = Field(default="posts", description="Content types to include")
+    cursor: bool = Field(default=True, description="Controls from which position to start the extraction process from.")
+    include: str | list[str] = Field(default="all", description="Content types to include")
     max_posts: int | None = Field(None, alias="max-posts")
     metadata: bool = Field(default=False, description="Extract additional metadata")
     order_files: str = Field(default="asc", alias="order-files", description="File ordering")

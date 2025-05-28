@@ -202,21 +202,19 @@ def config() -> None:
 
 
 @APP.command()
-def show_configs() -> None:
+def show_configs(
+    dump: bool = typer.Option(False, "--dump", help="Dump GalleryDLConfig as pretty-printed dictionary"),
+) -> None:
     """Show gallery-dl and yt-dlp configuration files"""
     import json
     from pathlib import Path
 
     cprint("\n[bold blue]Download Tool Configurations[/bold blue]", style="bold blue")
     cprint("=" * 60, style="blue")
+    from boss_bot.core.downloads.clients.aio_gallery_dl import get_default_gallery_dl_config_locations
 
     # Check for gallery-dl config
-    gallery_dl_configs = [
-        Path.home() / ".config" / "gallery-dl" / "config.json",
-        Path.home() / ".gallery-dl.conf",
-        Path.cwd() / "gallery-dl.conf",
-        Path("/etc/gallery-dl.conf"),
-    ]
+    gallery_dl_configs = get_default_gallery_dl_config_locations()
 
     cprint("\n[bold green]Gallery-dl Configuration[/bold green]")
     cprint("-" * 30, style="green")
@@ -314,6 +312,25 @@ def show_configs() -> None:
     cprint("[dim]• gallery-dl: ~/.config/gallery-dl/config.json or ~/.gallery-dl.conf[/dim]")
     cprint("[dim]• yt-dlp: ~/.config/yt-dlp/config or ~/yt-dlp.conf[/dim]")
     cprint("[dim]• Use 'gallery-dl --help' or 'yt-dlp --help' for configuration options[/dim]")
+
+    # Handle --dump flag to show GalleryDLConfig dictionary
+    if dump:
+        cprint("\n[bold blue]GalleryDLConfig Dictionary Dump[/bold blue]")
+        cprint("=" * 40, style="blue")
+
+        try:
+            from boss_bot.core.downloads.clients.config.gallery_dl_config import GalleryDLConfig
+
+            # Create a default GalleryDLConfig instance
+            config = GalleryDLConfig()
+            config_dict = config.to_dict()
+
+            # Pretty print the configuration dictionary
+            formatted_config = json.dumps(config_dict, indent=2, default=str)
+            cprint(formatted_config)
+
+        except Exception as e:
+            cprint(f"[red]❌ Error dumping GalleryDLConfig: {e}[/red]")
 
 
 def _mask_sensitive_config(config_data: dict) -> dict:
@@ -785,6 +802,172 @@ async def run_bot():
             await bot.start(settings.discord_token.get_secret_value())
     except KeyboardInterrupt:
         print("\nShutting down...")
+
+
+@APP.command()
+def check_config() -> None:
+    """Check and validate gallery-dl configuration using gallery-dl's config.load and GalleryDLConfig validation"""
+    import json
+    from pathlib import Path
+
+    try:
+        import gallery_dl.config
+    except ImportError:
+        cprint("[red]❌ gallery-dl is not installed or not available[/red]")
+        cprint("[yellow]Install gallery-dl with: pip install gallery-dl[/yellow]")
+        raise typer.Exit(1)
+
+    try:
+        from boss_bot.core.downloads.clients.config.gallery_dl_config import GalleryDLConfig
+    except ImportError as e:
+        cprint(f"[red]❌ Error importing GalleryDLConfig: {e}[/red]")
+        raise typer.Exit(1)
+
+    cprint("\n[bold blue]🔧 Gallery-dl Configuration Check[/bold blue]", style="bold blue")
+    cprint("=" * 60, style="blue")
+
+    # Step 1: Use gallery-dl's config.load to load configuration
+    cprint("\n[bold green]1. Loading Configuration with gallery-dl[/bold green]")
+    cprint("-" * 45, style="green")
+
+    # Clear any existing config first
+    gallery_dl.config.clear()
+
+    try:
+        # Use gallery-dl's config.load function (same as what gallery-dl uses internally)
+        gallery_dl.config.load()
+        raw_config = gallery_dl.config._config
+
+        if not raw_config:
+            cprint("[yellow]⚠️  No configuration loaded. Using defaults.[/yellow]")
+            cprint("[dim]This means no config files were found in standard locations[/dim]")
+            config_found = False
+        else:
+            cprint("[green]✅ Configuration loaded successfully[/green]")
+            config_found = True
+
+            # Show some basic info about loaded config
+            config_sections = list(raw_config.keys())
+            if config_sections:
+                cprint(f"[dim green]📂 Found sections: {', '.join(config_sections)}[/dim green]")
+
+    except Exception as e:
+        cprint(f"[red]❌ Error loading configuration: {e}[/red]")
+        raw_config = {}
+        config_found = False
+
+    # Step 2: Validate with GalleryDLConfig
+    cprint("\n[bold green]2. Validating with GalleryDLConfig[/bold green]")
+    cprint("-" * 40, style="green")
+
+    try:
+        if raw_config:
+            # Try to create GalleryDLConfig from loaded config
+            validated_config = GalleryDLConfig.from_dict(raw_config)
+            cprint("[green]✅ Configuration is valid according to GalleryDLConfig schema[/green]")
+            validation_success = True
+        else:
+            # Create default config for validation
+            validated_config = GalleryDLConfig()
+            cprint("[yellow]⚠️  Using default GalleryDLConfig (no custom config found)[/yellow]")
+            validation_success = True
+
+    except Exception as e:
+        cprint(f"[red]❌ Configuration validation failed: {e}[/red]")
+        validated_config = GalleryDLConfig()  # Use defaults
+        validation_success = False
+
+    # Step 3: Display configuration by sections (with sensitive data masked)
+    if config_found and raw_config:
+        cprint("\n[bold green]3. Configuration Overview[/bold green]")
+        cprint("-" * 30, style="green")
+
+        # Display each section
+        _display_config_section("Extractor", raw_config.get("extractor", {}))
+        _display_config_section("Downloader", raw_config.get("downloader", {}))
+        _display_config_section("Output", raw_config.get("output", {}))
+        _display_config_section("Postprocessor", raw_config.get("postprocessor", {}))
+
+        # Show any additional sections
+        standard_sections = {"extractor", "downloader", "output", "postprocessor"}
+        additional_sections = set(raw_config.keys()) - standard_sections
+        if additional_sections:
+            for section in sorted(additional_sections):
+                _display_config_section(f"Custom: {section}", raw_config[section])
+
+    # Step 4: Show configuration file locations
+    cprint("\n[bold green]4. Configuration File Status[/bold green]")
+    cprint("-" * 35, style="green")
+
+    # Check standard gallery-dl config locations
+    from boss_bot.core.downloads.clients.aio_gallery_dl import get_default_gallery_dl_config_locations
+
+    config_paths = get_default_gallery_dl_config_locations()
+
+    found_configs = []
+    for config_path in config_paths:
+        if config_path.exists():
+            found_configs.append(config_path)
+            cprint(f"[green]✓[/green] Found: {config_path}")
+
+            # Show file size and last modified
+            try:
+                stat = config_path.stat()
+                size_kb = stat.st_size / 1024
+                import datetime
+
+                mtime = datetime.datetime.fromtimestamp(stat.st_mtime)
+                cprint(f"[dim]  Size: {size_kb:.1f} KB, Modified: {mtime.strftime('%Y-%m-%d %H:%M:%S')}[/dim]")
+            except Exception:
+                pass
+        else:
+            cprint(f"[dim]✗ Not found: {config_path}[/dim]")
+
+    if not found_configs:
+        cprint("[yellow]⚠️  No configuration files found in standard locations[/yellow]")
+        cprint("[dim]Consider creating a config file with: gallery-dl --help[/dim]")
+
+    # Step 5: Summary
+    cprint("\n[bold blue]📋 Summary[/bold blue]")
+    cprint("=" * 15, style="blue")
+
+    if config_found and validation_success:
+        cprint("[green]🎉 Configuration is valid and loaded successfully![/green]")
+        cprint(f"[green]📂 Found {len(found_configs)} config file(s)[/green]")
+    elif config_found and not validation_success:
+        cprint("[yellow]⚠️  Configuration loaded but has validation issues[/yellow]")
+        cprint("[yellow]The config may still work, but consider reviewing the errors above[/yellow]")
+    elif validation_success and not config_found:
+        cprint("[cyan]ℹ️  No custom configuration found, using defaults[/cyan]")
+        cprint("[cyan]This is normal for new installations[/cyan]")
+    else:
+        cprint("[red]❌ Configuration has issues that need attention[/red]")
+        raise typer.Exit(1)
+
+
+def _display_config_section(section_name: str, section_data: dict) -> None:
+    """Display a configuration section with masked sensitive data."""
+    if not section_data:
+        return
+
+    cprint(f"\n[bold cyan]{section_name}[/bold cyan]")
+
+    # Mask sensitive data
+    masked_data = _mask_sensitive_config(section_data)
+
+    # Display in a compact format
+    if isinstance(masked_data, dict):
+        for key, value in masked_data.items():
+            if isinstance(value, dict):
+                cprint(f"  [yellow]{key}[/yellow]: {{...}} [dim]({len(value)} items)[/dim]")
+            elif isinstance(value, list):
+                cprint(f"  [yellow]{key}[/yellow]: [...] [dim]({len(value)} items)[/dim]")
+            elif isinstance(value, str) and len(value) > 50:
+                cprint(f"  [yellow]{key}[/yellow]: [dim]{value[:47]}...[/dim]")
+            else:
+                cprint(f"  [yellow]{key}[/yellow]: {value}")
+    else:
+        cprint(f"  {masked_data}")
 
 
 @APP.command()

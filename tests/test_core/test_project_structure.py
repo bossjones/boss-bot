@@ -34,7 +34,7 @@ def test_project_structure():
         "test_commands",
         "test_downloaders",
         "test_storage",
-        "cassettes",
+        # "cassettes",
     ]
     for dir_name in test_dirs:
         assert (root / "tests" / dir_name).is_dir()

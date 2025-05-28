@@ -134,11 +134,15 @@ class AsyncGalleryDL:
 
                 # Apply configuration
                 effective_config = self._get_effective_config()
-                config.load(effective_config)
 
-                # Apply additional options
+                # Merge additional options into config before loading
                 if options:
-                    config.set(options)
+                    # Merge options into the effective config
+                    if "extractor" not in effective_config:
+                        effective_config["extractor"] = {}
+                    effective_config["extractor"].update(options)
+
+                config.load(effective_config)
 
                 # Find and create extractor
                 extr = extractor.find(url)
@@ -191,11 +195,15 @@ class AsyncGalleryDL:
 
                 # Apply configuration
                 effective_config = self._get_effective_config()
-                config.load(effective_config)
 
-                # Apply additional options
+                # Merge additional options into config before loading
                 if options:
-                    config.set(options)
+                    # Merge options into the effective config
+                    if "extractor" not in effective_config:
+                        effective_config["extractor"] = {}
+                    effective_config["extractor"].update(options)
+
+                config.load(effective_config)
 
                 # Ensure download directory exists
                 self.download_dir.mkdir(parents=True, exist_ok=True)
@@ -209,10 +217,10 @@ class AsyncGalleryDL:
                 # Hook into job to capture results
                 original_handle_url = download_job.handle_url
 
-                def capture_url_result(url_tuple):
+                def capture_url_result(url_tuple, kwdict):
                     """Capture URL processing results."""
                     try:
-                        result = original_handle_url(url_tuple)
+                        result = original_handle_url(url_tuple, kwdict)
                         # Convert result to serializable format
                         if hasattr(url_tuple, "__dict__"):
                             result_dict = dict(url_tuple.__dict__)

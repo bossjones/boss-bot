@@ -23,7 +23,7 @@ class TwitterConfig(BaseModel):
     class Config:
         """Pydantic configuration."""
 
-        allow_population_by_field_name = True
+        populate_by_name = True
 
 
 class RedditConfig(BaseModel):
@@ -48,7 +48,7 @@ class RedditConfig(BaseModel):
     class Config:
         """Pydantic configuration."""
 
-        allow_population_by_field_name = True
+        populate_by_name = True
 
 
 class DownloaderConfig(BaseModel):
@@ -64,7 +64,7 @@ class DownloaderConfig(BaseModel):
     class Config:
         """Pydantic configuration."""
 
-        allow_population_by_field_name = True
+        populate_by_name = True
 
 
 class ExtractorConfig(BaseModel):
@@ -82,7 +82,7 @@ class ExtractorConfig(BaseModel):
     class Config:
         """Pydantic configuration."""
 
-        allow_population_by_field_name = True
+        populate_by_name = True
 
 
 class OutputConfig(BaseModel):
@@ -95,7 +95,7 @@ class OutputConfig(BaseModel):
     class Config:
         """Pydantic configuration."""
 
-        allow_population_by_field_name = True
+        populate_by_name = True
 
 
 class GalleryDLConfig(BaseModel):
@@ -139,5 +139,5 @@ class GalleryDLConfig(BaseModel):
     class Config:
         """Pydantic configuration."""
 
-        allow_population_by_field_name = True
+        populate_by_name = True
         validate_assignment = True

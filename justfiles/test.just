@@ -23,12 +23,12 @@ lint: test-fix
 # run tests with VCR recording
 [group('test')]
 test-vcr:
-	uv run pytest --record-mode=once tests/test_bot/test_cogs/test_downloads_vcr_integration.py
+	uv run pytest --record-mode=once --verbose --showlocals --tb=short --cov-append --cov-report=term-missing --junitxml=junit/test-results.xml --cov-report=xml:cov.xml --cov-report=html:htmlcov --cov-report=annotate:cov_annotate --cov=.
 
 # update VCR cassettes - rewrite all recorded network interactions
 [group('test')]
 update-vcr-tests:
-	uv run pytest --record-mode=rewrite tests/test_bot/test_cogs/test_downloads_vcr_integration.py
+	uv run pytest --record-mode=rewrite --verbose --showlocals --tb=short --cov-append --cov-report=term-missing --junitxml=junit/test-results.xml --cov-report=xml:cov.xml --cov-report=html:htmlcov --cov-report=annotate:cov_annotate --cov=.
 
 # update all VCR cassettes in the test suite
 [group('test')]
@@ -38,7 +38,7 @@ update-vcr-all:
 # run VCR tests without network (use existing cassettes only)
 [group('test')]
 test-vcr-offline:
-	uv run pytest --record-mode=none tests/test_bot/test_cogs/test_downloads_vcr_integration.py
+	uv run pytest --record-mode=none --verbose --showlocals --tb=short --cov-append --cov-report=term-missing --junitxml=junit/test-results.xml --cov-report=xml:cov.xml --cov-report=html:htmlcov --cov-report=annotate:cov_annotate --cov=.
 
 # clean VCR cassettes (remove all recorded network interactions)
 [group('test')]
@@ -63,7 +63,7 @@ dry-run-delete-cassettes:
 # record VCR tests with all mode (for initial recording)
 [group('test')]
 uv-unittests-vcr-record-final:
-	uv run pytest --record-mode=all tests/test_bot/test_cogs/test_downloads_vcr_integration.py
+	uv run pytest --record-mode=all --verbose --showlocals --tb=short --cov-append --cov-report=term-missing --junitxml=junit/test-results.xml --cov-report=xml:cov.xml --cov-report=html:htmlcov --cov-report=annotate:cov_annotate --cov=.
 
 # delete all cassette files and directories, regenerate all cassette files and rerun tests
 [group('test')]

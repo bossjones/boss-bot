@@ -72,7 +72,7 @@ repos:
           ["validate-pyproject[all]", "validate-pyproject-schema-store"]
 
   - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.21.2
+    rev: v8.26.0
     hooks:
       - id: gitleaks
 
@@ -90,6 +90,12 @@ repos:
   #   hooks:
   #     - id: prettier
   #       types_or: [yaml, json5]
+
+  - repo: https://github.com/bossjones/pre-commit-pretty-format-json5
+    rev: "86957f50581644a8dd62833bcecbac1bd2c0e135"
+    hooks:
+      - id: pretty-format-json5
+        files: \.vscode/settings\.json$
 
   # Standard pre-commit hooks for basic file checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -112,7 +118,7 @@ repos:
   # When running with --fix, Ruff's lint hook should be placed before Ruff's formatter hook, and before Black, isort, and other formatting tools, as Ruff's fix behavior can output code changes that require reformatting.
   # SOURCE: https://github.com/astral-sh/ruff-pre-commit
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.11.3
+    rev: v0.11.11
     hooks:
       # Ruff linter
       - id: ruff
@@ -197,7 +203,7 @@ repos:
 
   # Automatically upgrade Python syntax
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.19.1
+    rev: v3.20.0
     hooks:
       - id: pyupgrade
         args:
@@ -221,7 +227,7 @@ repos:
 
   # JSON Schema validation for GitHub workflows
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: 0.32.1
+    rev: 0.33.0
     hooks:
       # Validate GitHub workflow files
       - id: check-github-workflows
@@ -240,7 +246,7 @@ repos:
 
   # Commitizen for standardizing commit messages
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: "v4.4.1"
+    rev: "v4.8.2"
     hooks:
       # Check commit message format
       - id: commitizen
@@ -294,7 +300,7 @@ repos:
           ["validate-pyproject[all]", "validate-pyproject-schema-store"]
 
   - repo: https://github.com/tcort/markdown-link-check
-    rev: 7564532c49a3529e677b7c21ce21d49190338482 # frozen: v3.13.7
+    rev: v3.13.7
     hooks:
       - id: markdown-link-check
         args: [--quiet]

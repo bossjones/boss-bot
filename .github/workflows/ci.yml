@@ -45,7 +45,7 @@ env:
   LANGCHAIN_ENDPOINT: "https://api.smith.langchain.com"
   LANGCHAIN_TRACING_V2: true
   LANGCHAIN_HUB_API_URL: "https://api.hub.langchain.com"
-  LANGCHAIN_PROJECT: "goob-ci"
+  LANGCHAIN_PROJECT: "boss-bot"
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
@@ -120,7 +120,7 @@ jobs:
           sudo apt-get install -y build-essential libssl-dev zlib1g-dev libbz2-dev \
           libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev \
           xz-utils tk-dev libffi-dev liblzma-dev python3-openssl git autoconf automake \
-          build-essential libtool python3-dev libsqlite3-dev
+          build-essential libtool python3-dev libsqlite3-dev zsh
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3

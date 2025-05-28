@@ -86,7 +86,7 @@ class BossSettings(BaseSettings):
     prefix: str = Field(default="$", description="Command prefix for the Discord bot")
 
     # Discord settings
-    discord_token: SecretStr = Field(..., description="Discord bot token", validation_alias="DISCORD_TOKEN")
+    discord_token: SecretStr | None = Field(..., description="Discord bot token", validation_alias="DISCORD_TOKEN")
     discord_client_id: int | None = Field(None, description="Discord client ID", validation_alias="DISCORD_CLIENT_ID")
     discord_server_id: int | None = Field(None, description="Discord server ID", validation_alias="DISCORD_SERVER_ID")
     discord_admin_user_id: int | None = Field(

@@ -146,9 +146,13 @@ jobs:
           uv run pre-commit run -a --show-diff-on-failure
           uv run python -c 'import boss_bot'
 
+      # - name: Run tests and collect coverage
+      #   run: |
+      #     ./scripts/retry -t 2 -- uv run pytest --diff-width=60 --diff-symbols --cov-append --cov-report=term-missing --cov-report=xml:cov.xml --cov-report=html:htmlcov --junitxml=junit/test-results.xml --cov=.
+
       - name: Run tests and collect coverage
         run: |
-          ./scripts/retry -t 2 -- uv run pytest --diff-width=60 --diff-symbols --cov-append --cov-report=term-missing --cov-report=xml:cov.xml --cov-report=html:htmlcov --junitxml=junit/test-results.xml --cov=.
+          ./scripts/retry -t 2 -- just ci
 
       - name: tmate session if tests fail
         if: failure() && github.event_name == 'workflow_dispatch'

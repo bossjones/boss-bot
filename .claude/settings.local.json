@@ -18,8 +18,22 @@
       "WebFetch(domain:docs.anthropic.com)",
       "Bash(timeout 10 uv run:*)",
       "WebFetch(domain:discordpy.readthedocs.io)",
-      "Bash(gh pr list:*)"
+      "Bash(gh pr list:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(just test-vcr:*)",
+      "Bash(chmod:*)",
+      "mcp__mcp-server-democracy-exe__search_democracy_exe_code",
+      "mcp__mcp-server-democracy-exe__fetch_generic_url_content",
+      "mcp__mcp-server-pytest-recording__fetch_pytest_recording_docs",
+      "mcp__mcp-server-democracy-exe__fetch_democracy_exe_documentation",
+      "mcp__mcp-server-democracy-exe__search_democracy_exe_docs",
+      "mcp__mcp-server-gallery-dl__fetch_gallery_dl_documentation",
+      "mcp__mcp-server-gallery-dl__search_gallery_dl_documentation",
+      "mcp__mcp-server-gallery-dl__search_gallery_dl_code",
+      "mcp__mcp-server-gallery-dl__fetch_generic_url_content",
+      "Bash(gh pr create:*)"
     ],
     "deny": []
-  }
+  },
+  "enableAllProjectMcpServers": false
 }

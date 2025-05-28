@@ -96,6 +96,26 @@ class BossSettings(BaseSettings):
         False, description="Whether the admin user has been invited", validation_alias="DISCORD_ADMIN_USER_INVITED"
     )
 
+    @field_validator(
+        "discord_client_id",
+        "discord_server_id",
+        "discord_admin_user_id",
+        "max_file_size_mb",
+        "max_concurrent_downloads",
+        "max_queue_size",
+        "metrics_port",
+        "health_check_port",
+        "rate_limit_requests",
+        "rate_limit_window_seconds",
+        mode="before",
+    )
+    @classmethod
+    def coerce_int_fields(cls, v):
+        """Convert string environment variables to integers for all integer fields."""
+        if isinstance(v, str) and v.isdigit():
+            return int(v)
+        return v
+
     # Feature flags
     enable_ai: bool = Field(False, description="Whether AI features are enabled", validation_alias="ENABLE_AI")
     enable_redis: bool = Field(False, description="Whether Redis is enabled", validation_alias="ENABLE_REDIS")

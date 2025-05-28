@@ -5,7 +5,8 @@ This import path is maintained for backward compatibility and will be removed in
 
 import warnings
 
-from boss_bot.cli.main import *
+# Removed wildcard import to avoid sys.modules conflicts
+# from boss_bot.cli.main import *
 
 warnings.warn(
     "Importing from boss_bot.cli is deprecated. Use boss_bot.cli.main instead. This module will be removed in v2.0.0",

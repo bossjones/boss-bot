@@ -1,0 +1,113 @@
+interactions:
+- request:
+    body: null
+    headers: {}
+    method: GET
+    uri: https://x.com/i/api/graphql/MWY3AO9_I3rcP_L2A4FR4A/TweetResultByRestId?features=%7B%22responsive_web_graphql_exclude_directive_enabled%22%3Atrue%2C%22verified_phone_label_enabled%22%3Afalse%2C%22creator_subscriptions_tweet_preview_api_enabled%22%3Atrue%2C%22responsive_web_graphql_timeline_navigation_enabled%22%3Atrue%2C%22responsive_web_graphql_skip_user_profile_image_extensions_enabled%22%3Afalse%2C%22c9s_tweet_anatomy_moderator_badge_enabled%22%3Atrue%2C%22tweetypie_unmention_optimization_enabled%22%3Atrue%2C%22responsive_web_edit_tweet_api_enabled%22%3Atrue%2C%22graphql_is_translatable_rweb_tweet_is_translatable_enabled%22%3Atrue%2C%22view_counts_everywhere_api_enabled%22%3Atrue%2C%22longform_notetweets_consumption_enabled%22%3Atrue%2C%22responsive_web_twitter_article_tweet_consumption_enabled%22%3Atrue%2C%22tweet_awards_web_tipping_enabled%22%3Afalse%2C%22freedom_of_speech_not_reach_fetch_enabled%22%3Atrue%2C%22standardized_nudges_misinfo%22%3Atrue%2C%22tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled%22%3Atrue%2C%22rweb_video_timestamps_enabled%22%3Atrue%2C%22longform_notetweets_rich_text_read_enabled%22%3Atrue%2C%22longform_notetweets_inline_media_enabled%22%3Atrue%2C%22responsive_web_media_download_video_enabled%22%3Atrue%2C%22responsive_web_enhance_cards_enabled%22%3Afalse%7D&variables=%7B%22tweetId%22%3A%221927338030467002589%22%2C%22withCommunity%22%3Afalse%2C%22includePromotedContent%22%3Afalse%2C%22withVoice%22%3Afalse%7D
+  response:
+    body:
+      string: "{\"data\":{\"tweetResult\":{\"result\":{\"__typename\":\"Tweet\",\"rest_id\":\"1927338030467002589\",\"core\":{\"user_results\":{\"result\":{\"__typename\":\"User\",\"id\":\"VXNlcjoxMzgxOTEzODkzODAzNDUwMzc0\",\"rest_id\":\"1381913893803450374\",\"affiliates_highlighted_label\":{},\"is_blue_verified\":true,\"profile_image_shape\":\"Circle\",\"legacy\":{\"created_at\":\"Tue
+        Apr 13 10:15:34 +0000 2021\",\"default_profile\":true,\"default_profile_image\":false,\"description\":\"The
+        go-to place for #helldivers2 players. Discover Gameplays, News,  leaks and
+        more.Not\_affiliated\_with\_@helldivers2.\u2B06\uFE0F\u27A1\uFE0F\u2B07\uFE0F\u2B07\uFE0F\u2B07\uFE0F\",\"entities\":{\"description\":{\"urls\":[]}},\"fast_followers_count\":0,\"favourites_count\":2333,\"followers_count\":156067,\"friends_count\":11,\"has_custom_timelines\":false,\"is_translator\":false,\"listed_count\":145,\"location\":\"super
+        earth\",\"media_count\":2370,\"name\":\"Helldivers Alerts\",\"normal_followers_count\":156067,\"pinned_tweet_ids_str\":[\"1924754181937889643\"],\"possibly_sensitive\":false,\"profile_banner_url\":\"https://pbs.twimg.com/profile_banners/1381913893803450374/1746711851\",\"profile_image_url_https\":\"https://pbs.twimg.com/profile_images/1759992427400835074/1qWUzaOq_normal.jpg\",\"profile_interstitial_type\":\"\",\"screen_name\":\"HelldiversAlert\",\"statuses_count\":3048,\"translator_type\":\"none\",\"verified\":false,\"withheld_in_countries\":[]},\"professional\":{\"rest_id\":\"1498567259367030785\",\"professional_type\":\"Creator\",\"category\":[]}}}},\"unmention_data\":{},\"edit_control\":{\"edit_tweet_ids\":[\"1927338030467002589\"],\"editable_until_msecs\":\"1748351769000\",\"is_edit_eligible\":true,\"edits_remaining\":\"5\"},\"is_translatable\":false,\"views\":{\"count\":\"185243\",\"state\":\"EnabledWithCount\"},\"source\":\"<a
+        href=\\\"http://twitter.com/download/android\\\" rel=\\\"nofollow\\\">Twitter
+        for Android</a>\",\"author_community_relationship\":{\"community_results\":{\"result\":{\"__typename\":\"Community\",\"id_str\":\"1766404796268093557\",\"name\":\"Helldivers
+        2\",\"created_at\":1709978696304,\"question\":\"\",\"search_tags\":[],\"primary_community_topic\":{\"topic_id\":\"701\",\"topic_name\":\"Gaming\"},\"actions\":{\"delete_action_result\":{\"__typename\":\"CommunityDeleteActionUnavailable\",\"reason\":\"Unavailable\"},\"join_action_result\":{\"__typename\":\"CommunityJoinActionUnavailable\",\"reason\":\"Unavailable\",\"message\":\"Must
+        be logged in.\"},\"leave_action_result\":{\"__typename\":\"CommunityLeaveActionUnavailable\",\"reason\":\"ViewerNotMember\",\"message\":\"Not
+        a member.\"},\"pin_action_result\":{\"__typename\":\"CommunityTweetPinActionUnavailable\"}},\"admin_results\":{\"result\":{\"__typename\":\"User\",\"id\":\"VXNlcjoxMzgxOTEzODkzODAzNDUwMzc0\",\"rest_id\":\"1381913893803450374\",\"affiliates_highlighted_label\":{},\"is_blue_verified\":true,\"profile_image_shape\":\"Circle\",\"legacy\":{\"created_at\":\"Tue
+        Apr 13 10:15:34 +0000 2021\",\"default_profile\":true,\"default_profile_image\":false,\"description\":\"The
+        go-to place for #helldivers2 players. Discover Gameplays, News,  leaks and
+        more.Not\_affiliated\_with\_@helldivers2.\u2B06\uFE0F\u27A1\uFE0F\u2B07\uFE0F\u2B07\uFE0F\u2B07\uFE0F\",\"entities\":{\"description\":{\"urls\":[]}},\"fast_followers_count\":0,\"favourites_count\":2333,\"followers_count\":156067,\"friends_count\":11,\"has_custom_timelines\":false,\"is_translator\":false,\"listed_count\":145,\"location\":\"super
+        earth\",\"media_count\":2370,\"name\":\"Helldivers Alerts\",\"normal_followers_count\":156067,\"pinned_tweet_ids_str\":[\"1924754181937889643\"],\"possibly_sensitive\":false,\"profile_banner_url\":\"https://pbs.twimg.com/profile_banners/1381913893803450374/1746711851\",\"profile_image_url_https\":\"https://pbs.twimg.com/profile_images/1759992427400835074/1qWUzaOq_normal.jpg\",\"profile_interstitial_type\":\"\",\"screen_name\":\"HelldiversAlert\",\"statuses_count\":3048,\"translator_type\":\"none\",\"verified\":false,\"withheld_in_countries\":[]},\"professional\":{\"rest_id\":\"1498567259367030785\",\"professional_type\":\"Creator\",\"category\":[]}}},\"creator_results\":{\"result\":{\"__typename\":\"User\",\"id\":\"VXNlcjoxMzgxOTEzODkzODAzNDUwMzc0\",\"rest_id\":\"1381913893803450374\",\"affiliates_highlighted_label\":{},\"is_blue_verified\":true,\"profile_image_shape\":\"Circle\",\"legacy\":{\"created_at\":\"Tue
+        Apr 13 10:15:34 +0000 2021\",\"default_profile\":true,\"default_profile_image\":false,\"description\":\"The
+        go-to place for #helldivers2 players. Discover Gameplays, News,  leaks and
+        more.Not\_affiliated\_with\_@helldivers2.\u2B06\uFE0F\u27A1\uFE0F\u2B07\uFE0F\u2B07\uFE0F\u2B07\uFE0F\",\"entities\":{\"description\":{\"urls\":[]}},\"fast_followers_count\":0,\"favourites_count\":2333,\"followers_count\":156067,\"friends_count\":11,\"has_custom_timelines\":false,\"is_translator\":false,\"listed_count\":145,\"location\":\"super
+        earth\",\"media_count\":2370,\"name\":\"Helldivers Alerts\",\"normal_followers_count\":156067,\"pinned_tweet_ids_str\":[\"1924754181937889643\"],\"possibly_sensitive\":false,\"profile_banner_url\":\"https://pbs.twimg.com/profile_banners/1381913893803450374/1746711851\",\"profile_image_url_https\":\"https://pbs.twimg.com/profile_images/1759992427400835074/1qWUzaOq_normal.jpg\",\"profile_interstitial_type\":\"\",\"screen_name\":\"HelldiversAlert\",\"statuses_count\":3048,\"translator_type\":\"none\",\"verified\":false,\"withheld_in_countries\":[]},\"professional\":{\"rest_id\":\"1498567259367030785\",\"professional_type\":\"Creator\",\"category\":[]}}},\"invites_result\":{\"__typename\":\"CommunityInvitesUnavailable\",\"reason\":\"Unavailable\",\"message\":\"Must
+        be logged in.\"},\"join_policy\":\"Open\",\"invites_policy\":\"MemberInvitesAllowed\",\"is_pinned\":false,\"members_facepile_results\":[{\"result\":{\"__typename\":\"User\",\"id\":\"VXNlcjoxMzgxOTEzODkzODAzNDUwMzc0\",\"rest_id\":\"1381913893803450374\",\"affiliates_highlighted_label\":{},\"is_blue_verified\":true,\"profile_image_shape\":\"Circle\",\"legacy\":{\"created_at\":\"Tue
+        Apr 13 10:15:34 +0000 2021\",\"default_profile\":true,\"default_profile_image\":false,\"description\":\"The
+        go-to place for #helldivers2 players. Discover Gameplays, News,  leaks and
+        more.Not\_affiliated\_with\_@helldivers2.\u2B06\uFE0F\u27A1\uFE0F\u2B07\uFE0F\u2B07\uFE0F\u2B07\uFE0F\",\"entities\":{\"description\":{\"urls\":[]}},\"fast_followers_count\":0,\"favourites_count\":2333,\"followers_count\":156067,\"friends_count\":11,\"has_custom_timelines\":false,\"is_translator\":false,\"listed_count\":145,\"location\":\"super
+        earth\",\"media_count\":2370,\"name\":\"Helldivers Alerts\",\"normal_followers_count\":156067,\"pinned_tweet_ids_str\":[\"1924754181937889643\"],\"possibly_sensitive\":false,\"profile_banner_url\":\"https://pbs.twimg.com/profile_banners/1381913893803450374/1746711851\",\"profile_image_url_https\":\"https://pbs.twimg.com/profile_images/1759992427400835074/1qWUzaOq_normal.jpg\",\"profile_interstitial_type\":\"\",\"screen_name\":\"HelldiversAlert\",\"statuses_count\":3048,\"translator_type\":\"none\",\"verified\":false,\"withheld_in_countries\":[]},\"professional\":{\"rest_id\":\"1498567259367030785\",\"professional_type\":\"Creator\",\"category\":[]}}},{\"result\":{\"__typename\":\"User\",\"id\":\"VXNlcjoxMzQyMzQ4NDkyNjAyMjI0NjQx\",\"rest_id\":\"1342348492602224641\",\"affiliates_highlighted_label\":{},\"is_blue_verified\":false,\"profile_image_shape\":\"Circle\",\"legacy\":{\"protected\":true,\"created_at\":\"Fri
+        Dec 25 05:56:42 +0000 2020\",\"default_profile\":true,\"default_profile_image\":false,\"description\":\"New
+        Orleans native chef during the day vampire at night\",\"entities\":{\"description\":{\"urls\":[]}},\"fast_followers_count\":0,\"favourites_count\":227,\"followers_count\":6,\"friends_count\":1101,\"has_custom_timelines\":false,\"is_translator\":false,\"listed_count\":0,\"location\":\"New
+        Orleans, LA\",\"media_count\":1,\"name\":\"Dracodrift\",\"normal_followers_count\":6,\"pinned_tweet_ids_str\":[],\"possibly_sensitive\":false,\"profile_image_url_https\":\"https://pbs.twimg.com/profile_images/1342349210180608000/khazV9aZ_normal.jpg\",\"profile_interstitial_type\":\"\",\"screen_name\":\"Dracodrift504\",\"statuses_count\":7,\"translator_type\":\"none\",\"verified\":false,\"withheld_in_countries\":[]}}},{\"result\":{\"__typename\":\"User\",\"id\":\"VXNlcjoxNTI2MzYwMDQ4MjE3MzMzNzYy\",\"rest_id\":\"1526360048217333762\",\"affiliates_highlighted_label\":{},\"is_blue_verified\":false,\"profile_image_shape\":\"Circle\",\"legacy\":{\"protected\":true,\"created_at\":\"Tue
+        May 17 00:33:02 +0000 2022\",\"default_profile\":true,\"default_profile_image\":false,\"description\":\"Sorry
+        bout tha\",\"entities\":{\"description\":{\"urls\":[]}},\"fast_followers_count\":0,\"favourites_count\":81,\"followers_count\":5,\"friends_count\":58,\"has_custom_timelines\":false,\"is_translator\":false,\"listed_count\":0,\"location\":\"\",\"media_count\":4,\"name\":\"Fl4SH\",\"normal_followers_count\":5,\"pinned_tweet_ids_str\":[],\"possibly_sensitive\":true,\"profile_image_url_https\":\"https://pbs.twimg.com/profile_images/1607639716861558789/Xco-EfVx_normal.jpg\",\"profile_interstitial_type\":\"\",\"screen_name\":\"Fl4_SHs\",\"statuses_count\":18,\"translator_type\":\"none\",\"verified\":false,\"withheld_in_countries\":[]}}},{\"result\":{\"__typename\":\"User\",\"id\":\"VXNlcjoxNjk3NjQ0MTM2OTc3ODk1NDI3\",\"rest_id\":\"1697644136977895427\",\"affiliates_highlighted_label\":{},\"is_blue_verified\":false,\"profile_image_shape\":\"Circle\",\"legacy\":{\"created_at\":\"Fri
+        Sep 01 16:16:09 +0000 2023\",\"default_profile\":true,\"default_profile_image\":false,\"description\":\"\",\"entities\":{\"description\":{\"urls\":[]}},\"fast_followers_count\":0,\"favourites_count\":5,\"followers_count\":1,\"friends_count\":29,\"has_custom_timelines\":false,\"is_translator\":false,\"listed_count\":0,\"location\":\"\",\"media_count\":0,\"name\":\"Michael
+        raymond\",\"normal_followers_count\":1,\"pinned_tweet_ids_str\":[],\"possibly_sensitive\":false,\"profile_image_url_https\":\"https://pbs.twimg.com/profile_images/1697644525110329344/4bHD6DVz_normal.png\",\"profile_interstitial_type\":\"\",\"screen_name\":\"Michaelray26835\",\"statuses_count\":13,\"translator_type\":\"none\",\"verified\":false,\"withheld_in_countries\":[]}}},{\"result\":{\"__typename\":\"User\",\"id\":\"VXNlcjoxNzQ0ODUzODIxNjg2MjE4NzUy\",\"rest_id\":\"1744853821686218752\",\"affiliates_highlighted_label\":{},\"is_blue_verified\":false,\"profile_image_shape\":\"Circle\",\"legacy\":{\"created_at\":\"Tue
+        Jan 09 22:49:18 +0000 2024\",\"default_profile\":true,\"default_profile_image\":false,\"description\":\"\",\"entities\":{\"description\":{\"urls\":[]}},\"fast_followers_count\":0,\"favourites_count\":5313,\"followers_count\":4,\"friends_count\":21,\"has_custom_timelines\":false,\"is_translator\":false,\"listed_count\":0,\"location\":\"\",\"media_count\":0,\"name\":\"Cxshout_Juxn\",\"normal_followers_count\":4,\"pinned_tweet_ids_str\":[],\"possibly_sensitive\":false,\"profile_banner_url\":\"https://pbs.twimg.com/profile_banners/1744853821686218752/1709999235\",\"profile_image_url_https\":\"https://pbs.twimg.com/profile_images/1766240460215885824/CD56XAwA_normal.jpg\",\"profile_interstitial_type\":\"\",\"screen_name\":\"ddsnd942988\",\"statuses_count\":89,\"translator_type\":\"none\",\"verified\":false,\"withheld_in_countries\":[]}}}],\"moderator_count\":1,\"member_count\":12151,\"role\":\"NonMember\",\"rules\":[{\"rest_id\":\"1766404796309983380\",\"name\":\"Be
+        kind and respectful.\"},{\"rest_id\":\"1766404796314178041\",\"name\":\"Keep
+        posts on topic.\"},{\"rest_id\":\"1766404796314231177\",\"name\":\"Explore
+        and share.\"}],\"custom_banner_media\":{\"media_info\":{\"color_info\":{\"palette\":[{\"rgb\":{\"red\":111,\"green\":42,\"blue\":61},\"percentage\":33.7},{\"rgb\":{\"red\":199,\"green\":85,\"blue\":91},\"percentage\":23.44},{\"rgb\":{\"red\":26,\"green\":10,\"blue\":26},\"percentage\":20.5},{\"rgb\":{\"red\":252,\"green\":180,\"blue\":139},\"percentage\":5.21},{\"rgb\":{\"red\":76,\"green\":34,\"blue\":61},\"percentage\":2.97}]},\"original_img_url\":\"https://pbs.twimg.com/community_banner_img/1926333172351983617/Rsoh4lYv?format=jpg&name=orig\",\"original_img_width\":2048,\"original_img_height\":819,\"salient_rect\":{\"left\":1024,\"top\":409,\"width\":1,\"height\":1}}},\"default_banner_media\":{\"media_info\":{\"color_info\":{\"palette\":[{\"rgb\":{\"red\":148,\"green\":224,\"blue\":254},\"percentage\":29.58},{\"rgb\":{\"red\":252,\"green\":154,\"blue\":0},\"percentage\":26.24},{\"rgb\":{\"red\":252,\"green\":191,\"blue\":6},\"percentage\":17.11},{\"rgb\":{\"red\":177,\"green\":213,\"blue\":192},\"percentage\":7.49},{\"rgb\":{\"red\":252,\"green\":129,\"blue\":0},\"percentage\":7.44}]},\"original_img_url\":\"https://pbs.twimg.com/media/FECQ6xrUUAQP6u9.jpg\",\"original_img_width\":1200,\"original_img_height\":480}},\"join_requests_result\":{\"__typename\":\"CommunityJoinRequestsUnavailable\"}}},\"role\":\"Admin\",\"user_results\":{\"result\":{\"__typename\":\"User\",\"id\":\"VXNlcjoxMzgxOTEzODkzODAzNDUwMzc0\",\"rest_id\":\"1381913893803450374\",\"affiliates_highlighted_label\":{},\"is_blue_verified\":true,\"profile_image_shape\":\"Circle\",\"legacy\":{\"created_at\":\"Tue
+        Apr 13 10:15:34 +0000 2021\",\"default_profile\":true,\"default_profile_image\":false,\"description\":\"The
+        go-to place for #helldivers2 players. Discover Gameplays, News,  leaks and
+        more.Not\_affiliated\_with\_@helldivers2.\u2B06\uFE0F\u27A1\uFE0F\u2B07\uFE0F\u2B07\uFE0F\u2B07\uFE0F\",\"entities\":{\"description\":{\"urls\":[]}},\"fast_followers_count\":0,\"favourites_count\":2333,\"followers_count\":156067,\"friends_count\":11,\"has_custom_timelines\":false,\"is_translator\":false,\"listed_count\":145,\"location\":\"super
+        earth\",\"media_count\":2370,\"name\":\"Helldivers Alerts\",\"normal_followers_count\":156067,\"pinned_tweet_ids_str\":[\"1924754181937889643\"],\"possibly_sensitive\":false,\"profile_banner_url\":\"https://pbs.twimg.com/profile_banners/1381913893803450374/1746711851\",\"profile_image_url_https\":\"https://pbs.twimg.com/profile_images/1759992427400835074/1qWUzaOq_normal.jpg\",\"profile_interstitial_type\":\"\",\"screen_name\":\"HelldiversAlert\",\"statuses_count\":3048,\"translator_type\":\"none\",\"verified\":false,\"withheld_in_countries\":[]},\"professional\":{\"rest_id\":\"1498567259367030785\",\"professional_type\":\"Creator\",\"category\":[]}}}},\"legacy\":{\"bookmark_count\":645,\"bookmarked\":false,\"created_at\":\"Tue
+        May 27 12:16:09 +0000 2025\",\"conversation_id_str\":\"1927338030467002589\",\"display_text_range\":[0,59],\"entities\":{\"hashtags\":[{\"indices\":[47,59],\"text\":\"Helldivers2\"}],\"media\":[{\"display_url\":\"pic.x.com/oTDxsLO6fW\",\"expanded_url\":\"https://x.com/HelldiversAlert/status/1927338030467002589/photo/1\",\"id_str\":\"1927338020568449024\",\"indices\":[60,83],\"media_key\":\"3_1927338020568449024\",\"media_url_https\":\"https://pbs.twimg.com/media/Gr9Ht94WQAAA3Qf.jpg\",\"type\":\"photo\",\"url\":\"https://t.co/oTDxsLO6fW\",\"ext_media_availability\":{\"status\":\"Available\"},\"features\":{\"large\":{\"faces\":[{\"x\":1094,\"y\":903,\"h\":62,\"w\":62}]},\"medium\":{\"faces\":[{\"x\":693,\"y\":572,\"h\":39,\"w\":39}]},\"small\":{\"faces\":[{\"x\":392,\"y\":324,\"h\":22,\"w\":22}]},\"orig\":{\"faces\":[{\"x\":1094,\"y\":903,\"h\":62,\"w\":62}]}},\"sizes\":{\"large\":{\"h\":1869,\"w\":1893,\"resize\":\"fit\"},\"medium\":{\"h\":1185,\"w\":1200,\"resize\":\"fit\"},\"small\":{\"h\":671,\"w\":680,\"resize\":\"fit\"},\"thumb\":{\"h\":150,\"w\":150,\"resize\":\"crop\"}},\"original_info\":{\"height\":1869,\"width\":1893,\"focus_rects\":[{\"x\":0,\"y\":463,\"w\":1893,\"h\":1060},{\"x\":0,\"y\":0,\"w\":1869,\"h\":1869},{\"x\":80,\"y\":0,\"w\":1639,\"h\":1869},{\"x\":432,\"y\":0,\"w\":935,\"h\":1869},{\"x\":0,\"y\":0,\"w\":1893,\"h\":1869}]}}],\"symbols\":[],\"timestamps\":[],\"urls\":[],\"user_mentions\":[]},\"extended_entities\":{\"media\":[{\"display_url\":\"pic.x.com/oTDxsLO6fW\",\"expanded_url\":\"https://x.com/HelldiversAlert/status/1927338030467002589/photo/1\",\"id_str\":\"1927338020568449024\",\"indices\":[60,83],\"media_key\":\"3_1927338020568449024\",\"media_url_https\":\"https://pbs.twimg.com/media/Gr9Ht94WQAAA3Qf.jpg\",\"type\":\"photo\",\"url\":\"https://t.co/oTDxsLO6fW\",\"ext_media_availability\":{\"status\":\"Available\"},\"features\":{\"large\":{\"faces\":[{\"x\":1094,\"y\":903,\"h\":62,\"w\":62}]},\"medium\":{\"faces\":[{\"x\":693,\"y\":572,\"h\":39,\"w\":39}]},\"small\":{\"faces\":[{\"x\":392,\"y\":324,\"h\":22,\"w\":22}]},\"orig\":{\"faces\":[{\"x\":1094,\"y\":903,\"h\":62,\"w\":62}]}},\"sizes\":{\"large\":{\"h\":1869,\"w\":1893,\"resize\":\"fit\"},\"medium\":{\"h\":1185,\"w\":1200,\"resize\":\"fit\"},\"small\":{\"h\":671,\"w\":680,\"resize\":\"fit\"},\"thumb\":{\"h\":150,\"w\":150,\"resize\":\"crop\"}},\"original_info\":{\"height\":1869,\"width\":1893,\"focus_rects\":[{\"x\":0,\"y\":463,\"w\":1893,\"h\":1060},{\"x\":0,\"y\":0,\"w\":1869,\"h\":1869},{\"x\":80,\"y\":0,\"w\":1639,\"h\":1869},{\"x\":432,\"y\":0,\"w\":935,\"h\":1869},{\"x\":0,\"y\":0,\"w\":1893,\"h\":1869}]}}]},\"favorite_count\":8903,\"favorited\":false,\"full_text\":\"From
+        trash-tier to top-tier in a single update #Helldivers2 https://t.co/oTDxsLO6fW\",\"is_quote_status\":false,\"lang\":\"en\",\"possibly_sensitive\":false,\"possibly_sensitive_editable\":true,\"quote_count\":13,\"reply_count\":49,\"retweet_count\":420,\"retweeted\":false,\"user_id_str\":\"1381913893803450374\",\"id_str\":\"1927338030467002589\"}}}}}"
+    headers:
+      CF-RAY:
+      - 946fda5e588681c1-IAD
+      Cache-Control:
+      - no-cache, no-store, must-revalidate, pre-check=0, post-check=0
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Wed, 28 May 2025 18:35:38 GMT
+      Server:
+      - cloudflare tsa_b
+      Set-Cookie:
+      - guest_id_marketing=v1%3FAKEBROTHER; Max-Age=63072000; Path=/; Domain=.x.com;
+        Secure
+      - guest_id_ads=v1%3FAKEBROTHER; Max-Age=63072000; Path=/; Domain=.x.com; Secure
+      - personalization_id=v1_SUPERFAKE; Max-Age=63072000; Path=/; Domain=.x.com;
+        Secure
+      - guest_id=v1%3FAKEBROTHER; Max-Age=63072000; Path=/; Domain=.x.com; Secure
+      Transfer-Encoding:
+      - chunked
+      cf-cache-status:
+      - DYNAMIC
+      content-disposition:
+      - attachment; filename=json.json
+      content-length:
+      - '15837'
+      expires:
+      - Tue, 31 Mar 1981 05:00:00 GMT
+      last-modified:
+      - Wed, 28 May 2025 18:35:38 GMT
+      perf:
+      - '7402827104'
+      pragma:
+      - no-cache
+      strict-transport-security:
+      - max-age=631138519
+      vary:
+      - Origin
+      - accept-encoding
+      x-connection-hash:
+      - a0e5ecd9eee8efb0279ea939e8348e78e20d281f006e9968da2af5eb75c00383
+      x-content-type-options:
+      - nosniff
+      x-frame-options:
+      - SAMEORIGIN
+      x-rate-limit-limit:
+      - '50'
+      x-rate-limit-remaining: '49'
+      x-rate-limit-reset: '1735960916'
+      x-response-time:
+      - '121'
+      x-tfe-preserve-body:
+      - 'true'
+      x-transaction-id:
+      - bebbe6cff2b7fd5c
+      x-twitter-response-tags:
+      - BouncerCompliant
+      x-xss-protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+version: 1

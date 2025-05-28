@@ -16,6 +16,11 @@ Boss-Bot is a Discord bot that enables downloading and managing media files. The
 - Manage dependencies: `just uv-update`
 - Run bot: `goobctl go`
 
+**Important**: All Python commands should be prefixed with `uv run` when running outside of just commands:
+- Run pytest directly: `uv run python -m pytest <test_path>`
+- Run CLI commands: `uv run python -m boss_bot.cli.main <command>`
+- Run Python scripts: `uv run python <script.py>`
+
 ## Code Architecture
 - `BossBot` (in `src/boss_bot/bot/client.py`) is the main bot class extending discord.ext.commands.Bot
 - `BossSettings` (in `src/boss_bot/core/env.py`) manages configuration via pydantic-settings

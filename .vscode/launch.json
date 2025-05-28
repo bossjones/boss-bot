@@ -1,0 +1,171 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "$schema": "vscode://schemas/launch",
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src"
+            }
+        },
+        {
+            "name": "Boss-Bot: Run Bot",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "boss_bot.main_bot",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src",
+                "PYDEVD_DISABLE_FILE_VALIDATION": "1",
+                "PYTHONASYNCIODEBUG": "1"
+            },
+            "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "name": "Boss-Bot: CLI - Fetch Instagram",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "boss_bot.cli.main",
+            "args": [
+                "fetch",
+                "https://www.instagram.com/p/DIF8mBjMYlO/"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src",
+                "PYDEVD_DISABLE_FILE_VALIDATION": "1"
+            },
+            "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "name": "Boss-Bot: CLI - Fetch Twitter",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "boss_bot.cli.main",
+            "args": [
+                "fetch",
+                "https://x.com/HelldiversAlert/status/1927338030467002589"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src",
+                "PYDEVD_DISABLE_FILE_VALIDATION": "1"
+            },
+            "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "name": "uv run pytest: All Tests",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${command:python.interpreterPath}",
+            "args": [
+                "-m",
+                "pytest",
+                "--verbose",
+                "--showlocals",
+                "--tb=short",
+                "tests"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src",
+                "PYDEVD_DISABLE_FILE_VALIDATION": "1",
+                "PYTHONASYNCIODEBUG": "1",
+                "PYTEST_ADDOPTS": "--no-cov"
+            },
+            "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "name": "uv run pytest: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${command:python.interpreterPath}",
+            "args": [
+                "-m",
+                "pytest",
+                "--verbose",
+                "--showlocals",
+                "--tb=short",
+                "${file}"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src",
+                "PYDEVD_DISABLE_FILE_VALIDATION": "1",
+                "PYTHONASYNCIODEBUG": "1",
+                "PYTEST_ADDOPTS": "--no-cov"
+            },
+            "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "name": "uv run pytest: With Debugger",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${command:python.interpreterPath}",
+            "args": [
+                "-m",
+                "pytest",
+                "--verbose",
+                "--showlocals",
+                "--tb=short",
+                "--pdb",
+                "${input:testPath}"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src",
+                "PYDEVD_DISABLE_FILE_VALIDATION": "1",
+                "PYTHONASYNCIODEBUG": "1",
+                "PYTEST_ADDOPTS": "--no-cov"
+            },
+            "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "name": "uv run pytest: Debug Test File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "purpose": [
+                "debug-test"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src",
+                "PYDEVD_DISABLE_FILE_VALIDATION": "1",
+                "PYTHONASYNCIODEBUG": "1",
+                "PYTEST_ADDOPTS": "--no-cov"
+            },
+            "envFile": "${workspaceFolder}/.env",
+            "cwd": "${workspaceFolder}"
+        }
+    ],
+    "inputs": [
+        {
+            "id": "testPath",
+            "description": "Test path (file or directory)",
+            "default": "tests",
+            "type": "promptString"
+        }
+    ]
+}

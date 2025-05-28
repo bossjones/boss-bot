@@ -26,6 +26,7 @@
     "Makefile.ci": "makefile",
     "pyproject.toml*": "toml",
   },
+  "files.eol": "\n",
   "files.exclude": {
     "**/*.pyc": true,
     "**/__pycache__": true,

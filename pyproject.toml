@@ -241,7 +241,7 @@
     [project.scripts]
         # clctl       = "boss_bot.cli:main"
         # boss-bot = "boss_bot.cli:main"
-        bossctl = 'boss_bot.cli:entry'
+        bossctl = 'boss_bot.cli.main:entry'
 
     [project.urls]
         "Bug Tracker"   = "https://github.com/bossjones/boss-bot/issues"

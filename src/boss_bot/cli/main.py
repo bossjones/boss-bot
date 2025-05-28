@@ -25,7 +25,7 @@ from importlib.metadata import version as importlib_metadata_version
 from pathlib import Path
 from re import Pattern
 from types import FrameType
-from typing import Annotated, Any, Dict, List, NoReturn, Optional, Set, Tuple, Type, Union
+from typing import TYPE_CHECKING, Annotated, Any, Dict, List, NoReturn, Optional, Set, Tuple, Type, Union
 
 import rich
 import typer
@@ -37,6 +37,10 @@ from boss_bot.bot.client import BossBot
 from boss_bot.cli.commands import download_app
 from boss_bot.core.env import BossSettings
 from boss_bot.utils.asynctyper import AsyncTyper
+
+if TYPE_CHECKING:
+    from boss_bot.core.downloads.clients.aio_gallery_dl import AsyncGalleryDL
+    from boss_bot.core.downloads.clients.aio_yt_dlp import AsyncYtDlp
 
 # Set up logging
 LOGGER = logging.getLogger(__name__)
@@ -54,14 +58,22 @@ def load_commands(directory: str = "subcommands"):
     script_dir = Path(__file__).parent
     subcommands_dir = script_dir / directory
 
+    # Check if subcommands directory exists
+    if not subcommands_dir.exists():
+        LOGGER.debug(f"Subcommands directory {subcommands_dir} does not exist, skipping")
+        return
+
     LOGGER.info(f"Loading subcommands from {subcommands_dir}")
 
-    for filename in os.listdir(subcommands_dir):
-        if filename.endswith("_cmd.py"):
-            module_name = f"{__name__.split('.')[0]}.{directory}.{filename[:-3]}"
-            module = import_module(module_name)
-            if hasattr(module, "app"):
-                APP.add_typer(module.app, name=filename[:-7])
+    try:
+        for filename in os.listdir(subcommands_dir):
+            if filename.endswith("_cmd.py"):
+                module_name = f"{__name__.split('.')[0]}.{directory}.{filename[:-3]}"
+                module = import_module(module_name)
+                if hasattr(module, "app"):
+                    APP.add_typer(module.app, name=filename[:-7])
+    except Exception as e:
+        LOGGER.error(f"Error loading subcommands: {e}")
 
 
 def version_callback(version: bool) -> None:
@@ -484,6 +496,11 @@ async def _download_with_ytdlp_api(client: AsyncYtDlp, url: str, output_dir: Pat
             "embed_metadata": True,
         }
 
+        if verbose:
+            # Show equivalent command-line in verbose mode
+            equivalent_cmd = _generate_ytdlp_command_equivalent(options, url, output_dir)
+            cprint(f"[dim cyan]Equivalent command: {equivalent_cmd}[/dim cyan]")
+
         # Perform download - the download method returns an AsyncIterator
         download_successful = False
         async for result in client.download(url, **options):
@@ -518,6 +535,10 @@ async def _download_with_gallery_dl_api(client: AsyncGalleryDL, url: str, output
         if verbose:
             cprint(f"[dim]Using gallery-dl API client for {url}[/dim]")
 
+            # Show equivalent command-line in verbose mode
+            equivalent_cmd = await _generate_gallery_dl_command_equivalent(client, url, output_dir)
+            cprint(f"[dim cyan]Equivalent command: {equivalent_cmd}[/dim cyan]")
+
         # Configure download options as keyword arguments
         options = {
             "base_directory": str(output_dir),
@@ -541,9 +562,188 @@ async def _download_with_gallery_dl_api(client: AsyncGalleryDL, url: str, output
         return False
 
 
+async def _generate_gallery_dl_command_equivalent(client: AsyncGalleryDL, url: str, output_dir: Path) -> str:
+    """Generate equivalent gallery-dl command line from client configuration.
+
+    Args:
+        client: AsyncGalleryDL client instance
+        url: URL being processed
+        output_dir: Output directory
+
+    Returns:
+        String representation of equivalent command
+    """
+    cmd_parts = ["gallery-dl"]
+
+    # Get the effective configuration
+    config = client.config_dict
+
+    # Extract extractor config if available
+    extractor_config = config.get("extractor", {})
+
+    # Determine which platform/extractor is being used
+    platform = _detect_platform_from_url(url)
+    platform_config = extractor_config.get(platform, {}) if platform else {}
+
+    # Add common global options
+    if extractor_config.get("cookies-from-browser"):
+        cmd_parts.append(f"--cookies-from-browser {extractor_config['cookies-from-browser']}")
+    elif extractor_config.get("cookies"):
+        cmd_parts.append(f"--cookies {extractor_config['cookies']}")
+
+    if extractor_config.get("user-agent") or platform_config.get("user-agent"):
+        user_agent = platform_config.get("user-agent") or extractor_config.get("user-agent")
+        cmd_parts.append(f"--user-agent '{user_agent}'")
+
+    # Add write options
+    if extractor_config.get("writeinfojson", True):
+        cmd_parts.append("--write-info-json")
+
+    if extractor_config.get("write-metadata", True):
+        cmd_parts.append("--write-metadata")
+
+    # Add output directory
+    if extractor_config.get("base-directory") or str(output_dir) != "./downloads":
+        base_dir = extractor_config.get("base-directory", str(output_dir))
+        cmd_parts.append(f"--dest '{base_dir}'")
+
+    # Add filename template if specified for the platform
+    if platform_config.get("filename"):
+        filename_template = platform_config["filename"]
+        cmd_parts.append(f"--filename '{filename_template}'")
+
+    # Add directory structure if specified for the platform
+    if platform_config.get("directory"):
+        directory_template = platform_config["directory"]
+        if isinstance(directory_template, list):
+            directory_template = "/".join(directory_template)
+        cmd_parts.append(f"--directory '{directory_template}'")
+
+    # Add platform-specific options
+    if platform == "instagram":
+        if platform_config.get("videos", True):
+            cmd_parts.append("--filter 'video or image'")
+        if not platform_config.get("highlights", True):
+            cmd_parts.append("--filter 'not highlight'")
+        if not platform_config.get("stories", True):
+            cmd_parts.append("--filter 'not story'")
+
+    elif platform == "twitter":
+        if platform_config.get("videos", True):
+            cmd_parts.append("--filter 'video or image'")
+        if platform_config.get("retweets", False):
+            cmd_parts.append("--filter 'retweet'")
+
+    elif platform == "reddit":
+        if platform_config.get("comments", False):
+            cmd_parts.append("--comments")
+        if platform_config.get("morecomments", False):
+            cmd_parts.append("--more-comments")
+
+    # Add verbose flag (always on since we're in verbose mode)
+    cmd_parts.append("-v")
+
+    # Add the URL
+    cmd_parts.append(f"'{url}'")
+
+    return " ".join(cmd_parts)
+
+
+def _generate_ytdlp_command_equivalent(options: dict, url: str, output_dir: Path) -> str:
+    """Generate equivalent yt-dlp command line from options.
+
+    Args:
+        options: yt-dlp options dictionary
+        url: URL being processed
+        output_dir: Output directory
+
+    Returns:
+        String representation of equivalent command
+    """
+    cmd_parts = ["yt-dlp"]
+
+    # Add output template
+    if options.get("outtmpl"):
+        cmd_parts.append(f"--output '{options['outtmpl']}'")
+
+    # Add info json option
+    if options.get("writeinfojson"):
+        cmd_parts.append("--write-info-json")
+
+    # Add metadata embedding
+    if options.get("embed_metadata"):
+        cmd_parts.append("--embed-metadata")
+
+    # Add other common options that might be in the options dict
+    if options.get("format"):
+        cmd_parts.append(f"--format '{options['format']}'")
+
+    if options.get("quality"):
+        cmd_parts.append(f"--format 'best[height<={options['quality']}]'")
+
+    if options.get("extract_flat"):
+        cmd_parts.append("--flat-playlist")
+
+    if options.get("no_playlist"):
+        cmd_parts.append("--no-playlist")
+
+    if options.get("verbose"):
+        cmd_parts.append("--verbose")
+    else:
+        # Always add verbose since we're in verbose mode
+        cmd_parts.append("-v")
+
+    # Add cookies if specified
+    if options.get("cookiefile"):
+        cmd_parts.append(f"--cookies '{options['cookiefile']}'")
+
+    # Add user agent if specified
+    if options.get("user_agent"):
+        cmd_parts.append(f"--user-agent '{options['user_agent']}'")
+
+    # Add the URL
+    cmd_parts.append(f"'{url}'")
+
+    return " ".join(cmd_parts)
+
+
+def _detect_platform_from_url(url: str) -> str | None:
+    """Detect platform name from URL for configuration lookup.
+
+    Args:
+        url: URL to analyze
+
+    Returns:
+        Platform name or None if not detected
+    """
+    import re
+
+    url_lower = url.lower()
+
+    platform_patterns = {
+        "twitter": [r"twitter\.com", r"x\.com"],
+        "instagram": [r"instagram\.com"],
+        "reddit": [r"reddit\.com"],
+        "youtube": [r"youtube\.com", r"youtu\.be"],
+        "tiktok": [r"tiktok\.com", r"vm\.tiktok\.com"],
+        "imgur": [r"imgur\.com"],
+        "tumblr": [r"tumblr\.com"],
+        "pinterest": [r"pinterest\.com"],
+        "deviantart": [r"deviantart\.com"],
+        "pixiv": [r"pixiv\.net"],
+    }
+
+    for platform, patterns in platform_patterns.items():
+        for pattern in patterns:
+            if re.search(pattern, url_lower):
+                return platform
+
+    return None
+
+
 def main():
-    APP()
     load_commands()
+    APP()
 
 
 def entry():
@@ -562,6 +762,139 @@ async def run_bot():
             await bot.start(settings.discord_token.get_secret_value())
     except KeyboardInterrupt:
         print("\nShutting down...")
+
+
+@APP.command()
+def doctor() -> None:
+    """Run health checks to verify repository requirements"""
+    cprint("\n[bold blue]🏥 BossBot Doctor - Health Check[/bold blue]", style="bold blue")
+    cprint("=" * 50, style="blue")
+
+    overall_status = True
+    checks_passed = 0
+    total_checks = 0
+
+    # Check 1: Gallery-dl configuration validation
+    total_checks += 1
+    cprint("\n[bold green]1. Gallery-dl Configuration Validation[/bold green]")
+    cprint("-" * 40, style="green")
+
+    gallery_config_status = _check_gallery_dl_config()
+    if gallery_config_status:
+        checks_passed += 1
+        cprint("[green]✅ Gallery-dl configuration is valid[/green]")
+    else:
+        overall_status = False
+        cprint("[red]❌ Gallery-dl configuration issues detected[/red]")
+
+    # Summary
+    cprint("\n[bold blue]Health Check Summary[/bold blue]")
+    cprint("=" * 25, style="blue")
+    cprint(f"Checks passed: {checks_passed}/{total_checks}")
+
+    if overall_status:
+        cprint("[green]🎉 All health checks passed![/green]")
+        cprint("[green]Your repository is ready to work properly.[/green]")
+    else:
+        cprint("[red]⚠️  Some health checks failed.[/red]")
+        cprint("[yellow]Please address the issues above before proceeding.[/yellow]")
+        raise typer.Exit(1)
+
+
+def _check_gallery_dl_config() -> bool:
+    """Check if gallery-dl configuration is valid.
+
+    Returns:
+        True if configuration is valid, False otherwise
+    """
+    import json
+    from pathlib import Path
+
+    # Define possible config locations in order of precedence
+    gallery_dl_configs = [
+        Path.cwd() / "gallery-dl.conf",
+        Path.home() / ".gallery-dl.conf",
+        Path.home() / ".config" / "gallery-dl" / "config.json",
+        Path("/etc/gallery-dl.conf"),
+    ]
+
+    config_found = False
+    config_valid = False
+
+    for config_path in gallery_dl_configs:
+        if config_path.exists():
+            config_found = True
+            cprint(f"[cyan]📁 Found config: {config_path}[/cyan]")
+
+            try:
+                with open(config_path, encoding="utf-8") as f:
+                    config_content = f.read().strip()
+
+                if not config_content:
+                    cprint(f"[yellow]⚠️  Config file is empty: {config_path}[/yellow]")
+                    continue
+
+                # Try to parse as JSON
+                try:
+                    config_data = json.loads(config_content)
+
+                    # Basic validation checks
+                    if not isinstance(config_data, dict):
+                        cprint(f"[red]❌ Config must be a JSON object: {config_path}[/red]")
+                        continue
+
+                    # Check for common configuration sections
+                    valid_sections = ["extractor", "output", "downloader", "cache", "cookies"]
+                    has_valid_sections = any(section in config_data for section in valid_sections)
+
+                    if not has_valid_sections:
+                        cprint(
+                            f"[yellow]⚠️  Config lacks common sections (extractor, output, etc.): {config_path}[/yellow]"
+                        )
+                        cprint("[dim]This might still be valid but could be misconfigured[/dim]")
+
+                    # Check extractor configuration if present
+                    if "extractor" in config_data:
+                        extractor_config = config_data["extractor"]
+                        if isinstance(extractor_config, dict):
+                            # Count configured extractors
+                            configured_extractors = [
+                                key
+                                for key in extractor_config.keys()
+                                if key not in ["base-directory", "user-agent", "cookies", "cookies-from-browser"]
+                            ]
+                            if configured_extractors:
+                                cprint(
+                                    f"[dim green]✓ Configured extractors: {', '.join(configured_extractors)}[/dim green]"
+                                )
+
+                    config_valid = True
+                    cprint(f"[green]✅ Valid JSON configuration: {config_path}[/green]")
+                    break  # Use first valid config found
+
+                except json.JSONDecodeError as e:
+                    cprint(f"[red]❌ Invalid JSON in {config_path}: {e}[/red]")
+                    # Try to give helpful error context
+                    lines = config_content.split("\n")
+                    if hasattr(e, "lineno") and e.lineno <= len(lines):
+                        error_line = lines[e.lineno - 1] if e.lineno > 0 else "N/A"
+                        cprint(f"[dim red]Error near line {e.lineno}: {error_line}[/dim red]")
+                    continue
+
+            except Exception as e:
+                cprint(f"[red]❌ Error reading {config_path}: {e}[/red]")
+                continue
+
+    if not config_found:
+        cprint("[yellow]⚠️  No gallery-dl configuration file found[/yellow]")
+        cprint("[dim]Searched locations:[/dim]")
+        for config_path in gallery_dl_configs:
+            cprint(f"[dim]  - {config_path}[/dim]")
+        cprint("[dim]This will use gallery-dl defaults, which may not be optimal[/dim]")
+        cprint("[dim]Consider creating a config file with: gallery-dl --help[/dim]")
+        return False
+
+    return config_valid
 
 
 @APP.command()

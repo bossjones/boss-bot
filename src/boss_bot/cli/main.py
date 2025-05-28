@@ -105,6 +105,88 @@ def show() -> None:
     cprint("\nShow boss_bot", style="yellow")
 
 
+@APP.command()
+def config() -> None:
+    """Show BossSettings configuration and environment variables"""
+    import json
+
+    from pydantic import SecretStr
+
+    settings = BossSettings()
+
+    cprint("\n[bold blue]BossBot Configuration[/bold blue]", style="bold blue")
+    cprint("=" * 50, style="blue")
+
+    # Get all fields from the settings
+    for field_name, field_info in settings.model_fields.items():
+        value = getattr(settings, field_name)
+
+        # Handle SecretStr fields - don't unmask them
+        if isinstance(value, SecretStr):
+            display_value = "[yellow]<SECRET>[/yellow]"
+        elif isinstance(value, (dict, list)):
+            # Pretty print complex types
+            display_value = json.dumps(value, indent=2, default=str)
+        else:
+            display_value = str(value)
+
+        # Get field description from docstring if available
+        description = field_info.description or ""
+
+        cprint(f"\n[bold green]{field_name}[/bold green]: {display_value}")
+        if description:
+            cprint(f"  [dim]{description}[/dim]")
+
+    cprint("\n" + "=" * 50, style="blue")
+    cprint("[bold blue]Environment Variables Status[/bold blue]", style="bold blue")
+
+    # Check key environment variables
+    import os
+
+    env_vars_to_check = [
+        # Core settings
+        "DISCORD_TOKEN",
+        "OPENAI_API_KEY",
+        "LANGCHAIN_API_KEY",
+        "PREFIX",
+        "DEBUG",
+        "LOG_LEVEL",
+        "ENVIRONMENT",
+        # Feature flags
+        "ENABLE_AI",
+        "ENABLE_REDIS",
+        "ENABLE_SENTRY",
+        # Download settings
+        "MAX_QUEUE_SIZE",
+        "MAX_CONCURRENT_DOWNLOADS",
+        "STORAGE_ROOT",
+        "MAX_FILE_SIZE_MB",
+        # Strategy feature flags
+        "TWITTER_USE_API_CLIENT",
+        "REDDIT_USE_API_CLIENT",
+        "INSTAGRAM_USE_API_CLIENT",
+        "YOUTUBE_USE_API_CLIENT",
+        "DOWNLOAD_API_FALLBACK_TO_CLI",
+        # Monitoring
+        "ENABLE_METRICS",
+        "METRICS_PORT",
+        "ENABLE_HEALTH_CHECK",
+        "HEALTH_CHECK_PORT",
+    ]
+
+    for var in env_vars_to_check:
+        value = os.getenv(var)
+        if value is not None:
+            # Mask sensitive values
+            if any(keyword in var for keyword in ["TOKEN", "SECRET", "PASSWORD", "API_KEY"]):
+                display_value = "[yellow]<SET>[/yellow]"
+            else:
+                display_value = value
+            cprint(f"[green]✓[/green] {var}: {display_value}")
+        else:
+            cprint(f"[red]✗[/red] {var}: [dim]not set[/dim]")
+
+
 def main():
     APP()
     load_commands()

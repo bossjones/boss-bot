@@ -97,6 +97,117 @@ class QueueCog(commands.Cog):
         await self.bot.queue_manager.resume_queue()
         await ctx.send("Download queue resumed. New downloads will now start.")
 
+    # Event Handlers
+    @commands.Cog.listener()
+    async def on_ready(self):
+        """Called when the cog is ready."""
+        print(f"{type(self).__name__} Cog ready.")
+
+    # Command Error Handlers
+    @show_queue.error
+    async def queue_error_handler(self, ctx: commands.Context, error: commands.CommandError):
+        """Handle errors for the queue command."""
+        if isinstance(error, commands.CommandOnCooldown):
+            embed = discord.Embed(
+                description=f"Command is on cooldown. Try again in {error.retry_after:.1f} seconds.",
+                color=discord.Color.orange(),
+            )
+            await ctx.send(embed=embed)
+        else:
+            print(f"Unexpected error in queue command: {error}")
+            embed = discord.Embed(
+                description="An unexpected error occurred while showing the queue.", color=discord.Color.red()
+            )
+            await ctx.send(embed=embed)
+
+    @clear_queue.error
+    async def clear_error_handler(self, ctx: commands.Context, error: commands.CommandError):
+        """Handle errors for the clear command."""
+        if isinstance(error, commands.MissingPermissions):
+            embed = discord.Embed(
+                description="Sorry, you need `MANAGE SERVER` permissions to clear the download queue!",
+                color=discord.Color.red(),
+            )
+            await ctx.send(embed=embed)
+        elif isinstance(error, commands.CommandOnCooldown):
+            embed = discord.Embed(
+                description=f"Command is on cooldown. Try again in {error.retry_after:.1f} seconds.",
+                color=discord.Color.orange(),
+            )
+            await ctx.send(embed=embed)
+        else:
+            print(f"Unexpected error in clear command: {error}")
+            embed = discord.Embed(
+                description="An unexpected error occurred while clearing the queue.", color=discord.Color.red()
+            )
+            await ctx.send(embed=embed)
+
+    @remove_from_queue.error
+    async def remove_error_handler(self, ctx: commands.Context, error: commands.CommandError):
+        """Handle errors for the remove command."""
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(
+                description=f"Please provide a download ID to remove. Usage: `{self.bot.command_prefix}remove <download_id>`",
+                color=discord.Color.orange(),
+            )
+            await ctx.send(embed=embed)
+        elif isinstance(error, commands.CommandOnCooldown):
+            embed = discord.Embed(
+                description=f"Command is on cooldown. Try again in {error.retry_after:.1f} seconds.",
+                color=discord.Color.orange(),
+            )
+            await ctx.send(embed=embed)
+        else:
+            print(f"Unexpected error in remove command: {error}")
+            embed = discord.Embed(
+                description="An unexpected error occurred while removing from queue.", color=discord.Color.red()
+            )
+            await ctx.send(embed=embed)
+
+    @pause_queue.error
+    async def pause_error_handler(self, ctx: commands.Context, error: commands.CommandError):
+        """Handle errors for the pause command."""
+        if isinstance(error, commands.MissingPermissions):
+            embed = discord.Embed(
+                description="Sorry, you need `MANAGE SERVER` permissions to pause the download queue!",
+                color=discord.Color.red(),
+            )
+            await ctx.send(embed=embed)
+        elif isinstance(error, commands.CommandOnCooldown):
+            embed = discord.Embed(
+                description=f"Command is on cooldown. Try again in {error.retry_after:.1f} seconds.",
+                color=discord.Color.orange(),
+            )
+            await ctx.send(embed=embed)
+        else:
+            print(f"Unexpected error in pause command: {error}")
+            embed = discord.Embed(
+                description="An unexpected error occurred while pausing the queue.", color=discord.Color.red()
+            )
+            await ctx.send(embed=embed)
+
+    @resume_queue.error
+    async def resume_error_handler(self, ctx: commands.Context, error: commands.CommandError):
+        """Handle errors for the resume command."""
+        if isinstance(error, commands.MissingPermissions):
+            embed = discord.Embed(
+                description="Sorry, you need `MANAGE SERVER` permissions to resume the download queue!",
+                color=discord.Color.red(),
+            )
+            await ctx.send(embed=embed)
+        elif isinstance(error, commands.CommandOnCooldown):
+            embed = discord.Embed(
+                description=f"Command is on cooldown. Try again in {error.retry_after:.1f} seconds.",
+                color=discord.Color.orange(),
+            )
+            await ctx.send(embed=embed)
+        else:
+            print(f"Unexpected error in resume command: {error}")
+            embed = discord.Embed(
+                description="An unexpected error occurred while resuming the queue.", color=discord.Color.red()
+            )
+            await ctx.send(embed=embed)
+
 
 async def setup(bot: BossBot):
     """Load the QueueCog.

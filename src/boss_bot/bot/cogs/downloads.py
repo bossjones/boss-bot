@@ -3,6 +3,7 @@
 from pathlib import Path
 from typing import Dict, Optional
 
+import discord
 from discord.ext import commands
 
 from boss_bot.bot.client import BossBot
@@ -246,6 +247,120 @@ class DownloadCog(commands.Cog):
         )
 
         await ctx.send("\n".join(lines))
+
+    # Event Handlers
+    @commands.Cog.listener()
+    async def on_ready(self):
+        """Called when the cog is ready."""
+        print(f"{type(self).__name__} Cog ready.")
+
+    @commands.Cog.listener()
+    async def on_guild_join(self, guild):
+        """Called when the bot joins a new guild."""
+        print(f"Bot joined new guild: {guild.name} (ID: {guild.id})")
+
+        # Send a welcome message to the system channel if available
+        if guild.system_channel is not None:
+            try:
+                embed = discord.Embed(
+                    title="👋 Thanks for adding BossBot!",
+                    description=f"Use `{self.bot.command_prefix}help` to see available commands.\n"
+                    f"Use `{self.bot.command_prefix}download <url>` to download media from various platforms.",
+                    color=discord.Color.blue(),
+                )
+                embed.add_field(
+                    name="Supported Platforms",
+                    value="• Twitter/X\n• Reddit\n• Instagram\n• YouTube\n• And more!",
+                    inline=False,
+                )
+                await guild.system_channel.send(embed=embed)
+            except discord.Forbidden:
+                print(f"Cannot send welcome message to {guild.name} - missing permissions")
+
+    # Command Error Handlers
+    @download.error
+    async def download_error_handler(self, ctx: commands.Context, error: commands.CommandError):
+        """Handle errors for the download command."""
+        if isinstance(error, commands.MissingPermissions):
+            embed = discord.Embed(
+                description="Sorry, you need `MANAGE SERVER` permissions to use the download command!",
+                color=discord.Color.red(),
+            )
+            await ctx.send(embed=embed)
+        elif isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(
+                description=f"Please provide a URL to download. Usage: `{self.bot.command_prefix}download <url>`",
+                color=discord.Color.orange(),
+            )
+            await ctx.send(embed=embed)
+        elif isinstance(error, commands.CommandOnCooldown):
+            embed = discord.Embed(
+                description=f"Command is on cooldown. Try again in {error.retry_after:.1f} seconds.",
+                color=discord.Color.orange(),
+            )
+            await ctx.send(embed=embed)
+        else:
+            print(f"Unexpected error in download command: {error}")
+            embed = discord.Embed(
+                description="An unexpected error occurred while processing your download request.",
+                color=discord.Color.red(),
+            )
+            await ctx.send(embed=embed)
+
+    @info.error
+    async def info_error_handler(self, ctx: commands.Context, error: commands.CommandError):
+        """Handle errors for the info command."""
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(
+                description=f"Please provide a URL to get info for. Usage: `{self.bot.command_prefix}info <url>`",
+                color=discord.Color.orange(),
+            )
+            await ctx.send(embed=embed)
+        elif isinstance(error, commands.CommandOnCooldown):
+            embed = discord.Embed(
+                description=f"Command is on cooldown. Try again in {error.retry_after:.1f} seconds.",
+                color=discord.Color.orange(),
+            )
+            await ctx.send(embed=embed)
+        else:
+            print(f"Unexpected error in info command: {error}")
+            embed = discord.Embed(
+                description="An unexpected error occurred while getting URL information.", color=discord.Color.red()
+            )
+            await ctx.send(embed=embed)
+
+    @status.error
+    async def status_error_handler(self, ctx: commands.Context, error: commands.CommandError):
+        """Handle errors for the status command."""
+        if isinstance(error, commands.CommandOnCooldown):
+            embed = discord.Embed(
+                description=f"Command is on cooldown. Try again in {error.retry_after:.1f} seconds.",
+                color=discord.Color.orange(),
+            )
+            await ctx.send(embed=embed)
+        else:
+            print(f"Unexpected error in status command: {error}")
+            embed = discord.Embed(
+                description="An unexpected error occurred while getting status.", color=discord.Color.red()
+            )
+            await ctx.send(embed=embed)
+
+    @show_strategies.error
+    async def strategies_error_handler(self, ctx: commands.Context, error: commands.CommandError):
+        """Handle errors for the strategies command."""
+        if isinstance(error, commands.CommandOnCooldown):
+            embed = discord.Embed(
+                description=f"Command is on cooldown. Try again in {error.retry_after:.1f} seconds.",
+                color=discord.Color.orange(),
+            )
+            await ctx.send(embed=embed)
+        else:
+            print(f"Unexpected error in strategies command: {error}")
+            embed = discord.Embed(
+                description="An unexpected error occurred while getting strategy information.",
+                color=discord.Color.red(),
+            )
+            await ctx.send(embed=embed)
 
 
 async def setup(bot: BossBot):

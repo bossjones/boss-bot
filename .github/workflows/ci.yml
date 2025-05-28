@@ -134,6 +134,8 @@ jobs:
           ./scripts/retry -t 4 -- uv sync --dev
           pipx install rust-just
           ./scripts/retry -t 2 -- uv run bossctl version
+        env:
+          DISCORD_TOKEN: "fake-token"
 
       - name: Display UV and Python versions
         run: |

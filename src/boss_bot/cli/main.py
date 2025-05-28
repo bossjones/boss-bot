@@ -27,6 +27,8 @@ from re import Pattern
 from types import FrameType
 from typing import TYPE_CHECKING, Annotated, Any, Dict, List, NoReturn, Optional, Set, Tuple, Type, Union
 
+import bpdb
+import pysnooper
 import rich
 import typer
 from rich.console import Console
@@ -348,6 +350,8 @@ def fetch(
     import asyncio
     from pathlib import Path
 
+    settings = BossSettings()
+
     # Ensure output directory exists
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
@@ -362,10 +366,29 @@ def fetch(
 
     cprint("")
 
-    # Run the async download process
-    asyncio.run(_download_urls_async(urls, output_path, verbose, dry_run))
+    try:
+        # Run the async download process
+        asyncio.run(_download_urls_async(urls, output_path, verbose, dry_run))
+    except Exception as e:
+        print(f"{e}")
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        print(f"Error Class: {e.__class__}")
+        output = f"[UNEXPECTED] {type(e).__name__}: {e}"
+        print(output)
+        print(f"exc_type: {exc_type}")
+        print(f"exc_value: {exc_value}")
+        traceback.print_tb(exc_traceback)
+
+        # Only launch debugger if in dev mode and not in test mode
+        if settings.debug:
+            bpdb.pm()
+
+        LOGGER.error("Error in gallery-dl download")
+        # cprint(f"[red]❌ Error: {e}[/red]")
+        # raise typer.Exit(1)
 
 
+# @pysnooper.snoop(thread_info=True, max_variable_length=None, depth=10)
 async def _download_urls_async(urls: list[str], output_dir: Path, verbose: bool, dry_run: bool) -> None:
     """Async function to handle URL downloads."""
     from boss_bot.core.downloads.clients.aio_gallery_dl import AsyncGalleryDL

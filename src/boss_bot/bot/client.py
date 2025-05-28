@@ -134,7 +134,7 @@ class BossBot(commands.Bot):
         try:
             # Load command extensions
             await self.load_extension("boss_bot.bot.cogs.downloads")
-            await self.load_extension("boss_bot.bot.cogs.task_queue")
+            await self.load_extension("boss_bot.bot.cogs.queue")
             logger.info("Successfully loaded all extensions")
 
         except Exception as e:

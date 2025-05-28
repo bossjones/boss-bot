@@ -22,7 +22,7 @@ from uuid import uuid4
 from datetime import datetime
 
 from boss_bot.bot.client import BossBot
-from boss_bot.bot.cogs.task_queue import QueueCog
+from boss_bot.bot.cogs.queue import QueueCog
 from boss_bot.core.queue.manager import QueueItem, QueueStatus
 
 

@@ -1,5 +1,6 @@
 """Environment settings for the Boss-Bot application."""
 # pylint: disable=no-member
+# pylint: disable=no-self-argument
 # pylint: disable=possibly-used-before-assignment
 # pyright: reportImportCycles=false
 # pyright: reportFunctionMemberAccess=false

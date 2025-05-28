@@ -187,6 +187,144 @@ def config() -> None:
             cprint(f"[red]✗[/red] {var}: [dim]not set[/dim]")
 
 
+@APP.command()
+def show_configs() -> None:
+    """Show gallery-dl and yt-dlp configuration files"""
+    import json
+    from pathlib import Path
+
+    cprint("\n[bold blue]Download Tool Configurations[/bold blue]", style="bold blue")
+    cprint("=" * 60, style="blue")
+
+    # Check for gallery-dl config
+    gallery_dl_configs = [
+        Path.home() / ".config" / "gallery-dl" / "config.json",
+        Path.home() / ".gallery-dl.conf",
+        Path.cwd() / "gallery-dl.conf",
+        Path("/etc/gallery-dl.conf"),
+    ]
+
+    cprint("\n[bold green]Gallery-dl Configuration[/bold green]")
+    cprint("-" * 30, style="green")
+
+    gallery_config_found = False
+    for config_path in gallery_dl_configs:
+        if config_path.exists():
+            gallery_config_found = True
+            cprint(f"[green]✓[/green] Found config: {config_path}")
+            try:
+                with open(config_path) as f:
+                    config_content = f.read()
+
+                # Try to parse as JSON first
+                try:
+                    config_data = json.loads(config_content)
+                    # Mask sensitive data
+                    masked_config = _mask_sensitive_config(config_data)
+                    formatted_config = json.dumps(masked_config, indent=2)
+                    cprint(f"\n[dim]{formatted_config}[/dim]")
+                except json.JSONDecodeError:
+                    # If not JSON, show as plain text (but mask sensitive lines)
+                    lines = config_content.split("\n")
+                    for line in lines[:20]:  # Show first 20 lines
+                        if any(keyword in line.lower() for keyword in ["password", "token", "key", "secret"]):
+                            # Mask the value part
+                            if "=" in line or ":" in line:
+                                separator = "=" if "=" in line else ":"
+                                key_part = line.split(separator)[0]
+                                cprint(f"[dim]{key_part}{separator} <MASKED>[/dim]")
+                            else:
+                                cprint(f"[dim]{line}[/dim]")
+                        else:
+                            cprint(f"[dim]{line}[/dim]")
+                    if len(lines) > 20:
+                        cprint(f"[dim]... ({len(lines) - 20} more lines)[/dim]")
+            except Exception as e:
+                cprint(f"[red]Error reading config: {e}[/red]")
+        else:
+            cprint(f"[red]✗[/red] Not found: {config_path}")
+
+    if not gallery_config_found:
+        cprint("[yellow]ℹ️  No gallery-dl config found. Using default settings.[/yellow]")
+
+    # Check for yt-dlp config
+    cprint("\n[bold green]yt-dlp Configuration[/bold green]")
+    cprint("-" * 25, style="green")
+
+    yt_dlp_configs = [
+        Path.home() / ".config" / "yt-dlp" / "config",
+        Path.home() / ".config" / "yt-dlp" / "config.txt",
+        Path.home() / "yt-dlp.conf",
+        Path.cwd() / "yt-dlp.conf",
+    ]
+
+    yt_dlp_config_found = False
+    for config_path in yt_dlp_configs:
+        if config_path.exists():
+            yt_dlp_config_found = True
+            cprint(f"[green]✓[/green] Found config: {config_path}")
+            try:
+                with open(config_path) as f:
+                    lines = f.readlines()
+                    for line in lines[:30]:  # Show first 30 lines
+                        line = line.strip()
+                        if line and not line.startswith("#"):
+                            # Mask sensitive options
+                            if any(
+                                keyword in line.lower()
+                                for keyword in ["password", "token", "username", "key", "secret", "cookie"]
+                            ):
+                                if line.startswith("--"):
+                                    option = line.split()[0] if " " in line else line
+                                    cprint(f"[dim]{option} <MASKED>[/dim]")
+                                else:
+                                    cprint("[dim]<MASKED LINE>[/dim]")
+                            else:
+                                cprint(f"[dim]{line}[/dim]")
+                        elif line.startswith("#"):
+                            cprint(f"[dim green]{line}[/dim green]")
+                    if len(lines) > 30:
+                        cprint(f"[dim]... ({len(lines) - 30} more lines)[/dim]")
+            except Exception as e:
+                cprint(f"[red]Error reading config: {e}[/red]")
+        else:
+            cprint(f"[red]✗[/red] Not found: {config_path}")
+
+    if not yt_dlp_config_found:
+        cprint("[yellow]ℹ️  No yt-dlp config found. Using default settings.[/yellow]")
+
+    # Show some common config locations info
+    cprint("\n[bold blue]Configuration Help[/bold blue]")
+    cprint("-" * 18, style="blue")
+    cprint("[dim]Common config locations:[/dim]")
+    cprint("[dim]• gallery-dl: ~/.config/gallery-dl/config.json or ~/.gallery-dl.conf[/dim]")
+    cprint("[dim]• yt-dlp: ~/.config/yt-dlp/config or ~/yt-dlp.conf[/dim]")
+    cprint("[dim]• Use 'gallery-dl --help' or 'yt-dlp --help' for configuration options[/dim]")
+
+
+def _mask_sensitive_config(config_data: dict) -> dict:
+    """Recursively mask sensitive configuration values."""
+    if not isinstance(config_data, dict):
+        return config_data
+
+    masked_config = {}
+    sensitive_keys = ["password", "token", "key", "secret", "username", "user", "auth", "cookie", "session"]
+
+    for key, value in config_data.items():
+        key_lower = key.lower()
+
+        if any(sensitive in key_lower for sensitive in sensitive_keys):
+            masked_config[key] = "<MASKED>"
+        elif isinstance(value, dict):
+            masked_config[key] = _mask_sensitive_config(value)
+        elif isinstance(value, list):
+            masked_config[key] = [_mask_sensitive_config(item) if isinstance(item, dict) else item for item in value]
+        else:
+            masked_config[key] = value
+
+    return masked_config
+
+
 def main():
     APP()
     load_commands()

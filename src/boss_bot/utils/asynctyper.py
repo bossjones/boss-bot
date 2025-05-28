@@ -46,10 +46,20 @@ class AsyncTyperImproved(Typer):
 
             @wraps(f)
             def sync_runner(*args: Any, **kwargs: Any) -> Any:
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    return async_runner(*args, **kwargs)
-                return loop.run_until_complete(async_runner(*args, **kwargs))
+                try:
+                    # Check if an event loop is already running
+                    loop = asyncio.get_running_loop()
+                    # If we get here, a loop is already running - we can't use run_until_complete
+                    # Instead, we need to run in a separate thread
+                    import concurrent.futures
+
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        future = executor.submit(asyncio.run, async_runner(*args, **kwargs))
+                        return future.result()
+                except RuntimeError:
+                    # No event loop is running, safe to use the traditional approach
+                    loop = asyncio.get_event_loop()
+                    return loop.run_until_complete(async_runner(*args, **kwargs))
 
             return decorator(cast(CommandFunctionType, sync_runner))
         return decorator(f)
@@ -192,7 +202,19 @@ class AsyncTyper(Typer):
 
             @wraps(f)
             def runner(*args: Any, **kwargs: Any) -> Any:
-                return asyncio.run(f(*args, **kwargs))
+                try:
+                    # Check if an event loop is already running
+                    loop = asyncio.get_running_loop()
+                    # If we get here, a loop is already running
+                    # Create a new task and run it
+                    import concurrent.futures
+
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        future = executor.submit(asyncio.run, f(*args, **kwargs))
+                        return future.result()
+                except RuntimeError:
+                    # No event loop is running, safe to use asyncio.run
+                    return asyncio.run(f(*args, **kwargs))
 
             return decorator(runner)
         else:

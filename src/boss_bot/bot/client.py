@@ -105,6 +105,7 @@ class BossBot(commands.Bot):
             allowed_mentions=allowed_mentions,
             intents=intents,
             help_command=BossHelpCommand(),
+            chunk_guilds_at_startup=True,  # Enable automatic guild chunking
         )
 
         # Initialize services
@@ -127,7 +128,7 @@ class BossBot(commands.Bot):
             format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         )
 
-    async def _async_setup_hook(self):
+    async def setup_hook(self):
         """Initialize services and load extensions."""
         logger.info("Setting up bot services and extensions...")
 

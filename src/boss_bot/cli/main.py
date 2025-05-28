@@ -119,7 +119,13 @@ async def run_bot():
     """Run the Discord bot."""
     settings = BossSettings()
     bot = BossBot(settings)
-    await bot.start(settings.discord_token.get_secret_value())
+
+    try:
+        # Use the modern async context manager pattern
+        async with bot:
+            await bot.start(settings.discord_token.get_secret_value())
+    except KeyboardInterrupt:
+        print("\nShutting down...")
 
 
 @APP.command()

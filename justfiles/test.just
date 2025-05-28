@@ -79,3 +79,5 @@ local-regenerate-cassettes:
 # (alias) delete all cassette files and directories, regenerate all cassette files and rerun tests
 [group('test')]
 local-regenerate-vcr: local-regenerate-cassettes
+
+fix-vcr: local-regenerate-vcr

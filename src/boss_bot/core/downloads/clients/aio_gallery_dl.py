@@ -121,10 +121,18 @@ class AsyncGalleryDL:
 
             except ImportError as e:
                 logger.error(f"gallery-dl is not available: {e}")
-                return self.config or {}
+                # Return default config merged with instance config
+                default_config = GalleryDLConfig()
+                if self.config:
+                    default_config = default_config.merge_with(self.config)
+                return default_config.to_dict()
             except Exception as e:
                 logger.error(f"Error loading gallery-dl configuration: {e}")
-                return self.config or {}
+                # Return default config merged with instance config
+                default_config = GalleryDLConfig()
+                if self.config:
+                    default_config = default_config.merge_with(self.config)
+                return default_config.to_dict()
 
         try:
             # Run config loading in executor to avoid blocking
@@ -146,9 +154,12 @@ class AsyncGalleryDL:
             logger.debug("Gallery-dl configuration loaded successfully")
         except Exception as e:
             logger.error(f"Error initializing gallery-dl configuration: {e}")
-            # Fall back to minimal configuration
-            self._gdl_config = self.config or {}
-            self._gallery_dl_config = GalleryDLConfig()
+            # Fall back to default configuration merged with instance config
+            default_config = GalleryDLConfig()
+            if self.config:
+                default_config = default_config.merge_with(self.config)
+            self._gdl_config = default_config.to_dict()
+            self._gallery_dl_config = default_config
 
     def _get_effective_config(self) -> dict[str, Any]:
         """Get the effective configuration dictionary."""

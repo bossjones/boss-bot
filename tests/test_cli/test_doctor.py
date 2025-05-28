@@ -253,5 +253,9 @@ class TestDoctorCommand:
 
         assert result.exit_code == 0
         assert "Health Check Summary" in result.stdout
-        assert "Checks passed: 1/1" in result.stdout
-        assert "Your repository is ready to work properly" in result.stdout
+        # Remove ANSI color codes for assertion - use regex or strip ANSI codes
+        import re
+        ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+        clean_output = ansi_escape.sub('', result.stdout)
+        assert "Checks passed: 1/1" in clean_output
+        assert "Your repository is ready to work properly" in clean_output

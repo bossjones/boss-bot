@@ -1104,6 +1104,424 @@ def _check_gallery_dl_config() -> bool:
 
 
 @APP.command()
+def setup_config(
+    force: bool = typer.Option(False, "--force", help="Skip confirmation prompt and create config file"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Show what would be changed without making modifications"),
+) -> None:
+    """Create a dummy gallery-dl configuration file at ~/.gallery-dl.conf"""
+    import difflib
+    import json
+    import shutil
+    from datetime import datetime
+    from pathlib import Path
+
+    config_path = Path.home() / ".gallery-dl.conf"
+
+    # Define the dummy config content
+    dummy_config = {
+        "extractor": {
+            "base-directory": "./gallery-dl/",
+            "postprocessors": None,
+            "archive": None,
+            "cookies": None,
+            "cookies-update": True,
+            "proxy": None,
+            "skip": True,
+            "sleep": 0,
+            "sleep-request": 0,
+            "sleep-extractor": 0,
+            "path-restrict": "auto",
+            "path-replace": "_",
+            "path-remove": "\\u0000-\\u001f\\u007f",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:115.0) Gecko/20100101 Firefox/115.0",
+            "path-strip": "auto",
+            "path-extended": True,
+            "extension-map": {"jpeg": "jpg", "jpe": "jpg", "jfif": "jpg", "jif": "jpg", "jfi": "jpg"},
+            "artstation": {"external": False, "pro-first": True},
+            "aryion": {"username": None, "password": None},
+            "blogger": {"videos": True},
+            "danbooru": {"username": None, "password": None, "ugoira": False},
+            "deviantart": {
+                "extra": False,
+                "flat": True,
+                "folders": False,
+                "journals": "html",
+                "mature": True,
+                "metadata": False,
+                "original": True,
+                "quality": 100,
+                "wait-min": 0,
+            },
+            "exhentai": {
+                "username": None,
+                "password": None,
+                "domain": "auto",
+                "limits": True,
+                "original": True,
+                "wait-min": 3.0,
+                "wait-max": 6.0,
+            },
+            "flickr": {"videos": True, "size-max": None},
+            "gelbooru": {"api": True},
+            "gfycat": {"format": "mp4"},
+            "hitomi": {"metadata": True},
+            "idolcomplex": {"username": None, "password": None, "wait-min": 3.0, "wait-max": 6.0},
+            "imgur": {"mp4": True},
+            "instagram": {
+                "highlights": False,
+                "videos": True,
+                "include": "all",
+                "directory": ["Instagram", "{username}", "Posts", "({date}) ({post_shortcode}) - {description[0:150]}"],
+                "stories": {"directory": ["Instagram", "{username}", "Stories", "({expires}) {post_id}"]},
+                "channel": {"directory": ["Instagram", "{username}", "IGTV", "{post_id}"]},
+                "tagged": {"directory": ["Instagram", "{tagged_username}", "Tagged", "{username}"]},
+                "reels": {"directory": ["Instagram", "{username}", "Reels", "{post_shortcode}"]},
+                "filename": "({date})_{username}_{num}.{extension}",
+                "date-format": "%Y-%m-%dT%H:%M:%S",
+                "cookies": "<CHANGEME>",
+                "username": "<CHANGEME>",
+                "password": "<CHANGEME>",
+                "sleep-request": 8.0,
+            },
+            "nijie": {"username": None, "password": None},
+            "oauth": {"browser": "true", "cache": True, "host": "localhost", "port": 6414},
+            "pinterest": {"domain": "auto", "sections": True, "videos": True},
+            "pixiv": {"username": None, "password": None, "avatar": False, "ugoira": True},
+            "reactor": {"wait-min": 3.0, "wait-max": 6.0},
+            "reddit": {
+                "client-id": "<REDACT>",
+                "user-agent": "Python:gdl:v1.0 (by /u/bossjones)",
+                "browser": "firefox:macos",
+                "refresh-token": None,
+                "comments": 0,
+                "morecomments": False,
+                "date-min": 0,
+                "date-max": 253402210800,
+                "date-format": "%Y-%m-%dT%H:%M:%S",
+                "id-min": None,
+                "id-max": None,
+                "recursion": 0,
+                "videos": True,
+                "parent-directory": True,
+                "directory": ["reddit", "_u_{author}", "{subreddit}"],
+                "filename": "{subreddit}_{author}_{title}_{id}_{num}_{filename}_{date}.{extension}",
+            },
+            "redgifs": {"format": ["hd", "sd", "gif"], "username": "<CHANGEME>", "password": "<CHANGEME>"},
+            "seiga": {"username": None, "password": None},
+            "tumblr": {"avatar": False, "external": False, "inline": True, "posts": "all", "reblogs": True},
+            "twitter": {
+                "quoted": True,
+                "replies": True,
+                "retweets": True,
+                "twitpic": False,
+                "videos": True,
+                "cookies": "<CHANGEME>",
+                "filename": "{author[name]}-{tweet_id}-({date:%Y%m%d_%H%M%S})-img{num}.{extension}",
+            },
+            "vsco": {"videos": True},
+            "wallhaven": {"api-key": None},
+            "weibo": {"retweets": True, "videos": True},
+            "booru": {"tags": False},
+        },
+        "downloader": {
+            "filesize-min": None,
+            "filesize-max": None,
+            "part": True,
+            "part-directory": None,
+            "http": {
+                "adjust-extensions": True,
+                "mtime": True,
+                "rate": None,
+                "retries": 4,
+                "timeout": 30.0,
+                "verify": True,
+            },
+            "ytdl": {
+                "format": None,
+                "forward-cookies": False,
+                "logging": True,
+                "mtime": True,
+                "outtmpl": None,
+                "rate": None,
+                "retries": 4,
+                "timeout": 30.0,
+                "verify": True,
+            },
+        },
+        "output": {
+            "mode": "auto",
+            "progress": True,
+            "shorten": True,
+            "log": "[{name}][{levelname}][{extractor.url}] {message}",
+            "logfile": None,
+            "unsupportedfile": None,
+        },
+        "netrc": False,
+    }
+
+    if dry_run:
+        cprint("\n[bold yellow]🔍 DRY RUN MODE - No files will be modified[/bold yellow]", style="bold yellow")
+        cprint("=" * 50, style="yellow")
+    else:
+        cprint("\n[bold blue]🔧 Gallery-dl Configuration Setup[/bold blue]", style="bold blue")
+        cprint("=" * 50, style="blue")
+
+    # Check if config file already exists
+    config_exists = config_path.exists()
+    backup_path = None
+
+    # Generate new config content as JSON string for comparison
+    new_config_json = json.dumps(dummy_config, indent=4, ensure_ascii=False)
+
+    if config_exists:
+        # Generate backup filename with timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_path = config_path.with_suffix(f".conf.backup_{timestamp}")
+
+        # Read existing config for comparison
+        try:
+            with open(config_path, encoding="utf-8") as f:
+                existing_config = f.read()
+        except Exception as e:
+            existing_config = f"# Error reading file: {e}\n"
+
+        if dry_run:
+            cprint(f"[cyan]📁 Found existing config: {config_path}[/cyan]")
+            cprint(f"[dim]Backup would be created at: {backup_path}[/dim]")
+
+            # Show diff
+            _show_config_diff(existing_config, new_config_json, config_path)
+            return
+        else:
+            cprint(f"[yellow]⚠️  Existing config found at: {config_path}[/yellow]")
+            cprint(f"[cyan]📁 Backup will be created at: {backup_path}[/cyan]")
+
+            if not force:
+                cprint("\n[bold yellow]Do you want to replace the existing configuration?[/bold yellow]")
+                cprint("[dim]The existing file will be backed up before replacement.[/dim]")
+
+                confirm = typer.confirm("Continue with setup?")
+                if not confirm:
+                    cprint("[yellow]Setup cancelled by user.[/yellow]")
+                    raise typer.Exit(0)
+    else:
+        if dry_run:
+            cprint(f"[green]📝 Would create new config at: {config_path}[/green]")
+
+            # Show what would be created
+            _show_new_config_preview(new_config_json, config_path)
+            return
+        else:
+            cprint(f"[green]✅ No existing config found. Creating new config at: {config_path}[/green]")
+
+            if not force:
+                confirm = typer.confirm("Create the configuration file?")
+                if not confirm:
+                    cprint("[yellow]Setup cancelled by user.[/yellow]")
+                    raise typer.Exit(0)
+
+    try:
+        # Create backup if file exists
+        if config_exists and backup_path:
+            cprint(f"\n[cyan]📋 Creating backup: {backup_path}[/cyan]")
+            shutil.copy2(config_path, backup_path)
+            cprint("[green]✅ Backup created successfully[/green]")
+
+        # Write the new config file
+        cprint(f"\n[blue]✍️  Writing configuration to: {config_path}[/blue]")
+
+        with open(config_path, "w", encoding="utf-8") as f:
+            json.dump(dummy_config, f, indent=4, ensure_ascii=False)
+
+        cprint("[green]✅ Configuration file created successfully![/green]")
+
+        # Show next steps
+        cprint("\n[bold green]🎉 Setup Complete![/bold green]")
+        cprint("-" * 20, style="green")
+        cprint(f"[green]📁 Config file: {config_path}[/green]")
+        if backup_path:
+            cprint(f"[cyan]💾 Backup file: {backup_path}[/cyan]")
+
+        cprint("\n[bold blue]Next Steps:[/bold blue]")
+        cprint("[dim]1. Edit the config file to add your credentials:[/dim]")
+        cprint("[dim]   - Replace <CHANGEME> values with actual credentials[/dim]")
+        cprint("[dim]   - Update paths and preferences as needed[/dim]")
+        cprint("[dim]2. Test the configuration with:[/dim]")
+        cprint("[dim]   bossctl check-config[/dim]")
+        cprint("[dim]3. View the configuration with:[/dim]")
+        cprint("[dim]   bossctl show-configs[/dim]")
+
+    except Exception as e:
+        cprint(f"[red]❌ Error creating configuration: {e}[/red]")
+
+        # Clean up backup if we created one but failed to write config
+        if backup_path and backup_path.exists() and not config_path.exists():
+            try:
+                backup_path.unlink()
+                cprint(f"[yellow]🧹 Cleaned up failed backup: {backup_path}[/yellow]")
+            except Exception:
+                pass
+
+        raise typer.Exit(1)
+
+
+def _show_config_diff(existing_config: str, new_config: str, config_path: Path) -> None:
+    """Show a diff between existing and new configuration."""
+    import difflib
+
+    cprint(f"\n[bold blue]📋 Configuration Diff for {config_path}[/bold blue]")
+    cprint("=" * 60, style="blue")
+
+    # Split into lines for difflib
+    existing_lines = existing_config.splitlines(keepends=True)
+    new_lines = new_config.splitlines(keepends=True)
+
+    # Generate unified diff
+    diff = list(
+        difflib.unified_diff(
+            existing_lines,
+            new_lines,
+            fromfile=f"current {config_path.name}",
+            tofile=f"new {config_path.name}",
+            lineterm="",
+        )
+    )
+
+    if not diff:
+        cprint("[green]✅ No changes needed - files are identical[/green]")
+        return
+
+    # Display diff with color coding
+    cprint("\n[bold yellow]Changes that would be made:[/bold yellow]")
+    cprint("-" * 40, style="yellow")
+
+    max_lines = 50  # Limit output for readability
+
+    for line_count, line in enumerate(diff):
+        if line_count >= max_lines:
+            remaining = len(diff) - line_count
+            cprint(f"[dim]... and {remaining} more lines[/dim]")
+            break
+
+        line = line.rstrip()
+        if line.startswith("+++") or line.startswith("---"):
+            cprint(f"[bold blue]{line}[/bold blue]")
+        elif line.startswith("@@"):
+            cprint(f"[bold cyan]{line}[/bold cyan]")
+        elif line.startswith("+"):
+            cprint(f"[green]{line}[/green]")
+        elif line.startswith("-"):
+            cprint(f"[red]{line}[/red]")
+        elif line.startswith(" "):
+            cprint(f"[dim]{line}[/dim]")
+        else:
+            cprint(line)
+
+    # Summary
+    added_lines = sum(1 for line in diff if line.startswith("+") and not line.startswith("+++"))
+    removed_lines = sum(1 for line in diff if line.startswith("-") and not line.startswith("---"))
+
+    cprint("\n[bold blue]Summary:[/bold blue]")
+    cprint(f"[green]+ {added_lines} lines would be added[/green]")
+    cprint(f"[red]- {removed_lines} lines would be removed[/red]")
+
+    cprint("\n[dim]Run without --dry-run to apply these changes[/dim]")
+
+
+def _show_new_config_preview(new_config: str, config_path: Path) -> None:
+    """Show a preview of the new configuration that would be created."""
+    cprint(f"\n[bold blue]📝 New Configuration Preview for {config_path}[/bold blue]")
+    cprint("=" * 60, style="blue")
+
+    lines = new_config.splitlines()
+    total_lines = len(lines)
+
+    # Show first 30 lines as preview
+    preview_lines = 30
+
+    cprint(f"[dim]Preview (first {min(preview_lines, total_lines)} of {total_lines} lines):[/dim]")
+    cprint("-" * 50, style="dim")
+
+    for i, line in enumerate(lines[:preview_lines], 1):
+        # Add line numbers and syntax highlighting for JSON
+        if (line.strip().startswith('"') and line.strip().endswith('":')) or line.strip().endswith('": {'):
+            # JSON keys
+            cprint(f"[dim]{i:3d}[/dim] [bold blue]{line}[/bold blue]")
+        elif line.strip() in ["{", "}", "[", "]"]:
+            # JSON structure
+            cprint(f"[dim]{i:3d}[/dim] [bold]{line}[/bold]")
+        elif "<CHANGEME>" in line or "<REDACT>" in line:
+            # Placeholder values
+            cprint(f"[dim]{i:3d}[/dim] [yellow]{line}[/yellow]")
+        elif line.strip().startswith('"') and line.strip().endswith(","):
+            # JSON string values
+            cprint(f"[dim]{i:3d}[/dim] [green]{line}[/green]")
+        elif (
+            any(keyword in line for keyword in ["true", "false", "null"])
+            or line.strip().replace(",", "").replace(".", "").isdigit()
+        ):
+            # JSON literals and numbers
+            cprint(f"[dim]{i:3d}[/dim] [cyan]{line}[/cyan]")
+        else:
+            # Default
+            cprint(f"[dim]{i:3d}[/dim] {line}")
+
+    if total_lines > preview_lines:
+        cprint(f"[dim]... and {total_lines - preview_lines} more lines[/dim]")
+
+    # Show file info
+    estimated_size = len(new_config.encode("utf-8"))
+    cprint("\n[bold blue]File Information:[/bold blue]")
+    cprint(f"[dim]• Total lines: {total_lines}[/dim]")
+    cprint(f"[dim]• Estimated size: {estimated_size:,} bytes ({estimated_size / 1024:.1f} KB)[/dim]")
+    cprint(f"[dim]• Path: {config_path}[/dim]")
+
+    # Show key configuration sections
+    try:
+        import json
+
+        config_data = json.loads(new_config)
+
+        cprint("\n[bold blue]Configuration Sections:[/bold blue]")
+        if "extractor" in config_data:
+            extractor_platforms = [
+                k
+                for k in config_data["extractor"].keys()
+                if k
+                not in [
+                    "base-directory",
+                    "user-agent",
+                    "cookies",
+                    "cookies-update",
+                    "proxy",
+                    "skip",
+                    "sleep",
+                    "sleep-request",
+                    "sleep-extractor",
+                    "path-restrict",
+                    "path-replace",
+                    "path-remove",
+                    "path-strip",
+                    "path-extended",
+                    "extension-map",
+                ]
+            ]
+            if extractor_platforms:
+                cprint(
+                    f"[dim]• Extractor platforms: {', '.join(extractor_platforms[:10])}{'...' if len(extractor_platforms) > 10 else ''}[/dim]"
+                )
+
+        if "downloader" in config_data:
+            cprint("[dim]• Downloader configuration included[/dim]")
+        if "output" in config_data:
+            cprint("[dim]• Output configuration included[/dim]")
+    except Exception:
+        pass
+
+    cprint("\n[dim]Run without --dry-run to create this configuration file[/dim]")
+
+
+@APP.command()
 def go() -> None:
     """Main entry point for BossAI"""
     typer.echo("Starting up BossAI Bot")

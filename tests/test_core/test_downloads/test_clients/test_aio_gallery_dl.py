@@ -40,7 +40,12 @@ class TestAsyncGalleryDL:
         client = AsyncGalleryDL(download_dir=temp_download_dir)
 
         assert client.download_dir == temp_download_dir
-        assert client.config == {"extractor": {"base-directory": str(temp_download_dir)}}
+        assert client.config == {
+            "extractor": {
+                "base-directory": str(temp_download_dir),
+                "cookies-from-browser": "Firefox"  # Default value
+            }
+        }
         assert client._executor is None
         assert client._gallery_dl_config is None
 

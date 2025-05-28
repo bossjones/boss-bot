@@ -69,6 +69,61 @@ bossctl config
 - **Strategy Flags:** `TWITTER_USE_API_CLIENT`, `REDDIT_USE_API_CLIENT`, `INSTAGRAM_USE_API_CLIENT`, `YOUTUBE_USE_API_CLIENT`, `DOWNLOAD_API_FALLBACK_TO_CLI`
 - **Monitoring:** `ENABLE_METRICS`, `METRICS_PORT`, `ENABLE_HEALTH_CHECK`, `HEALTH_CHECK_PORT`
 
+#### `setup-config`
+Create a dummy gallery-dl configuration file at `~/.gallery-dl.conf` with comprehensive platform settings.
+
+```bash
+bossctl setup-config [options]
+```
+
+**Options:**
+- `--force`: Skip confirmation prompt and create config file
+- `--dry-run`: Show what would be changed without making modifications
+
+**Features:**
+- **Automatic Backup**: Creates timestamped backups of existing config files (e.g., `.gallery-dl.conf.backup_20241215_143021`)
+- **User Confirmation**: Prompts before replacing existing files with backup preview
+- **Comprehensive Config**: Includes settings for 20+ platforms (Twitter, Instagram, Reddit, YouTube, etc.)
+- **Placeholder Values**: Uses `<CHANGEME>` and `<REDACT>` for credentials that need user input
+- **Safety**: Error handling with automatic cleanup on failures
+
+**Dry-Run Features:**
+- **Diff Visualization**: Shows unified diff with color coding when existing config is found
+  - 🟢 Green: Lines that would be added
+  - 🔴 Red: Lines that would be removed
+  - 🔵 Blue: File headers and context
+- **New File Preview**: Shows syntax-highlighted preview of config that would be created
+  - Line numbers and JSON syntax highlighting
+  - File size and statistics
+  - Platform summary
+- **No Modifications**: Guarantees no files are created or modified in dry-run mode
+
+**Examples:**
+```bash
+# Interactive mode - prompts for confirmation
+bossctl setup-config
+
+# See what would change without modifying files
+bossctl setup-config --dry-run
+
+# Force creation without prompts
+bossctl setup-config --force
+
+# Preview changes to existing config
+bossctl setup-config --dry-run  # Shows diff if config exists
+```
+
+**Generated Config Includes:**
+- **Platform Extractors**: Twitter, Instagram, Reddit, YouTube, DeviantArt, Pixiv, Tumblr, Pinterest, and 15+ more
+- **Download Settings**: File handling, retries, timeouts, user agents
+- **Output Configuration**: Progress indicators, logging, file naming
+- **Authentication Placeholders**: Cookie settings, API keys, usernames/passwords marked for user input
+
+**Next Steps After Setup:**
+1. Edit `~/.gallery-dl.conf` to replace `<CHANGEME>` values with actual credentials
+2. Test configuration with `bossctl check-config`
+3. View configuration with `bossctl show-configs`
+
 #### `show-configs`
 Display gallery-dl and yt-dlp configuration files with sensitive data masked.
 
@@ -81,6 +136,33 @@ bossctl show-configs
 - Masks sensitive configuration values (passwords, tokens, keys)
 - Shows JSON and text-based configurations
 - Provides help for configuration file locations
+
+#### `check-config`
+Check and validate gallery-dl configuration using gallery-dl's config.load and GalleryDLConfig validation.
+
+```bash
+bossctl check-config
+```
+
+**Features:**
+- Uses gallery-dl's internal config loading mechanism
+- Validates configuration with GalleryDLConfig schema
+- Shows configuration sections and platform-specific settings
+- Reports configuration file locations and status
+- Provides detailed error messages for invalid configurations
+
+#### `doctor`
+Run health checks to verify repository requirements and configurations.
+
+```bash
+bossctl doctor
+```
+
+**Health Checks:**
+- Gallery-dl configuration validation
+- Configuration file accessibility
+- JSON syntax validation
+- Required sections verification
 
 ### Bot Management
 
@@ -427,11 +509,23 @@ bossctl download youtube <url> --quality 720p --audio-only
 
 ### Configuration Management
 ```bash
+# Create initial gallery-dl configuration
+bossctl setup-config
+
+# Preview configuration changes
+bossctl setup-config --dry-run
+
 # Check current configuration
 bossctl config
 
 # Show download tool configs
 bossctl show-configs
+
+# Validate gallery-dl configuration
+bossctl check-config
+
+# Run health checks
+bossctl doctor
 
 # Check strategy status
 bossctl download strategies
@@ -464,9 +558,14 @@ bossctl download <platform> <url> --verbose
 # Dry run to test without downloading
 bossctl fetch <url> --dry-run
 
+# Preview config changes
+bossctl setup-config --dry-run
+
 # Check configuration status
 bossctl config
 bossctl show-configs
+bossctl check-config
+bossctl doctor
 ```
 
 ### Getting Help

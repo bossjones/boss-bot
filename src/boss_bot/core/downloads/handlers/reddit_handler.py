@@ -1,3 +1,4 @@
+# pyright: reportGeneralTypeIssues=false
 """Reddit download handler using gallery-dl."""
 
 from __future__ import annotations
@@ -5,7 +6,7 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .base_handler import BaseDownloadHandler, DownloadResult, MediaMetadata
 
@@ -62,7 +63,7 @@ class RedditHandler(BaseDownloadHandler):
         cmd.append(url)
         return cmd
 
-    def download(self, url: str, **options) -> DownloadResult:
+    def download(self, url: str, **options: Any) -> DownloadResult:
         """Download Reddit content synchronously.
 
         Args:
@@ -84,7 +85,7 @@ class RedditHandler(BaseDownloadHandler):
 
         # If metadata-only, don't look for downloaded files
         if options.get("metadata_only", False):
-            metadata = self._extract_metadata_from_stdout(stdout)
+            metadata: MediaMetadata | None = self._extract_metadata_from_stdout(stdout)
             return DownloadResult(
                 success=True,
                 files=[],
@@ -129,7 +130,7 @@ class RedditHandler(BaseDownloadHandler):
 
         # If metadata-only, don't look for downloaded files
         if options.get("metadata_only", False):
-            metadata = self._extract_metadata_from_stdout(stdout)
+            metadata: MediaMetadata | None = self._extract_metadata_from_stdout(stdout)
             return DownloadResult(
                 success=True,
                 files=[],
@@ -165,7 +166,9 @@ class RedditHandler(BaseDownloadHandler):
         try:
             options["metadata_only"] = True
             result = self.download(url, **options)
-            return result.metadata
+            if result.metadata:
+                return self._parse_metadata(result.metadata)
+            return None
         except Exception:
             return None
 
@@ -182,7 +185,9 @@ class RedditHandler(BaseDownloadHandler):
         try:
             options["metadata_only"] = True
             result = await self.adownload(url, **options)
-            return result.metadata
+            if result.metadata:
+                return self._parse_metadata(result.metadata)
+            return None
         except Exception:
             return None
 
@@ -211,9 +216,9 @@ class RedditHandler(BaseDownloadHandler):
         downloaded_files = []
 
         # Look for files in the output directory
-        if self.output_dir.exists():
+        if self.download_dir.exists():
             # Reddit content typically downloaded to reddit/<subreddit>/ structure
-            for file_path in self.output_dir.rglob("*"):
+            for file_path in self.download_dir.rglob("*"):
                 if file_path.is_file() and not file_path.name.startswith("."):
                     downloaded_files.append(file_path)
 

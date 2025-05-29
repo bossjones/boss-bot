@@ -40,6 +40,7 @@ class TestAsyncGalleryDL:
         client = AsyncGalleryDL(download_dir=temp_download_dir)
 
         assert client.download_dir == temp_download_dir
+        # Before context manager: self.config contains initial + enhancements
         assert client.config == {
             "extractor": {
                 "base-directory": str(temp_download_dir),
@@ -48,6 +49,7 @@ class TestAsyncGalleryDL:
         }
         assert client._executor is None
         assert client._gallery_dl_config is None
+        assert client._gdl_config == {}  # Not loaded yet
 
     def test_client_initialization_with_config(self, mock_config_dict, temp_download_dir):
         """Test client initialization with custom config."""
@@ -57,8 +59,12 @@ class TestAsyncGalleryDL:
         )
 
         assert client.download_dir == temp_download_dir
+        # Before context manager: self.config contains merged init + enhancements
         assert "extractor" in client.config
         assert client.config["extractor"]["base-directory"] == str(temp_download_dir)
+        # Should also contain original config data
+        assert client.config["extractor"]["twitter"]["quoted"] is True
+        assert client.config["downloader"]["retries"] == 3
 
     def test_client_initialization_with_cookies_file(self, temp_download_dir):
         """Test client initialization with cookies file."""
@@ -68,7 +74,9 @@ class TestAsyncGalleryDL:
             cookies_file=cookies_file
         )
 
+        # Before context manager: self.config contains initial + cookies enhancement
         assert client.config["extractor"]["cookies"] == str(cookies_file)
+        assert client.config["extractor"]["base-directory"] == str(temp_download_dir)
 
     def test_client_initialization_with_browser_cookies(self, temp_download_dir):
         """Test client initialization with browser cookies."""
@@ -77,7 +85,9 @@ class TestAsyncGalleryDL:
             cookies_from_browser="firefox"
         )
 
+        # Before context manager: self.config contains initial + browser cookies enhancement
         assert client.config["extractor"]["cookies-from-browser"] == "firefox"
+        assert client.config["extractor"]["base-directory"] == str(temp_download_dir)
 
     @pytest.mark.asyncio
     async def test_context_manager_entry(self, temp_download_dir):
@@ -100,6 +110,57 @@ class TestAsyncGalleryDL:
 
         # Executor should be shut down after exit
         assert executor._shutdown
+
+    @pytest.mark.asyncio
+    async def test_self_config_synchronization(self, temp_download_dir):
+        """Test that self.config gets updated with merged configuration."""
+        initial_config = {
+            "extractor": {
+                "twitter": {
+                    "quoted": True,
+                    "videos": True,
+                }
+            }
+        }
+
+        client = AsyncGalleryDL(
+            config=initial_config,
+            download_dir=temp_download_dir
+        )
+
+        # Before context manager: self.config contains initial + enhancements
+        config_before = client.config.copy()
+        assert "extractor" in config_before
+        assert config_before["extractor"]["base-directory"] == str(temp_download_dir)
+        assert config_before["extractor"]["twitter"]["quoted"] is True
+
+        async with client:
+            # After context manager: self.config should be updated with merged config
+            config_after = client.config
+
+            # Should still contain our overrides
+            assert config_after["extractor"]["twitter"]["quoted"] is True
+            assert config_after["extractor"]["base-directory"] == str(temp_download_dir)
+
+            # self.config should now equal _gdl_config
+            assert client.config == client._gdl_config
+
+            # _get_effective_config should return the same as self.config
+            effective_config = client._get_effective_config()
+            assert effective_config == client.config
+
+    @pytest.mark.asyncio
+    async def test_self_config_fallback_synchronization(self, temp_download_dir):
+        """Test that self.config gets updated even when using fallback configuration."""
+        # Create a client that will use fallback config (no gallery-dl file)
+        client = AsyncGalleryDL(download_dir=temp_download_dir)
+
+        async with client:
+            # Even with fallback, self.config should be synchronized
+            assert client.config == client._gdl_config
+            assert client._gdl_config is not None
+            assert "extractor" in client.config
+            assert client.config["extractor"]["base-directory"] == str(temp_download_dir)
 
     @pytest.mark.asyncio
     async def test_configuration_loading_default(self, temp_download_dir):
@@ -138,7 +199,7 @@ class TestAsyncGalleryDL:
 
     @pytest.mark.asyncio
     async def test_configuration_merging(self, temp_download_dir, mock_config_dict):
-        """Test configuration merging priority."""
+        """Test configuration merging priority and self.config synchronization."""
         config_file = temp_download_dir / "gallery-dl.conf"
         config_file.parent.mkdir(parents=True, exist_ok=True)
 
@@ -162,7 +223,13 @@ class TestAsyncGalleryDL:
             download_dir=temp_download_dir
         )
 
+        # Store initial config state
+        initial_config = client.config.copy()
+        assert initial_config["extractor"]["twitter"]["quoted"] is False
+        assert initial_config["extractor"]["twitter"]["replies"] is True
+
         async with client:
+            # After context manager: verify self.config is updated with merged result
             config = client._get_effective_config()
 
             # Instance config should override file config
@@ -170,6 +237,17 @@ class TestAsyncGalleryDL:
             assert config["extractor"]["twitter"]["replies"] is True
             # File config should still be present for non-overridden values
             assert config["extractor"]["twitter"]["videos"] is True
+
+            # CRITICAL: self.config should now contain the complete merged configuration
+            assert client.config == client._gdl_config
+            assert client.config == config
+
+            # Verify self.config contains both file and instance config data
+            assert client.config["extractor"]["twitter"]["quoted"] is False  # Instance override
+            assert client.config["extractor"]["twitter"]["replies"] is True  # Instance addition
+            assert client.config["extractor"]["twitter"]["videos"] is True  # From file
+            assert client.config["downloader"]["retries"] == 3  # From file
+            assert client.config["extractor"]["base-directory"] == str(temp_download_dir)  # Enhancement
 
     def test_supports_platform(self, temp_download_dir):
         """Test platform support checking."""
@@ -354,7 +432,7 @@ class TestAsyncGalleryDLVCR:
     @pytest.mark.asyncio
     @pytest.mark.vcr
     async def test_client_with_vcr_configuration(self, temp_download_dir):
-        """Test client works with VCR configuration."""
+        """Test client works with VCR configuration and self.config synchronization."""
         # This test demonstrates VCR integration without actual gallery-dl
         # In practice, this would capture real gallery-dl interactions
 
@@ -364,11 +442,16 @@ class TestAsyncGalleryDLVCR:
         assert client.supports_platform("twitter")
         assert client.supports_platform("reddit")
 
-        # Configuration test
+        # Configuration test with new self.config behavior
         async with client:
             config = client._get_effective_config()
             assert "extractor" in config
             assert config["extractor"]["base-directory"] == str(temp_download_dir)
+
+            # Verify self.config synchronization in VCR context
+            assert client.config == client._gdl_config
+            assert client.config == config
+            assert client.config["extractor"]["base-directory"] == str(temp_download_dir)
 
     @pytest.mark.asyncio
     @pytest.mark.vcr

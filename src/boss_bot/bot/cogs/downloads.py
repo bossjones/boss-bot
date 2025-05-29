@@ -248,6 +248,104 @@ class DownloadCog(commands.Cog):
 
         await ctx.send("\n".join(lines))
 
+    @commands.command(name="validate-config")
+    async def validate_config(self, ctx: commands.Context, platform: str = "instagram"):
+        """Validate gallery-dl configuration for specified platform.
+
+        Args:
+            ctx: Discord command context
+            platform: Platform to validate (default: instagram)
+
+        Examples:
+            $validate-config
+            $validate-config instagram
+        """
+        platform = platform.lower()
+
+        if platform == "instagram":
+            if "instagram" not in self.strategies:
+                await ctx.send("❌ Instagram strategy not available")
+                return
+
+            strategy = self.strategies["instagram"]
+
+            # Perform validation
+            try:
+                is_valid, issues = strategy.validate_config()
+
+                if is_valid:
+                    await ctx.send("✅ **Instagram Configuration Valid**\n\nAll configuration settings are correct!")
+                else:
+                    lines = ["❌ **Instagram Configuration Issues**", ""]
+                    lines.extend([f"• {issue}" for issue in issues[:10]])  # Limit to first 10 issues
+                    if len(issues) > 10:
+                        lines.append(f"... and {len(issues) - 10} more issues")
+                    await ctx.send("\n".join(lines))
+            except Exception as e:
+                await ctx.send(f"❌ Configuration validation failed: {e!s}")
+        else:
+            await ctx.send(
+                f"❌ Configuration validation not supported for platform: {platform}\n\nSupported platforms: instagram"
+            )
+
+    @commands.command(name="config-summary")
+    async def config_summary(self, ctx: commands.Context, platform: str = "instagram"):
+        """Show configuration summary for specified platform.
+
+        Args:
+            ctx: Discord command context
+            platform: Platform to show summary for (default: instagram)
+
+        Examples:
+            $config-summary
+            $config-summary instagram
+        """
+        platform = platform.lower()
+
+        if platform == "instagram":
+            if "instagram" not in self.strategies:
+                await ctx.send("❌ Instagram strategy not available")
+                return
+
+            strategy = self.strategies["instagram"]
+
+            # Get config summary
+            try:
+                from boss_bot.core.downloads.clients.config.gallery_dl_validator import InstagramConfigValidator
+
+                result = InstagramConfigValidator.validate_config()
+
+                lines = ["📷 **Instagram Configuration Summary**", ""]
+
+                # Show key configuration values
+                config_items = [
+                    ("Base Directory", result.config_summary.get("extractor -> base-directory", "Not set")),
+                    ("Archive", result.config_summary.get("extractor -> archive", "Not set")),
+                    ("Videos Enabled", result.config_summary.get("extractor -> instagram -> videos", "Not set")),
+                    ("Include", result.config_summary.get("extractor -> instagram -> include", "Not set")),
+                    ("Filename Pattern", result.config_summary.get("extractor -> instagram -> filename", "Not set")),
+                    ("Sleep Request", result.config_summary.get("extractor -> instagram -> sleep-request", "Not set")),
+                    ("Downloader Retries", result.config_summary.get("downloader -> retries", "Not set")),
+                    ("Downloader Timeout", result.config_summary.get("downloader -> timeout", "Not set")),
+                ]
+
+                for name, value in config_items:
+                    # Truncate long values
+                    if isinstance(value, str) and len(value) > 50:
+                        value = value[:47] + "..."
+                    lines.append(f"**{name}**: `{value}`")
+
+                lines.append("")
+                lines.append(f"**Status**: {'✅ Valid' if result.is_valid else '❌ Has Issues'}")
+
+                await ctx.send("\n".join(lines))
+            except Exception as e:
+                await ctx.send(f"❌ Failed to get config summary: {e!s}")
+        else:
+            await ctx.send(
+                f"❌ Configuration summary not supported for platform: {platform}\n\nSupported platforms: instagram"
+            )
+
     # Event Handlers
     @commands.Cog.listener()
     async def on_ready(self):

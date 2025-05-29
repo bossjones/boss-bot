@@ -7,6 +7,7 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional
 
+from boss_bot.core.downloads.clients.config.gallery_dl_validator import InstagramConfigValidator
 from boss_bot.core.downloads.feature_flags import DownloadFeatureFlags
 from boss_bot.core.downloads.handlers.base_handler import MediaMetadata
 from boss_bot.core.downloads.handlers.instagram_handler import InstagramHandler
@@ -52,16 +53,30 @@ class InstagramDownloadStrategy(BaseDownloadStrategy):
             config = {
                 "extractor": {
                     "base-directory": str(self.download_dir),
+                    "archive": f"{self.download_dir}/.archive.sqlite3",
+                    "path-restrict": "auto",
+                    "path-extended": True,
                     "instagram": {
                         "videos": True,
+                        "include": "all",
                         "highlights": False,  # Don't download highlights by default
                         "stories": False,  # Don't download stories by default
                         "filename": "{username}_{shortcode}_{num}.{extension}",
                         "directory": ["instagram", "{username}"],
+                        "sleep-request": 8.0,
                         "cookies-from-browser": "firefox",  # Use Firefox cookies by default
                         "user-agent": "Wget/1.21.1",  # Specific user agent for Instagram
                     },
-                }
+                },
+                "downloader": {
+                    "retries": 4,
+                    "timeout": 30.0,
+                    "part": True,
+                },
+                "output": {
+                    "progress": True,
+                    "mode": "auto",
+                },
             }
 
             self._api_client = AsyncGalleryDL(config=config, download_dir=self.download_dir)
@@ -92,6 +107,55 @@ class InstagramDownloadStrategy(BaseDownloadStrategy):
             True if URL is an Instagram URL
         """
         return self.cli_handler.supports_url(url)
+
+    def validate_config(self, config: dict[str, Any] | None = None, verbose: bool = False) -> tuple[bool, list[str]]:
+        """Validate Instagram configuration.
+
+        Args:
+            config: Configuration to validate. If None, loads from gallery-dl.
+            verbose: If True, prints detailed validation information
+
+        Returns:
+            Tuple of (is_valid, issues_list)
+        """
+        try:
+            result = InstagramConfigValidator.validate_config(config)
+            if verbose:
+                if result.is_valid:
+                    print("✅ Instagram configuration is valid")
+                else:
+                    print("❌ Instagram configuration has issues:")
+                    for issue in result.issues:
+                        print(f"  - {issue}")
+            return result.is_valid, result.issues
+        except Exception as e:
+            logger.error(f"Configuration validation failed: {e}")
+            return False, [f"Validation error: {e}"]
+
+    def check_config(self, verbose: bool = False) -> bool:
+        """Check Instagram configuration with detailed output.
+
+        Args:
+            verbose: If True, prints detailed configuration check
+
+        Returns:
+            True if configuration is valid
+        """
+        try:
+            return InstagramConfigValidator.check_instagram_config(verbose=verbose)
+        except Exception as e:
+            logger.error(f"Configuration check failed: {e}")
+            if verbose:
+                print(f"❌ Configuration check failed: {e}")
+            return False
+
+    def print_config_summary(self) -> None:
+        """Print current Instagram configuration summary."""
+        try:
+            InstagramConfigValidator.print_config_summary()
+        except Exception as e:
+            logger.error(f"Failed to print config summary: {e}")
+            print(f"❌ Failed to print config summary: {e}")
 
     async def download(self, url: str, **kwargs: Any) -> MediaMetadata:
         """Download using feature-flagged approach.

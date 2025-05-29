@@ -81,3 +81,8 @@ local-regenerate-cassettes:
 local-regenerate-vcr: local-regenerate-cassettes
 
 fix-vcr: local-regenerate-vcr
+
+# open coverage in browser
+[group('test')]
+open-coverage:
+    open htmlcov/index.html

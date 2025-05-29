@@ -32,3 +32,8 @@ mkdocs-help:
 mkdocs-deploy-docs:
     #!/usr/bin/env zsh
     uv run mkdocs gh-deploy --force --message 'docs(mkdocs): update documentation [skip ci]'
+
+# open mkdocs documentation in browser
+[group('doc')]
+mkdocs-open:
+    open http://127.0.0.1:8000/boss-bot/docs/

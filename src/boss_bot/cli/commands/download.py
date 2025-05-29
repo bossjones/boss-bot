@@ -716,6 +716,13 @@ def download_info() -> None:
     console.print("  youtube    - Download YouTube content using yt-dlp [EXPERIMENTAL]")
     console.print()
 
+    console.print("[bold]Configuration Commands:[/bold]")
+    console.print("  validate-config   - Validate gallery-dl config for platform (instagram)")
+    console.print("  check-config      - Check config with detailed output")
+    console.print("  config-summary    - Show current config values")
+    console.print("  strategies        - Show strategy configuration")
+    console.print()
+
     console.print("[bold]Strategy Features:[/bold]")
     console.print("  🚀 API-Direct Mode: Experimental direct API integration")
     console.print("  🖥️ CLI Mode: Stable subprocess-based approach (default)")
@@ -756,6 +763,112 @@ def show_strategies() -> None:
     console.print(
         "💡 *Tip: Enable experimental features with environment variables like `TWITTER_USE_API_CLIENT=true`*"
     )
+
+
+@app.command("validate-config")
+def validate_config(
+    platform: Annotated[str, typer.Argument(help="Platform to validate config for (instagram)")],
+    verbose: Annotated[bool, typer.Option("--verbose", "-v", help="Show detailed validation information")] = False,
+) -> None:
+    """Validate gallery-dl configuration for specific platforms.
+
+    Currently supports Instagram configuration validation.
+
+    Examples:
+        bossctl download validate-config instagram
+        bossctl download validate-config instagram --verbose
+    """
+    platform = platform.lower()
+
+    if platform == "instagram":
+        download_dir = Path.cwd() / ".downloads"
+        strategy = get_strategy_for_platform("instagram", download_dir)
+        if not strategy:
+            console.print("[red]✗ Failed to initialize Instagram strategy[/red]")
+            raise typer.Exit(1)
+
+        console.print(f"[bold blue]Validating {platform.title()} Configuration[/bold blue]")
+        console.print()
+
+        # Perform validation
+        is_valid, issues = strategy.validate_config(verbose=verbose)
+
+        if is_valid:
+            console.print("[green]✅ Configuration is valid![/green]")
+        else:
+            console.print("[red]❌ Configuration has issues:[/red]")
+            for issue in issues:
+                console.print(f"  • {issue}")
+            raise typer.Exit(1)
+    else:
+        console.print(f"[red]✗ Configuration validation not yet supported for platform: {platform}[/red]")
+        console.print("Supported platforms: instagram")
+        raise typer.Exit(1)
+
+
+@app.command("check-config")
+def check_config(
+    platform: Annotated[str, typer.Argument(help="Platform to check config for (instagram)")],
+) -> None:
+    """Check gallery-dl configuration with detailed output.
+
+    Shows comprehensive configuration status for the specified platform.
+
+    Examples:
+        bossctl download check-config instagram
+    """
+    platform = platform.lower()
+
+    if platform == "instagram":
+        download_dir = Path.cwd() / ".downloads"
+        strategy = get_strategy_for_platform("instagram", download_dir)
+        if not strategy:
+            console.print("[red]✗ Failed to initialize Instagram strategy[/red]")
+            raise typer.Exit(1)
+
+        console.print(f"[bold blue]Checking {platform.title()} Configuration[/bold blue]")
+        console.print()
+
+        # Perform detailed check with verbose output
+        is_valid = strategy.check_config(verbose=True)
+
+        if not is_valid:
+            raise typer.Exit(1)
+    else:
+        console.print(f"[red]✗ Configuration check not yet supported for platform: {platform}[/red]")
+        console.print("Supported platforms: instagram")
+        raise typer.Exit(1)
+
+
+@app.command("config-summary")
+def config_summary(
+    platform: Annotated[str, typer.Argument(help="Platform to show config summary for (instagram)")],
+) -> None:
+    """Show configuration summary for specific platforms.
+
+    Displays current configuration values without validation.
+
+    Examples:
+        bossctl download config-summary instagram
+    """
+    platform = platform.lower()
+
+    if platform == "instagram":
+        download_dir = Path.cwd() / ".downloads"
+        strategy = get_strategy_for_platform("instagram", download_dir)
+        if not strategy:
+            console.print("[red]✗ Failed to initialize Instagram strategy[/red]")
+            raise typer.Exit(1)
+
+        console.print(f"[bold blue]{platform.title()} Configuration Summary[/bold blue]")
+        console.print()
+
+        # Show configuration summary
+        strategy.print_config_summary()
+    else:
+        console.print(f"[red]✗ Configuration summary not yet supported for platform: {platform}[/red]")
+        console.print("Supported platforms: instagram")
+        raise typer.Exit(1)
 
 
 # Make the app available for import

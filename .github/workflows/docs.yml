@@ -1,38 +1,114 @@
----
-# SOURCE: https://github.com/astral-sh/rye/blob/4b34ca16ac06794640c86a82ccd8ccd7b124a0ad/.github/workflows/docs.yml
-name: Publish docs via GitHub Pages
-on: # yamllint disable-line rule:truthy
-    push:
-        paths: ['docs/**', 'CHANGELOG.md', 'mkdocs.yml', 'scripts/install.sh']
-        branches:
-            - main
-  # # https://docs.github.com/en/webhooks-and-events/webhooks/webhook-events-and-payloads#workflow_dispatch
-  # workflow_dispatch:
-  #   # Allow this workflow to be run manually (pushing to testpypi instead of pypi)
-    workflow_dispatch:
-        inputs:
-            debug_enabled:
-                description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
-                required: false
-                default: "false"
+name: ci
+
+on:
+  push:
+    tags:
+      - v*
+    branches:
+      - main
+  pull_request:
+    branches: [main, "gh-pages"]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
 jobs:
-    build:
-        if: github.repository == 'astral-sh/rye'
-        name: Deploy docs
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout main
-              uses: actions/checkout@v4
-      #       - uses: Swatinem/rust-cache@v2
-      # # - name: Deploy docs
-      # #   uses: mhausenblas/mkdocs-deploy-gh-pages@master
-      # #   env:
-      # #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # #     CONFIG_FILE: mkdocs.yml
-      # #     REQUIREMENTS: ./requirements.lock
-      # # Allow debugging with tmate
-      #       - name: Setup tmate session
-      #         uses: mxschmitt/action-tmate@v3
-      #         if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled }}
-      #         with:
-      #             limit-access-to-actor: true
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Install additional dependencies
+        run: |
+          sudo apt-get update
+          sudo apt install -y --no-install-recommends \
+            build-essential \
+            curl \
+            python3-venv \
+            cmake \
+            zsh \
+            git
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+      - name: Run pre-commit checks
+        uses: pre-commit/action@v3.0.1
+
+  tests:
+    needs: [pre-commit]
+    name: "pytest"
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: ["3.12"]
+
+    steps:
+      - name: Set up Git repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Install additional dependencies
+        run: |
+          sudo apt-get update
+          sudo apt install -y --no-install-recommends \
+            build-essential \
+            curl \
+            python3-venv \
+            cmake \
+            zsh
+
+      - name: Set up the environment
+        uses: ./.github/actions/setup-python-env
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install extra dependencies
+        run: uv sync --dev
+
+      - name: Tests
+        run: make test
+
+  deploy-docs:
+    needs: [tests]
+    name: "Deploy documentation"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up the environment
+        uses: ./.github/actions/setup-python-env
+
+      - name: Configure Git Credentials
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+
+      - name: Install extra dependencies
+        run: uv sync --dev
+
+      - name: Build documentation
+        run: uv run mkdocs gh-deploy --force
+
+      # SOURCE: https://github.com/HYP3R00T/Rosetta/blob/e02fd400b94972a3f0529dbfaed7a55f72a5cade/Notes/Technology/Publish%20MkDocs%20using%20GitHub%20Action%20and%20uv.md?plain=1#L32
+      - name: Build and deploy documentation
+        run: |
+          uv run mkdocs build --verbose
+          uv run mkdocs gh-deploy --verbose --force
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

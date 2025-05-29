@@ -107,6 +107,10 @@ repos:
       # Verifies JSON syntax
       - id: check-json
         exclude: (.vscode|.devcontainer|hack|cookbook|ai_docs)
+      - id: detect-private-key # checks for private keys (BEGIN X PRIVATE KEY, etc.)
+      - id: pretty-format-json # cleaner json files
+        args: ["--autofix"] # automatically
+        files: ^pyrightconfig\.json$
 
   # Python import sorting for aio_settings.py
   - repo: https://github.com/bwhmather/ssort

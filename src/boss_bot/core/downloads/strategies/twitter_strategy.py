@@ -14,6 +14,7 @@ from boss_bot.core.downloads.strategies.base_strategy import BaseDownloadStrateg
 
 if TYPE_CHECKING:
     from boss_bot.core.downloads.clients import AsyncGalleryDL
+    from boss_bot.core.downloads.handlers.base_handler import DownloadResult
 
 logger = logging.getLogger(__name__)
 

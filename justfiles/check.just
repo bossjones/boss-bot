@@ -42,5 +42,5 @@ check-type-mpy:
 
 # check code typing
 [group('check')]
-check-type path="src/boss_bot/bot/cogs/downloads.py":
+check-type path="src/boss_bot":
 	uv run pylint --output-format=colorized --disable=all --max-line-length=120 --enable=F,E --rcfile pyproject.toml {{path}}

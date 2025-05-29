@@ -1,4 +1,4 @@
-name: ci
+name: docs
 
 on:
   push:
@@ -79,9 +79,6 @@ jobs:
 
       - name: Install extra dependencies
         run: uv sync --dev
-
-      - name: Tests
-        run: make test
 
   deploy-docs:
     needs: [tests]

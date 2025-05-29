@@ -500,8 +500,9 @@ def reset_logging_state() -> None:
     WARNING: This is only for testing and should not be used in production.
     """
     global _early_init_done
-    _early_init_done = False
-    logger.remove()
+    with _early_init_lock:
+        _early_init_done = False
+        logger.remove()
 
 
 # Logger tree analysis functions from original

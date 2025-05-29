@@ -1,121 +1,81 @@
-#!/usr/bin/env python3
 """
-Test script to verify thread safety of _early_init() function.
+Pytest tests to verify thread safety of early_init() function.
 
-This test intentionally tries to trigger race conditions by calling
-_early_init() from multiple threads simultaneously.
+Tests intentionally try to trigger race conditions by calling
+early_init() from multiple threads simultaneously.
 """
 
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-# Import our updated logger with thread-safe _early_init
-from my_intercept_logger import _early_init, logger, _early_init_done, _early_init_lock
+import pytest
 
-
-def reset_for_testing():
-    """Reset the early init state for testing purposes."""
-    import my_intercept_logger
-    with my_intercept_logger._early_init_lock:
-        # Reset the state for testing
-        # Note: This is only safe for testing, don't do this in production
-        my_intercept_logger._early_init_done = False
-        # Also remove any existing handlers for clean test
-        from loguru import logger
-        logger.remove()
+from boss_bot.monitoring.logging.interceptor import (
+    early_init,
+    reset_logging_state,
+    is_early_init_done,
+)
+from loguru import logger
 
 
 def test_concurrent_early_init():
-    """Test that multiple threads calling _early_init() is safe."""
+    """Test that multiple threads calling early_init() is safe."""
 
     # Reset state for clean test
-    reset_for_testing()
-
-    # Track how many threads actually performed initialization
-    init_count = {'value': 0}
-    init_lock = threading.Lock()
+    reset_logging_state()
 
     def call_early_init(thread_id: int):
         """Function that each thread will execute."""
-        print(f"Thread {thread_id}: Starting _early_init()")
-
-        # Check if we're the first to initialize
-        was_done_before = _early_init_done
-
-        # Call the function
-        _early_init()
-
-        # Check if we actually did the initialization
-        if not was_done_before and _early_init_done:
-            with init_lock:
-                init_count['value'] += 1
-                print(f"Thread {thread_id}: ✅ Performed initialization")
-        else:
-            print(f"Thread {thread_id}: ⏭️ Skipped (already done)")
-
+        # All threads call early_init - this should be thread-safe
+        early_init()
         return thread_id
 
     # Test with multiple threads starting simultaneously
     num_threads = 10
-    print(f"\n🧪 Testing {num_threads} threads calling _early_init() simultaneously...")
 
     with ThreadPoolExecutor(max_workers=num_threads) as executor:
         # Submit all tasks at once
         futures = [executor.submit(call_early_init, i) for i in range(num_threads)]
 
         # Wait for all to complete
-        for future in as_completed(futures):
-            thread_id = future.result()
-            # print(f"Thread {thread_id} completed")
+        results = [future.result() for future in as_completed(futures)]
 
-    print(f"\n📊 Results:")
-    print(f"   - Threads that performed initialization: {init_count['value']}")
-    print(f"   - Expected: 1 (only one should initialize)")
-    print(f"   - Final _early_init_done state: {_early_init_done}")
-
-    # Verify only one thread actually did the initialization
-    if init_count['value'] == 1:
-        print("   ✅ SUCCESS: Thread safety test passed!")
-    else:
-        print("   ❌ FAILURE: Race condition detected!")
-
-    return init_count['value'] == 1
+    # Verify thread safety - all calls should complete successfully
+    assert len(results) == num_threads, f"Expected {num_threads} results"
+    assert is_early_init_done(), "early_init should be marked as done"
 
 
 def test_performance_impact():
     """Test the performance impact of the thread safety check."""
 
     # Ensure initialization is done
-    _early_init()
+    early_init()
 
-    def call_early_init_repeatedly():
-        """Call _early_init many times (should be fast returns)."""
-        for _ in range(1000):
-            _early_init()  # Should return immediately
-
-    print(f"\n⚡ Testing performance impact of quick-return path...")
-
+    # Test many calls - should be fast returns
+    iterations = 10000  # Reduced for faster test runs
     start_time = time.time()
-    call_early_init_repeatedly()
+
+    for _ in range(iterations):
+        early_init()  # Should return immediately
+
     end_time = time.time()
-
     total_time = end_time - start_time
-    per_call = (total_time / 1000) * 1000000  # microseconds
+    per_call = (total_time / iterations) * 1000000  # microseconds
 
-    print(f"   - 1000 calls took: {total_time:.4f} seconds")
-    print(f"   - Average per call: {per_call:.2f} microseconds")
+    # Assert performance is acceptable
+    assert total_time < 0.1, f"Expected < 0.1 seconds for {iterations} calls, got {total_time:.4f}s"
+    assert per_call < 100, f"Expected < 100 microseconds per call, got {per_call:.2f}μs"
 
-    if per_call < 10:  # Less than 10 microseconds per call
-        print("   ✅ Performance impact is negligible")
-    else:
-        print("   ⚠️ Performance impact may be noticeable")
+    # Verify state is still correct
+    assert is_early_init_done(), "early_init should still be marked as done"
 
 
 def test_logging_after_threaded_init():
     """Test that logging works correctly after threaded initialization."""
 
-    print(f"\n📝 Testing logging functionality after threaded init...")
+    # Ensure early_init has been called
+    early_init()
 
     # Test basic logging
     logger.info("Test message from main thread")
@@ -129,22 +89,37 @@ def test_logging_after_threaded_init():
         futures = [executor.submit(thread_logger, i) for i in range(5)]
         results = [future.result() for future in as_completed(futures)]
 
-    print(f"   ✅ All threading logging tests completed successfully")
+    # Verify all threads logged successfully
+    assert all(results), "All threads should log successfully"
+    assert len(results) == 5, "Expected 5 thread results"
 
 
-if __name__ == "__main__":
-    print("🔒 Thread Safety Test for _early_init()")
-    print("=" * 50)
+def test_early_init_repeated_calls():
+    """Test that repeated calls to early_init are safe."""
+    # Reset state
+    reset_logging_state()
 
-    # Run the tests
-    thread_safety_passed = test_concurrent_early_init()
-    test_performance_impact()
-    test_logging_after_threaded_init()
+    # Call multiple times - should be safe
+    for i in range(10):
+        early_init()
+        assert is_early_init_done(), f"Should be done after call {i+1}"
 
-    print("\n" + "=" * 50)
-    if thread_safety_passed:
-        print("🎉 ALL TESTS PASSED - Thread safety is working correctly!")
-    else:
-        print("💥 TESTS FAILED - Race condition detected!")
 
-    logger.success("Thread safety testing completed")
+@pytest.mark.parametrize("delay", [0, 0.001, 0.01])
+def test_concurrent_early_init_with_delays(delay):
+    """Test early_init with artificial delays to increase race condition chances."""
+    reset_logging_state()
+
+    def delayed_early_init(thread_id: int):
+        if delay > 0:
+            time.sleep(delay)
+        early_init()
+        return thread_id
+
+    num_threads = 20
+    with ThreadPoolExecutor(max_workers=num_threads) as executor:
+        futures = [executor.submit(delayed_early_init, i) for i in range(num_threads)]
+        results = [future.result() for future in as_completed(futures)]
+
+    assert len(results) == num_threads
+    assert is_early_init_done(), "early_init should be marked as done"

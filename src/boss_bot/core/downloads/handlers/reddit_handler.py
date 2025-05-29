@@ -166,9 +166,7 @@ class RedditHandler(BaseDownloadHandler):
         try:
             options["metadata_only"] = True
             result = self.download(url, **options)
-            if result.metadata:
-                return self._parse_metadata(result.metadata)
-            return None
+            return result.metadata
         except Exception:
             return None
 
@@ -185,9 +183,7 @@ class RedditHandler(BaseDownloadHandler):
         try:
             options["metadata_only"] = True
             result = await self.adownload(url, **options)
-            if result.metadata:
-                return self._parse_metadata(result.metadata)
-            return None
+            return result.metadata
         except Exception:
             return None
 

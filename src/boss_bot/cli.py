@@ -1,3 +1,4 @@
+# pylint: disable=no-name-in-module
 """
 Deprecated: CLI functionality has been moved to boss_bot.cli.main
 This import path is maintained for backward compatibility and will be removed in v2.0.0

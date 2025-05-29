@@ -110,6 +110,56 @@ def setup_thread_safe_logging(
     return configure_thread_safe_logging(config)
 
 
+def setup_boss_bot_logging(settings=None) -> logger:
+    """
+    Setup logging specifically configured for boss-bot with settings integration.
+
+    This is the recommended function for boss-bot applications as it automatically
+    configures logging based on BossSettings and environment.
+
+    Args:
+        settings: Optional BossSettings instance. If not provided, will try to import and create one.
+
+    Returns:
+        Configured logger instance
+
+    Example:
+        from boss_bot.monitoring.logging import early_init, setup_boss_bot_logging
+        from boss_bot.core.env import BossSettings
+
+        # Call FIRST - before other imports
+        early_init()
+
+        # Import other modules...
+        import discord, asyncio, etc
+
+        # Configure logging with boss-bot settings
+        settings = BossSettings()
+        logger = setup_boss_bot_logging(settings)
+
+        # Or let it auto-create settings
+        logger = setup_boss_bot_logging()
+    """
+    # Ensure early init was called
+    if not is_early_init_done():
+        early_init()
+
+    # Import settings if not provided
+    if settings is None:
+        try:
+            from boss_bot.core.env import BossSettings
+
+            settings = BossSettings()
+        except ImportError:
+            # Fall back to default configuration if BossSettings not available
+            return setup_thread_safe_logging()
+
+    # Create config from boss settings
+    config = ThreadSafeLogConfig.from_boss_settings(settings)
+
+    return configure_thread_safe_logging(config)
+
+
 # Export all the logging functionality
 __all__ = [
     # Legacy (deprecated)
@@ -117,6 +167,7 @@ __all__ = [
     # New thread-safe logging (recommended)
     "early_init",
     "setup_thread_safe_logging",
+    "setup_boss_bot_logging",  # Boss-bot specific setup
     "configure_thread_safe_logging",
     "ThreadSafeLogConfig",
     # Configuration classes

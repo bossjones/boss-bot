@@ -120,8 +120,14 @@ ignore_missing_imports = True
 [mypy-logging_tree.*]
 ignore_missing_imports = True
 
-# Your application modules - adjust as needed
-[mypy-my_intercept_logger.*]
+# Boss-bot application modules
+[mypy-boss_bot.*]
+disallow_untyped_defs = True
+disallow_incomplete_defs = True
+check_untyped_defs = True
+warn_return_any = True
+
+[mypy-boss_bot.monitoring.logging.*]
 disallow_untyped_defs = True
 disallow_incomplete_defs = True
 check_untyped_defs = True
@@ -194,9 +200,9 @@ module = [
 ]
 ignore_missing_imports = true
 
-# Your application modules
+# Boss-bot application modules
 [[tool.mypy.overrides]]
-module = "my_intercept_logger.*"
+module = ["boss_bot.*", "boss_bot.monitoring.logging.*"]
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
 check_untyped_defs = true
@@ -323,8 +329,9 @@ def _early_init() -> None:
             diagnose=True
         )
 
-        # Immediately intercept common problematic loggers
+        # Immediately intercept critical loggers for Discord.py, async frameworks, and boss-bot
         critical_loggers: list[str] = [
+            # Python standard library
             "asyncio",
             "concurrent.futures",
             "multiprocessing",
@@ -333,10 +340,39 @@ def _early_init() -> None:
             "requests",
             "httpx",
             "aiohttp",
+            # Discord.py framework
             "discord",
             "discord.client",
             "discord.gateway",
-            "discord.http"
+            "discord.http",
+            "discord.voice_client",
+            "discord.shard",
+            "discord.ext.commands",
+            "discord.ext.tasks",
+            # Boss-bot specific modules
+            "boss_bot",
+            "boss_bot.bot",
+            "boss_bot.bot.client",
+            "boss_bot.bot.cogs",
+            "boss_bot.core",
+            "boss_bot.core.downloads",
+            "boss_bot.core.queue",
+            "boss_bot.cli",
+            "boss_bot.monitoring",
+            "boss_bot.storage",
+            "boss_bot.utils",
+            # AI/LangChain ecosystem
+            "langchain",
+            "langchain.agents",
+            "langchain.chains",
+            "langchain.llms",
+            "langsmith",
+            "openai",
+            "anthropic",
+            # Download tools
+            "gallery_dl",
+            "yt_dlp",
+            "youtube_dl",
         ]
 
         for logger_name in critical_loggers:
@@ -719,8 +755,8 @@ let g:ale_python_mypy_options = '--config-file mypy.ini'
 ```python
 #!/usr/bin/env python3
 """
-Comprehensive test for Loguru type safety.
-Run with: uv run mypy test_loguru_typing.py
+Comprehensive test for Loguru type safety in boss-bot.
+Run with: uv run mypy test_boss_bot_logging_typing.py
 """
 
 from __future__ import annotations
@@ -736,45 +772,63 @@ from typing import Union, Optional, Any, Dict, Callable
 import loguru
 from loguru import logger
 
+# Boss-bot specific imports
+from boss_bot.core.env import BossSettings
+from boss_bot.monitoring.logging import (
+    early_init,
+    setup_boss_bot_logging,
+    setup_thread_safe_logging,
+    ThreadSafeLogConfig,
+)
+
 # Test all the patterns we've defined
 def test_all_typing_patterns() -> None:
-    """Test all typing patterns to ensure MyPy compatibility."""
+    """Test all typing patterns to ensure MyPy compatibility in boss-bot."""
 
     # Test early initialization
-    _early_init()
+    early_init()
+
+    # Test boss-bot specific logging setup
+    settings = BossSettings()
+    boss_logger: loguru.Logger = setup_boss_bot_logging(settings)
 
     # Test basic logging
-    logger.info("Basic logging test")
-    logger.error("Error with data: {data}", data={"key": "value"})
+    boss_logger.info("Boss-bot logging test")
+    boss_logger.error("Error with data: {data}", data={"key": "value"})
 
-    # Test binding
-    bound_logger: loguru.Logger = logger.bind(
-        request_id="test-123",
-        user_id=456
+    # Test binding with boss-bot context
+    bound_logger: loguru.Logger = boss_logger.bind(
+        request_id="boss-bot-test-123",
+        user_id=456,
+        guild_id=789,
+        component="download_manager"
     )
     bound_logger.warning("Bound logger test")
 
     # Test options
-    logger.opt(colors=True).info("Colored message")
-    logger.opt(lazy=True).debug("Lazy: {}", lambda: "computed")
+    boss_logger.opt(colors=True).info("Colored message")
+    boss_logger.opt(lazy=True).debug("Lazy: {}", lambda: "computed")
 
     # Test exception handling
     try:
         raise ValueError("Test exception")
     except Exception:
-        logger.opt(exception=True).error("Exception test")
+        boss_logger.opt(exception=True).error("Exception test")
 
     # Test custom sink
-    logger.add(test_sink, level="DEBUG")
-    logger.debug("Custom sink test")
+    boss_logger.add(test_sink, level="DEBUG")
+    boss_logger.debug("Custom sink test")
 
-    # Test configuration
-    configured_logger: loguru.Logger = configure_production_logging(
-        log_level="INFO",
-        use_json=False,
-        enable_async=False
+    # Test configuration from settings
+    config: ThreadSafeLogConfig = ThreadSafeLogConfig.from_boss_settings(settings)
+    configured_logger: loguru.Logger = setup_thread_safe_logging(
+        log_level=config.log_level,
+        enable_file_logging=config.enable_file_logging,
+        log_file_path=config.log_file_path,
+        enable_json_logging=config.enable_json_logging,
+        enable_sensitive_obfuscation=config.enable_sensitive_obfuscation,
     )
-    configured_logger.success("Configuration test completed")
+    configured_logger.success("Boss-bot configuration test completed")
 
 def test_sink(message: loguru.Message) -> None:
     """Test sink function with proper typing."""
@@ -802,13 +856,19 @@ if __name__ == "__main__":
 
 ```bash
 # Should show "Success: no issues found"
-uv run mypy test_loguru_typing.py
+uv run mypy test_boss_bot_logging_typing.py
 
 # Test with strict mode
-uv run mypy --strict test_loguru_typing.py
+uv run mypy --strict test_boss_bot_logging_typing.py
+
+# Check boss-bot logging module
+uv run mypy src/boss_bot/monitoring/logging/
+
+# Check entire boss-bot project
+uv run mypy src/boss_bot/
 
 # Generate detailed report
-uv run mypy --html-report mypy_report test_loguru_typing.py
+uv run mypy --html-report mypy_report src/boss_bot/monitoring/logging/
 ```
 
 ---

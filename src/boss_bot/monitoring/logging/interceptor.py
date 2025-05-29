@@ -232,8 +232,9 @@ def early_init() -> None:
             diagnose=True,
         )
 
-        # Immediately intercept critical loggers for Discord.py and async frameworks
+        # Immediately intercept critical loggers for Discord.py, async frameworks, and boss-bot
         critical_loggers = [
+            # Python standard library
             "asyncio",
             "concurrent.futures",
             "multiprocessing",
@@ -242,11 +243,45 @@ def early_init() -> None:
             "requests",
             "httpx",
             "aiohttp",
+            # Discord.py framework
             "discord",
             "discord.client",
             "discord.gateway",
             "discord.http",
-            "boss_bot",  # Boss-bot specific loggers
+            "discord.voice_client",
+            "discord.shard",
+            "discord.ext.commands",
+            "discord.ext.tasks",
+            # Boss-bot specific modules
+            "boss_bot",
+            "boss_bot.bot",
+            "boss_bot.bot.client",
+            "boss_bot.bot.cogs",
+            "boss_bot.core",
+            "boss_bot.core.downloads",
+            "boss_bot.core.queue",
+            "boss_bot.cli",
+            "boss_bot.monitoring",
+            "boss_bot.storage",
+            "boss_bot.utils",
+            # AI/LangChain ecosystem
+            "langchain",
+            "langchain.agents",
+            "langchain.chains",
+            "langchain.llms",
+            "langchain.vectorstores",
+            "langsmith",
+            "openai",
+            "anthropic",
+            # Download tools
+            "gallery_dl",
+            "yt_dlp",
+            "youtube_dl",
+            # Monitoring and metrics
+            "prometheus_client",
+            "uvicorn",
+            "gunicorn",
+            "fastapi",
         ]
 
         for logger_name in critical_loggers:
@@ -315,6 +350,7 @@ class ThreadSafeLogConfig(BaseModel):
     Thread-safe logging configuration for boss-bot.
 
     Configured for stdout-only logging with thread safety and interception features.
+    Can be configured from BossSettings for full integration.
     """
 
     log_level: str = "INFO"
@@ -329,6 +365,39 @@ class ThreadSafeLogConfig(BaseModel):
         """Pydantic configuration."""
 
         arbitrary_types_allowed = True
+
+    @classmethod
+    def from_boss_settings(cls, settings: Any) -> ThreadSafeLogConfig:
+        """Create ThreadSafeLogConfig from BossSettings.
+
+        Args:
+            settings: Boss-bot settings instance (BossSettings)
+
+        Returns:
+            ThreadSafeLogConfig instance configured from boss-bot settings
+        """
+        # Determine file logging based on environment and debug settings
+        enable_file_logging = (
+            settings.debug or settings.environment.value == "development" or settings.environment.value == "staging"
+        )
+
+        # Use storage_root for log file path
+        log_file_path = str(settings.storage_root / "logs" / "boss_bot.log")
+
+        # Enable JSON logging for production environments
+        enable_json_logging = settings.environment.value == "production"
+
+        # Enable sensitive obfuscation for production
+        enable_sensitive_obfuscation = settings.environment.value == "production"
+
+        return cls(
+            log_level=settings.log_level,
+            enable_file_logging=enable_file_logging,
+            log_file_path=log_file_path,
+            enable_json_logging=enable_json_logging,
+            enable_sensitive_obfuscation=enable_sensitive_obfuscation,
+            enable_payload_formatting=True,  # Always enable for debugging
+        )
 
 
 def configure_thread_safe_logging(config: ThreadSafeLogConfig | None = None) -> loguru.Logger:
@@ -372,14 +441,53 @@ def configure_thread_safe_logging(config: ThreadSafeLogConfig | None = None) -> 
     seen = set()
     for name in [
         *logging.root.manager.loggerDict.keys(),  # pylint: disable=no-member
+        # Python standard library
         "asyncio",
+        "concurrent.futures",
+        "multiprocessing",
+        "threading",
+        "urllib3",
+        "requests",
+        "httpx",
+        "aiohttp",
+        # Discord.py framework
         "discord",
         "discord.client",
         "discord.gateway",
         "discord.http",
+        "discord.voice_client",
+        "discord.shard",
+        "discord.ext.commands",
+        "discord.ext.tasks",
+        # Boss-bot specific modules
         "boss_bot",
+        "boss_bot.bot",
+        "boss_bot.bot.client",
+        "boss_bot.bot.cogs",
+        "boss_bot.core",
+        "boss_bot.core.downloads",
+        "boss_bot.core.queue",
+        "boss_bot.cli",
+        "boss_bot.monitoring",
+        "boss_bot.storage",
+        "boss_bot.utils",
+        # AI/LangChain ecosystem
+        "langchain",
+        "langchain.agents",
+        "langchain.chains",
+        "langchain.llms",
+        "langsmith",
+        "openai",
+        "anthropic",
+        # Download tools
+        "gallery_dl",
+        "yt_dlp",
+        "youtube_dl",
+        # Monitoring and web frameworks
+        "prometheus_client",
         "uvicorn",
         "gunicorn",
+        "fastapi",
     ]:
         if name not in seen:
             seen.add(name.split(".")[0])

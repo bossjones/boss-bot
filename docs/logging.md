@@ -190,30 +190,35 @@ def global_log_config(log_level: Union[str, int] = logging.DEBUG, json: bool = F
 ### ✅ Correct Implementation Order
 
 ```python
-# main.py or your application entry point
-from my_intercept_logger import _early_init
+# main.py or boss-bot application entry point
+from boss_bot.monitoring.logging import early_init
 
-# 🔥 STEP 1: Call _early_init() FIRST - before ANY other imports
-_early_init()
+# 🔥 STEP 1: Call early_init() FIRST - before ANY other imports
+early_init()
 
 # 🔥 STEP 2: Now safe to import other modules
 import discord
 import asyncio
 import requests
 import aiohttp
+import gallery_dl
+import yt_dlp
 # ... all other imports that use logging
 
 # 🔥 STEP 3: Configure full logging features after imports
-from my_intercept_logger import global_log_config
-global_log_config(
-    log_level=logging.INFO,
-    json=False
-)
+from boss_bot.monitoring.logging import setup_boss_bot_logging
+from boss_bot.core.env import BossSettings
 
-# 🔥 STEP 4: Your application code
+# Initialize boss-bot settings
+settings = BossSettings()
+
+# Configure logging with boss-bot integration
+logger = setup_boss_bot_logging(settings)
+
+# 🔥 STEP 4: Your boss-bot application code
 async def main():
-    logger.info("Application starting...")
-    # Your code here
+    logger.info("Boss-bot starting...")
+    # Your boss-bot code here
 ```
 
 ### ❌ Incorrect Implementation Order
@@ -223,10 +228,12 @@ async def main():
 import discord        # ❌ This sets up its own logging first
 import asyncio        # ❌ This may use logging during import
 import requests       # ❌ This configures urllib3 logging
+import gallery_dl     # ❌ This may configure its own logging
+import yt_dlp        # ❌ This configures its own logging
 
 # ❌ TOO LATE: Interceptor misses early logging calls
-from my_intercept_logger import _early_init
-_early_init()         # ❌ Already missed discord's logging setup
+from boss_bot.monitoring.logging import early_init
+early_init()         # ❌ Already missed discord's and other libraries' logging setup
 ```
 
 ---
@@ -493,12 +500,25 @@ def context_formatter(record):
         "<level>{message}</level>"
     )
 
-# Usage in request handlers
-async def handle_request(request):
-    request_id_var.set(f"req-{uuid.uuid4().hex[:8]}")
-    user_id_var.set(request.user.id)
+# Usage in boss-bot Discord command handlers
+async def handle_discord_command(ctx):
+    request_id_var.set(f"cmd-{uuid.uuid4().hex[:8]}")
+    user_id_var.set(ctx.author.id)
 
-    logger.info("Processing request")  # Automatically includes context
+    logger.info("Processing Discord command")  # Automatically includes context
+
+# Usage in boss-bot download operations
+async def handle_download(url: str, user_id: int, guild_id: int):
+    request_id_var.set(f"dl-{uuid.uuid4().hex[:8]}")
+    user_id_var.set(user_id)
+
+    # Add boss-bot specific context
+    bound_logger = logger.bind(
+        guild_id=guild_id,
+        download_url=url,
+        component="download_manager"
+    )
+    bound_logger.info("Starting download operation")
 ```
 
 ---
@@ -513,12 +533,16 @@ async def handle_request(request):
 
 **Solution:**
 ```python
-# ✅ Move _early_init() to the very top
-from my_intercept_logger import _early_init
-_early_init()  # Must be first
+# ✅ Move early_init() to the very top
+from boss_bot.monitoring.logging import early_init
+early_init()  # Must be first
 
 # Then import everything else
-import problematic_library
+import discord
+import gallery_dl
+import yt_dlp
+import langchain
+# ... other boss-bot dependencies
 ```
 
 ### Problem 2: Multiprocessing File Corruption

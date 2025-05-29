@@ -839,6 +839,7 @@ dev = [
     { name = "factory-boy" },
     { name = "faker" },
     { name = "griffe-inherited-docstrings" },
+    { name = "griffe-typingdoc" },
     { name = "ipykernel" },
     { name = "ipywidgets" },
     { name = "jedi-language-server" },
@@ -1063,6 +1064,7 @@ dev = [
     { name = "factory-boy", specifier = ">=3.3.3" },
     { name = "faker", specifier = ">=37.1.0" },
     { name = "griffe-inherited-docstrings", specifier = ">=1.1.1" },
+    { name = "griffe-typingdoc", specifier = ">=0.2.8" },
     { name = "ipykernel", specifier = ">=6.29.5" },
     { name = "ipywidgets", specifier = ">=8.1.5" },
     { name = "jedi-language-server", specifier = ">=0.44.0" },
@@ -2576,6 +2578,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/7c/9f/098599019b2715e1edad3618305b8acf253e2ee375cbd389507cb23a2a00/griffe_inherited_docstrings-1.1.1.tar.gz", hash = "sha256:d179b6a6b7dc260fb892ad5b857837afd6f9de6193fc26d14463c4e9975a0cd3", size = 24146, upload-time = "2024-11-05T13:46:05.394Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/67/f9/51a3fd7460b95583ff470c7b4fd706bd21f3fda97d521f3770126dc6d1fc/griffe_inherited_docstrings-1.1.1-py3-none-any.whl", hash = "sha256:0cb613ade70793b3589c706269a2cc4ceb91cbc4cfdc651037839cb9506eabe6", size = 6008, upload-time = "2024-11-05T13:46:03.504Z" },
+]
+
+[[package]]
+name = "griffe-typingdoc"
+version = "0.2.8"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "griffe" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/97/5d/5b64411883042f49fa715fdd8085cc39f7378b934d3b35aa479dc9b37f3a/griffe_typingdoc-0.2.8.tar.gz", hash = "sha256:36f2c2f2568240a5d0ab462153d1f3cfec01a9cc56b2291f16ce7869f0f7af05", size = 30472, upload-time = "2025-02-18T00:25:51.741Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8e/50/0b1e5e81027d5664903236b44fee18cd0e1e5f046e02c0b3ebebd6b9e3d3/griffe_typingdoc-0.2.8-py3-none-any.whl", hash = "sha256:a4ed3dd73b9d48311b138d8b317916a0589325a73c525236bf5969a8fe2626b1", size = 9607, upload-time = "2025-02-18T00:25:49.489Z" },
 ]
 
 [[package]]

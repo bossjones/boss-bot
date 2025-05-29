@@ -1,5 +1,7 @@
 """Custom help command implementation."""
 
+from typing import Any
+
 import discord
 from discord.ext import commands
 
@@ -20,11 +22,12 @@ class BossHelpCommand(commands.DefaultHelpCommand):
 
     def get_command_signature(self, command: commands.Command) -> str:
         """Get the command signature with proper formatting."""
-        parent = command.parent
-        entries = []
+        parent: commands.GroupMixin[Any] | None = command.parent
+        entries: list[str] = []
+        # command.parent is type-hinted as GroupMixin some attributes are resolved via MRO
         while parent is not None:
-            entries.append(parent.name)
-            parent = parent.parent
+            entries.append(parent.name)  # type: ignore
+            parent = parent.parent  # type: ignore
         parent_sig = " ".join(reversed(entries))
         alias = command.name if not parent_sig else f"{parent_sig} {command.name}"
 

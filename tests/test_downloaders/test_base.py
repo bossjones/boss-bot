@@ -10,10 +10,15 @@ from boss_bot.core.env import BossSettings
 from pytest import MonkeyPatch
 
 @pytest.fixture
-def download_manager(fixture_env_vars_test: MonkeyPatch):
-    """Create a download manager instance for testing."""
+async def download_manager(fixture_env_vars_test: MonkeyPatch):
+    """Create a download manager instance for testing with proper cleanup."""
     settings = BossSettings()
-    return DownloadManager(settings=settings)
+    manager = DownloadManager(settings=settings)
+
+    yield manager
+
+    # Cleanup: Cancel all active downloads and wait for completion
+    await manager.cleanup()
 
 @pytest.mark.asyncio
 async def test_download_manager_initialization(download_manager: DownloadManager):

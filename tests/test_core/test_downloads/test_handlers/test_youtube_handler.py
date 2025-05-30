@@ -158,10 +158,12 @@ class TestYouTubeHandler:
         handler = fixture_youtube_handler_test
 
         # Mock successful command execution
-        mock_result = mocker.Mock()
-        mock_result.returncode = 0
-        mock_result.stdout = "Download completed"
-        mock_result.stderr = ""
+        mock_result = DownloadResult(
+            success=True,
+            stdout="Download completed",
+            stderr="",
+            return_code=0
+        )
 
         mock_run_command = mocker.patch.object(handler, '_run_command', return_value=mock_result)
         mock_find_files = mocker.patch.object(handler, '_find_downloaded_files', return_value=[])
@@ -178,10 +180,13 @@ class TestYouTubeHandler:
         handler = fixture_youtube_handler_test
 
         # Mock failed command execution
-        mock_result = mocker.Mock()
-        mock_result.returncode = 1
-        mock_result.stdout = ""
-        mock_result.stderr = "yt-dlp error"
+        mock_result = DownloadResult(
+            success=False,
+            stdout="",
+            stderr="yt-dlp error",
+            return_code=1,
+            error="yt-dlp command failed with return code 1"
+        )
 
         mock_run_command = mocker.patch.object(handler, '_run_command', return_value=mock_result)
 
@@ -207,10 +212,12 @@ class TestYouTubeHandler:
         handler = fixture_youtube_handler_test
 
         # Mock successful async command execution
-        mock_result = mocker.Mock()
-        mock_result.returncode = 0
-        mock_result.stdout = "Download completed"
-        mock_result.stderr = ""
+        mock_result = DownloadResult(
+            success=True,
+            stdout="Download completed",
+            stderr="",
+            return_code=0
+        )
 
         mock_arun_command = mocker.patch.object(handler, '_arun_command', return_value=mock_result)
         mock_find_files = mocker.patch.object(handler, '_find_downloaded_files', return_value=[])
@@ -233,10 +240,12 @@ class TestYouTubeHandler:
         handler = fixture_youtube_handler_test
 
         # Mock successful command execution
-        mock_result = mocker.Mock()
-        mock_result.returncode = 0
-        mock_result.stdout = "Metadata extracted"
-        mock_result.stderr = ""
+        mock_result = DownloadResult(
+            success=True,
+            stdout="Metadata extracted",
+            stderr="",
+            return_code=0
+        )
 
         expected_metadata = MediaMetadata(
             platform="youtube",
@@ -261,9 +270,12 @@ class TestYouTubeHandler:
         handler = fixture_youtube_handler_test
 
         # Mock failed command execution
-        mock_result = mocker.Mock()
-        mock_result.returncode = 1
-        mock_result.stderr = "yt-dlp error"
+        mock_result = DownloadResult(
+            success=False,
+            stdout="",
+            stderr="yt-dlp error",
+            return_code=1
+        )
 
         mock_run_command = mocker.patch.object(handler, '_run_command', return_value=mock_result)
 
@@ -276,10 +288,12 @@ class TestYouTubeHandler:
         handler = fixture_youtube_handler_test
 
         # Mock successful async command execution
-        mock_result = mocker.Mock()
-        mock_result.returncode = 0
-        mock_result.stdout = "Metadata extracted"
-        mock_result.stderr = ""
+        mock_result = DownloadResult(
+            success=True,
+            stdout="Metadata extracted",
+            stderr="",
+            return_code=0
+        )
 
         expected_metadata = MediaMetadata(
             platform="youtube",

@@ -14,6 +14,7 @@ from boss_bot.core.downloads.strategies.base_strategy import BaseDownloadStrateg
 
 if TYPE_CHECKING:
     from boss_bot.core.downloads.clients import AsyncGalleryDL
+    from boss_bot.core.downloads.handlers.base_handler import DownloadResult
 
 logger = logging.getLogger(__name__)
 
@@ -181,10 +182,18 @@ class RedditDownloadStrategy(BaseDownloadStrategy):
 
         Returns:
             MediaMetadata from CLI handler
+
+        Raises:
+            RuntimeError: If metadata extraction fails
         """
         # ✅ Call existing handler in executor to maintain async interface
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, self.cli_handler.get_metadata, url, **kwargs)
+        loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
+        metadata = await loop.run_in_executor(None, self.cli_handler.get_metadata, url, **kwargs)
+
+        if metadata is None:
+            raise RuntimeError(f"Failed to extract metadata from {url} using CLI handler")
+
+        return metadata
 
     async def _download_via_api(self, url: str, **kwargs: Any) -> MediaMetadata:
         """Use new API client for download.

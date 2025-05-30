@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Script to validate frontmatter in cursor rule files."""
 
+
 import os
 import re
 import sys

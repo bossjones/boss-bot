@@ -96,6 +96,12 @@ class DownloadManager:
 
             download.status = DownloadStatus.COMPLETED
 
+        except asyncio.CancelledError:
+            # Handle cancellation gracefully
+            download.status = DownloadStatus.CANCELLED
+            logger.debug(f"Download {download.download_id} was cancelled")
+            # Re-raise to ensure proper task cancellation
+            raise
         except Exception as e:
             logger.error(f"Download failed: {e}", exc_info=True)
             download.status = DownloadStatus.FAILED

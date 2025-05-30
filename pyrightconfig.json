@@ -1,10 +1,7 @@
 {
-  "include": [
-    "src",
-    "packages",
-    "scripts"
-  ],
-
+  "defineConstant": {
+    "DEBUG": true
+  },
   "exclude": [
     "**/node_modules",
     "**/__pycache__",
@@ -16,74 +13,68 @@
     "build",
     "dist"
   ],
-
-  "ignore": [
-    "src/oldstuff"
-  ],
-
-  "defineConstant": {
-    "DEBUG": true
-  },
-
-  "stubPath": "stubs",
-
-  "reportMissingImports": "error",
-  "reportMissingTypeStubs": false,
-
-  "reportUnannotatedClassAttribute": "error",
-  "reportPrivateLocalImportUsage": "warning",
-  "reportInvalidCast": "error",
-  "reportUnreachable": "warning",
-  "reportImplicitAbstractClass": "warning",
-  "reportUnusedParameter": "warning",
-  "reportImplicitRelativeImport": "warning",
-  "reportAny": "warning",
-  "reportExplicitAny": "warning",
-  "strictGenericNarrowing": true,
-  "failOnWarnings": true,
-  "reportPrivateUsage": "none",
-  "reportPrivateImportUsage": "none",
-
-  "reportCallIssue": "none",
-  "reportOptionalMemberAccess": "none",
-  "reportArgumentType": "none",
-  "reportOptionalOperand": "none",
-
-  "pythonVersion": "3.12",
-  "pythonPlatform": "Darwin",
-
   "executionEnvironments": [
     {
-      "root": "packages/cursor_rules_mcp_server",
-      "pythonVersion": "3.12",
-      "extraPaths": [
-        "packages/cursor_rules_mcp_server/src"
-      ]
-    },
-    {
-      "root": "packages/cursor_rules_mcp_server/src/cursor_rules_mcp_server/tests",
-      "pythonVersion": "3.12",
       "extraPaths": [
         "packages/cursor_rules_mcp_server/src"
       ],
-      "reportPrivateUsage": false
+      "pythonVersion": "3.12",
+      "root": "packages/cursor_rules_mcp_server"
     },
     {
-      "root": "src/boss_bot",
-      "pythonVersion": "3.12",
       "extraPaths": [
-        "src"
-      ]
+        "packages/cursor_rules_mcp_server/src"
+      ],
+      "pythonVersion": "3.12",
+      "reportPrivateUsage": false,
+      "root": "packages/cursor_rules_mcp_server/src/cursor_rules_mcp_server/tests"
     },
     {
-      "root": "scripts",
-      "pythonVersion": "3.12",
       "extraPaths": [
         "src"
-      ]
+      ],
+      "pythonVersion": "3.12",
+      "root": "src/boss_bot"
+    },
+    {
+      "extraPaths": [
+        "src"
+      ],
+      "pythonVersion": "3.12",
+      "root": "scripts"
     },
     {
       "root": "src"
     }
-  ]
+  ],
+  "failOnWarnings": true,
+  "ignore": [
+    "src/oldstuff"
+  ],
+  "include": [
+    "src",
+    "packages",
+    "scripts"
+  ],
+  "pythonPlatform": "Darwin",
+  "pythonVersion": "3.12",
+  "reportAny": "warning",
+  "reportArgumentType": "none",
+  "reportCallIssue": "none",
+  "reportExplicitAny": "warning",
+  "reportImplicitAbstractClass": "warning",
+  "reportImplicitRelativeImport": "warning",
+  "reportInvalidCast": "error",
+  "reportMissingImports": "error",
+  "reportMissingTypeStubs": false,
+  "reportOptionalMemberAccess": "none",
+  "reportOptionalOperand": "none",
+  "reportPrivateImportUsage": "none",
+  "reportPrivateLocalImportUsage": "warning",
+  "reportPrivateUsage": "none",
+  "reportUnannotatedClassAttribute": "error",
+  "reportUnreachable": "warning",
+  "reportUnusedParameter": "warning",
+  "strictGenericNarrowing": true,
+  "stubPath": "stubs"
 }

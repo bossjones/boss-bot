@@ -119,7 +119,7 @@ class AsyncYtDlp:
             Dictionary with video information
 
         Raises:
-            RuntimeError: If extraction fails
+            RuntimeError: If extraction fails or returns None
         """
         if not self._yt_dlp:
             raise RuntimeError("AsyncYtDlp not initialized. Use async context manager.")
@@ -128,12 +128,14 @@ class AsyncYtDlp:
 
         try:
             result = await loop.run_in_executor(None, self._extract_info_sync, url, download)
+            if result is None:
+                raise RuntimeError(f"yt-dlp extraction returned None for URL: {url}")
             return result
         except Exception as e:
             logger.error(f"Failed to extract info from {url}: {e}")
             raise RuntimeError(f"yt-dlp extraction failed: {e}") from e
 
-    def _extract_info_sync(self, url: str, download: bool) -> dict[str, Any]:
+    def _extract_info_sync(self, url: str, download: bool) -> dict[str, Any] | None:
         """Synchronous info extraction (runs in thread pool)."""
         return self._yt_dlp.extract_info(url, download=download)
 

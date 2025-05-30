@@ -1,0 +1,2 @@
+# Ignore documentation examples with redacted API keys
+docs/development/fastmcp/security-guide.md:933

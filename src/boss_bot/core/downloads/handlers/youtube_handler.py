@@ -187,9 +187,9 @@ class YouTubeHandler(BaseDownloadHandler):
 
         try:
             cmd = self._build_yt_dlp_command(url, **options)
-            result = self._run_command(cmd)
+            result: DownloadResult = self._run_command(cmd)
 
-            if result.returncode == 0:
+            if result.return_code == 0:
                 # Find downloaded files
                 files = self._find_downloaded_files(url, **options)
                 metadata = self._extract_metadata_from_files(files) if files else None
@@ -200,15 +200,15 @@ class YouTubeHandler(BaseDownloadHandler):
                     metadata=metadata,
                     stdout=result.stdout,
                     stderr=result.stderr,
-                    return_code=result.returncode,
+                    return_code=result.return_code,
                 )
             else:
                 return DownloadResult(
                     success=False,
-                    error=f"yt-dlp command failed with return code {result.returncode}",
+                    error=f"yt-dlp command failed with return code {result.return_code}",
                     stderr=result.stderr,
                     stdout=result.stdout,
-                    return_code=result.returncode,
+                    return_code=result.return_code,
                 )
 
         except Exception as e:
@@ -237,7 +237,7 @@ class YouTubeHandler(BaseDownloadHandler):
             cmd = self._build_yt_dlp_command(url, **options)
             result = await self._arun_command(cmd)
 
-            if result.returncode == 0:
+            if result.return_code == 0:
                 # Find downloaded files
                 files = self._find_downloaded_files(url, **options)
                 metadata = self._extract_metadata_from_files(files) if files else None
@@ -248,15 +248,15 @@ class YouTubeHandler(BaseDownloadHandler):
                     metadata=metadata,
                     stdout=result.stdout,
                     stderr=result.stderr,
-                    return_code=result.returncode,
+                    return_code=result.return_code,
                 )
             else:
                 return DownloadResult(
                     success=False,
-                    error=f"yt-dlp command failed with return code {result.returncode}",
+                    error=f"yt-dlp command failed with return code {result.return_code}",
                     stderr=result.stderr,
                     stdout=result.stdout,
-                    return_code=result.returncode,
+                    return_code=result.return_code,
                 )
 
         except Exception as e:
@@ -286,7 +286,7 @@ class YouTubeHandler(BaseDownloadHandler):
             cmd = self._build_yt_dlp_command(url, **options_copy)
             result = self._run_command(cmd)
 
-            if result.returncode == 0:
+            if result.return_code == 0:
                 # Find and parse JSON files
                 files = self._find_downloaded_files(url, **options_copy)
                 return self._extract_metadata_from_files(files) or MediaMetadata(
@@ -320,7 +320,7 @@ class YouTubeHandler(BaseDownloadHandler):
             cmd = self._build_yt_dlp_command(url, **options_copy)
             result = await self._arun_command(cmd)
 
-            if result.returncode == 0:
+            if result.return_code == 0:
                 # Find and parse JSON files
                 files = self._find_downloaded_files(url, **options_copy)
                 return self._extract_metadata_from_files(files) or MediaMetadata(

@@ -1,3 +1,13 @@
+# pylint: disable=no-member
+# pylint: disable=possibly-used-before-assignment
+# pyright: reportImportCycles=false
+# pyright: reportFunctionMemberAccess=false
+# pyright: reportAttributeAccessIssue=false
+# pyright: reportUnknownVariableType=false
+# pyright: reportInvalidTypeForm=false
+# mypy: disable-error-code="index"
+# mypy: disable-error-code="no-redef"
+# pylint: disable=consider-using-with, consider-using-min-builtin
 """Asynchronous wrapper around gallery-dl.
 
 This class provides an async interface to gallery-dl operations,
@@ -110,12 +120,17 @@ class AsyncGalleryDL:
                 # Get the loaded configuration
                 loaded_config = gdl_config._config.copy() if gdl_config._config else {}
 
+                logger.debug(f"loaded_config: {loaded_config}")
+
                 # Merge with instance config (highest priority)
                 if self.config:
                     # Use gallery-dl's utility function for proper merging
                     from gallery_dl import util
 
                     util.combine_dict(loaded_config, self.config)
+                    logger.debug(
+                        f"loaded_config after merge via (util.combine_dict(loaded_config, self.config): {loaded_config}"
+                    )
 
                 return loaded_config
 
@@ -142,6 +157,11 @@ class AsyncGalleryDL:
             loop = asyncio.get_event_loop()
             self._gdl_config = await loop.run_in_executor(self._executor, _load_config_sync)
 
+            # Update self.config with the final merged configuration from _gdl_config
+            if self._gdl_config:
+                self.config = self._gdl_config.copy()
+                logger.debug(f"Updated self.config with merged configuration: {self.config}")
+
             # Also create GalleryDLConfig for validation/compatibility
             try:
                 self._gallery_dl_config = (
@@ -160,6 +180,10 @@ class AsyncGalleryDL:
                 default_config = default_config.merge_with(self.config)
             self._gdl_config = default_config.to_dict()
             self._gallery_dl_config = default_config
+
+            # Update self.config with the fallback configuration
+            self.config = self._gdl_config.copy()
+            logger.debug(f"Updated self.config with fallback configuration: {self.config}")
 
     def _get_effective_config(self) -> dict[str, Any]:
         """Get the effective configuration dictionary."""

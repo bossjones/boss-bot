@@ -839,6 +839,7 @@ dev = [
     { name = "factory-boy" },
     { name = "faker" },
     { name = "griffe-inherited-docstrings" },
+    { name = "griffe-typingdoc" },
     { name = "ipykernel" },
     { name = "ipywidgets" },
     { name = "jedi-language-server" },
@@ -891,6 +892,7 @@ dev = [
     { name = "pytest-retry" },
     { name = "pytest-skip-slow" },
     { name = "pytest-skipuntil" },
+    { name = "pytest-subprocess" },
     { name = "pytest-sugar" },
     { name = "pytest-timeout" },
     { name = "pyupgrade" },
@@ -1063,6 +1065,7 @@ dev = [
     { name = "factory-boy", specifier = ">=3.3.3" },
     { name = "faker", specifier = ">=37.1.0" },
     { name = "griffe-inherited-docstrings", specifier = ">=1.1.1" },
+    { name = "griffe-typingdoc", specifier = ">=0.2.8" },
     { name = "ipykernel", specifier = ">=6.29.5" },
     { name = "ipywidgets", specifier = ">=8.1.5" },
     { name = "jedi-language-server", specifier = ">=0.44.0" },
@@ -1115,6 +1118,7 @@ dev = [
     { name = "pytest-retry", specifier = ">=1.7.0" },
     { name = "pytest-skip-slow", specifier = ">=0.0.5" },
     { name = "pytest-skipuntil", specifier = ">=0.2.0" },
+    { name = "pytest-subprocess", specifier = ">=1.5.3" },
     { name = "pytest-sugar", specifier = ">=1.0.0" },
     { name = "pytest-timeout", specifier = ">=2.2.0" },
     { name = "pyupgrade", specifier = ">=3.19.1" },
@@ -2576,6 +2580,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/7c/9f/098599019b2715e1edad3618305b8acf253e2ee375cbd389507cb23a2a00/griffe_inherited_docstrings-1.1.1.tar.gz", hash = "sha256:d179b6a6b7dc260fb892ad5b857837afd6f9de6193fc26d14463c4e9975a0cd3", size = 24146, upload-time = "2024-11-05T13:46:05.394Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/67/f9/51a3fd7460b95583ff470c7b4fd706bd21f3fda97d521f3770126dc6d1fc/griffe_inherited_docstrings-1.1.1-py3-none-any.whl", hash = "sha256:0cb613ade70793b3589c706269a2cc4ceb91cbc4cfdc651037839cb9506eabe6", size = 6008, upload-time = "2024-11-05T13:46:03.504Z" },
+]
+
+[[package]]
+name = "griffe-typingdoc"
+version = "0.2.8"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "griffe" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/97/5d/5b64411883042f49fa715fdd8085cc39f7378b934d3b35aa479dc9b37f3a/griffe_typingdoc-0.2.8.tar.gz", hash = "sha256:36f2c2f2568240a5d0ab462153d1f3cfec01a9cc56b2291f16ce7869f0f7af05", size = 30472, upload-time = "2025-02-18T00:25:51.741Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8e/50/0b1e5e81027d5664903236b44fee18cd0e1e5f046e02c0b3ebebd6b9e3d3/griffe_typingdoc-0.2.8-py3-none-any.whl", hash = "sha256:a4ed3dd73b9d48311b138d8b317916a0589325a73c525236bf5969a8fe2626b1", size = 9607, upload-time = "2025-02-18T00:25:49.489Z" },
 ]
 
 [[package]]
@@ -6843,6 +6860,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/1e/29/82634be09c88b55ce9bea734fe5b965b222aa4f8449bbbcc5a9ab702f758/pytest-skipuntil-0.2.0.tar.gz", hash = "sha256:9b0583b5268b3552d574ec552a6773782f908b0f1bad066184464a427c7169ea", size = 4859, upload-time = "2023-11-25T21:06:12.916Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/95/85/82f82659e5b0c1fda259c62db6534e5d718ee906c5db1c04836f05cfefd6/pytest_skipuntil-0.2.0-py3-none-any.whl", hash = "sha256:39db9a34e7c2f528ea77e77653393eeeb4125cb48b81c22e90ddfa533118c81e", size = 4493, upload-time = "2023-11-25T21:06:10.894Z" },
+]
+
+[[package]]
+name = "pytest-subprocess"
+version = "1.5.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/32/ae/3ad5c609a5088936608af12f42ad72567a877d3c64303500ebc3b7df0297/pytest_subprocess-1.5.3.tar.gz", hash = "sha256:c00b1140fb0211b3153e09500d770db10770baccbe6e05ee9c140036d1d811d5", size = 42282, upload-time = "2025-01-04T13:08:16.877Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1b/82/a038e8fdb86d5494a39b8730547ec79767731d02ecb556121e40c0892803/pytest_subprocess-1.5.3-py3-none-any.whl", hash = "sha256:b62580f5a84335fb9f2ec65d49e56a3c93f4722c148fe1771a002835d310a75b", size = 21759, upload-time = "2025-01-04T13:08:13.775Z" },
 ]
 
 [[package]]

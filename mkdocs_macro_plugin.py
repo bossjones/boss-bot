@@ -4,13 +4,17 @@ Macro definitions for https://mkdocs-macros-plugin.readthedocs.io/
 This module provides macro functions for use with the mkdocs-macros-plugin.
 It enables dynamic content generation and template rendering in MkDocs pages.
 """
+
 # pyright: reportUnusedFunction=false
+from __future__ import annotations
 
 import os
 from collections.abc import Callable
+from pathlib import Path
 from textwrap import dedent
 from typing import Any, Dict, List, Optional, Tuple
 
+import yaml
 from jinja2 import Environment
 
 SIGNATURE: str = "mkdocs_macro_plugin"
@@ -197,6 +201,62 @@ def define_env(env: Environment) -> None:
                 config=env.conf,
                 files=[],
             )
+
+    @env.macro
+    def list_contributors(yaml_file_path: str = "people.yml") -> str:
+        """
+        Reads contributor data from a YAML file and formats it as a Markdown list.
+
+        Args:
+            yaml_file_path: Path to the people.yml file relative to the project root.
+
+        Returns:
+            A Markdown formatted string listing contributors, or an error message.
+        """
+        try:
+            # Construct the full path relative to the mkdocs.yml file or project root
+            # Adjust this base path if your yaml file is located elsewhere
+            base_path = Path(env.conf.config_file_path).parent
+            full_path = base_path / yaml_file_path
+
+            if not full_path.exists():
+                return f"Error: YAML file not found at '{full_path}'"
+
+            with open(full_path) as f:
+                # Use load_all for multi-document YAML files
+                contributors = list(yaml.safe_load_all(f))
+
+            if not contributors:
+                return "No contributors found in the YAML file."
+
+            # Flatten the list since safe_load_all yields lists for each document
+            all_contributors: list[dict[str, Any]] = [item for sublist in contributors for item in sublist]
+
+            # Sort by contribution count (descending)
+            sorted_contributors = sorted(all_contributors, key=lambda x: x.get("count", 0), reverse=True)
+
+            markdown_output = "## Made with :hearts: by:\n\n"
+            markdown_output += "| Avatar | Contributor | Contributions |\n"
+            markdown_output += "|---|---|---|\n"
+
+            for c in sorted_contributors:
+                login = c.get("login", "N/A")
+                count = c.get("count", 0)
+                avatar_url = c.get("avatarUrl", "")
+                profile_url = c.get("url", "#")
+                avatar_img = f'<img src="{avatar_url}&s=40" alt="{login}" width="40">' if avatar_url else ""
+
+                markdown_output += f"| {avatar_img} | [{login}]({profile_url}) | {count} |\n"
+
+            return markdown_output
+
+        except FileNotFoundError:
+            # More specific error message if path exists but file not found during read attempt
+            return f"Error: YAML file not found at '{full_path}' during read attempt."
+        except yaml.YAMLError as e:
+            return f"Error parsing YAML file '{full_path}': {e}"
+        except Exception as e:
+            return f"An unexpected error occurred: {e}"
 
 
 def on_post_build(env: Environment) -> None:

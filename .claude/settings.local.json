@@ -31,7 +31,10 @@
       "mcp__mcp-server-gallery-dl__search_gallery_dl_documentation",
       "mcp__mcp-server-gallery-dl__search_gallery_dl_code",
       "mcp__mcp-server-gallery-dl__fetch_generic_url_content",
-      "Bash(gh pr create:*)"
+      "Bash(gh pr create:*)",
+      "WebFetch(domain:modelcontextprotocol.io)",
+      "Bash(mkdir:*)",
+      "Bash(find:*)"
     ],
     "deny": []
   },

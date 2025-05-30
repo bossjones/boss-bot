@@ -3,6 +3,7 @@
 # pyright: reportMissingTypeStubs=false
 # pylint: disable=no-member
 # pylint: disable=no-value-for-parameter
+# pylint: disable=no-name-in-module
 # SOURCE: https://github.com/tiangolo/typer/issues/88#issuecomment-1732469681
 from __future__ import annotations
 

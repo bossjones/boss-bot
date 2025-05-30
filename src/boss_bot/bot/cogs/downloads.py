@@ -145,8 +145,8 @@ class DownloadCog(commands.Cog):
         else:
             return {"emoji": "🔗", "name": "Unknown"}
 
-    @commands.command(name="info")
-    async def info(self, ctx: commands.Context, url: str):
+    @commands.command(name="metadata")
+    async def metadata(self, ctx: commands.Context, url: str):
         """Get metadata information about a URL without downloading."""
         # Try to find a strategy that supports this URL
         strategy = self._get_strategy_for_url(url)
@@ -405,12 +405,12 @@ class DownloadCog(commands.Cog):
             )
             await ctx.send(embed=embed)
 
-    @info.error
-    async def info_error_handler(self, ctx: commands.Context, error: commands.CommandError):
-        """Handle errors for the info command."""
+    @metadata.error
+    async def metadata_error_handler(self, ctx: commands.Context, error: commands.CommandError):
+        """Handle errors for the metadata command."""
         if isinstance(error, commands.MissingRequiredArgument):
             embed = discord.Embed(
-                description=f"Please provide a URL to get info for. Usage: `{self.bot.command_prefix}info <url>`",
+                description=f"Please provide a URL to get metadata for. Usage: `{self.bot.command_prefix}metadata <url>`",
                 color=discord.Color.orange(),
             )
             await ctx.send(embed=embed)
@@ -421,9 +421,9 @@ class DownloadCog(commands.Cog):
             )
             await ctx.send(embed=embed)
         else:
-            print(f"Unexpected error in info command: {error}")
+            print(f"Unexpected error in metadata command: {error}")
             embed = discord.Embed(
-                description="An unexpected error occurred while getting URL information.", color=discord.Color.red()
+                description="An unexpected error occurred while getting URL metadata.", color=discord.Color.red()
             )
             await ctx.send(embed=embed)
 

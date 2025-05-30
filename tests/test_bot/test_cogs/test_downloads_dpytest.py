@@ -5,7 +5,7 @@ following TDD principles and the patterns from the existing codebase.
 
 Tests cover:
 - download command with platform strategies
-- info command for metadata extraction
+- metadata command for metadata extraction
 - status command for system status
 - strategies command for configuration display
 - Error handling and edge cases
@@ -234,14 +234,14 @@ async def test_download_command_fallback_to_queue_dpytest(
 
 
 @pytest.mark.asyncio
-async def test_info_command_twitter_metadata_dpytest(
+async def test_metadata_command_twitter_metadata_dpytest(
     fixture_bot_test,
     fixture_download_test_data,
     fixture_mock_strategies,
     fixture_mock_metadata,
     mocker
 ):
-    """Test info command retrieves Twitter metadata using direct callback."""
+    """Test metadata command retrieves Twitter metadata using direct callback."""
     cog = fixture_bot_test.get_cog("DownloadCog")
     assert cog is not None, "DownloadCog should be loaded"
 
@@ -260,8 +260,8 @@ async def test_info_command_twitter_metadata_dpytest(
     ctx.channel = mocker.Mock()
     ctx.channel.id = 67890
 
-    # Call info command directly
-    await cog.info.callback(cog, ctx, fixture_download_test_data['twitter_url'])
+    # Call metadata command directly
+    await cog.metadata.callback(cog, ctx, fixture_download_test_data['twitter_url'])
 
     # Verify metadata extraction was called
     twitter_strategy.get_metadata.assert_called_once_with(fixture_download_test_data['twitter_url'])
@@ -500,8 +500,8 @@ async def test_command_isolation_dpytest(
     status_ctx.channel = mocker.Mock()
     status_ctx.channel.id = 89012
 
-    # Run info command
-    await cog.info.callback(cog, info_ctx, fixture_download_test_data['twitter_url'])
+    # Run metadata command
+    await cog.metadata.callback(cog, info_ctx, fixture_download_test_data['twitter_url'])
     info_args = [call[0][0] for call in info_ctx.send.call_args_list]
     assert any("🐦 **Twitter/X Content Info**" in arg for arg in info_args)
 

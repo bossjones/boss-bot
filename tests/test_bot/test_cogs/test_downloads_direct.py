@@ -5,7 +5,7 @@ bypassing dpytest for more reliable testing of command logic.
 
 Tests cover:
 - download command with platform strategies
-- info command for metadata extraction
+- metadata command for metadata extraction
 - status command for system status
 - strategies command for configuration display
 - Error handling and edge cases
@@ -280,7 +280,7 @@ async def test_download_command_invalid_url_direct(
 
 
 @pytest.mark.asyncio
-async def test_info_command_twitter_metadata_direct(
+async def test_metadata_command_twitter_metadata_direct(
     fixture_download_cog,
     fixture_mock_ctx,
     fixture_download_test_data,
@@ -288,7 +288,7 @@ async def test_info_command_twitter_metadata_direct(
     fixture_mock_metadata,
     mocker
 ):
-    """Test info command retrieves Twitter metadata."""
+    """Test metadata command retrieves Twitter metadata."""
     # Configure Twitter strategy to support URL and return metadata
     twitter_strategy = fixture_mock_strategies["twitter"]
     twitter_strategy.supports_url.return_value = True
@@ -296,7 +296,7 @@ async def test_info_command_twitter_metadata_direct(
 
     fixture_download_cog.strategies = fixture_mock_strategies
 
-    await fixture_download_cog.info.callback(
+    await fixture_download_cog.metadata.callback(
         fixture_download_cog,
         fixture_mock_ctx,
         fixture_download_test_data['twitter_url']
@@ -314,7 +314,7 @@ async def test_info_command_twitter_metadata_direct(
 
 
 @pytest.mark.asyncio
-async def test_info_command_reddit_metadata_direct(
+async def test_metadata_command_reddit_metadata_direct(
     fixture_download_cog,
     fixture_mock_ctx,
     fixture_download_test_data,
@@ -322,7 +322,7 @@ async def test_info_command_reddit_metadata_direct(
     fixture_mock_metadata,
     mocker
 ):
-    """Test info command retrieves Reddit metadata."""
+    """Test metadata command retrieves Reddit metadata."""
     # Configure Reddit strategy to support URL and return metadata
     reddit_strategy = fixture_mock_strategies["reddit"]
     reddit_strategy.supports_url.return_value = True
@@ -330,7 +330,7 @@ async def test_info_command_reddit_metadata_direct(
 
     fixture_download_cog.strategies = fixture_mock_strategies
 
-    await fixture_download_cog.info.callback(
+    await fixture_download_cog.metadata.callback(
         fixture_download_cog,
         fixture_mock_ctx,
         fixture_download_test_data['reddit_url']

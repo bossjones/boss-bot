@@ -252,13 +252,13 @@ class TestDownloadsCogIntegration:
         assert any(f"Added {url} to download queue." in str(call) for call in send_calls)
 
     @pytest.mark.asyncio
-    async def test_info_command_with_twitter_metadata(
+    async def test_metadata_command_with_twitter_metadata(
         self,
         fixture_integration_cog_test,
         fixture_mock_ctx_test,
         mocker,
     ):
-        """Test info command with Twitter metadata."""
+        """Test metadata command with Twitter metadata."""
         url = "https://twitter.com/user/status/123456789"
 
         # Configure twitter strategy
@@ -274,7 +274,7 @@ class TestDownloadsCogIntegration:
         mock_metadata.view_count = 50  # This becomes retweets for Twitter
         twitter_strategy.get_metadata.return_value = mock_metadata
 
-        await fixture_integration_cog_test.info.callback(
+        await fixture_integration_cog_test.metadata.callback(
             fixture_integration_cog_test,
             fixture_mock_ctx_test,
             url
@@ -295,13 +295,13 @@ class TestDownloadsCogIntegration:
         assert "🔄 **Retweets:** 50" in info_message
 
     @pytest.mark.asyncio
-    async def test_info_command_with_reddit_metadata(
+    async def test_metadata_command_with_reddit_metadata(
         self,
         fixture_integration_cog_test,
         fixture_mock_ctx_test,
         mocker,
     ):
-        """Test info command with Reddit metadata."""
+        """Test metadata command with Reddit metadata."""
         url = "https://www.reddit.com/r/test/comments/abc123/test_post"
 
         # Configure ONLY reddit strategy to support the URL
@@ -325,7 +325,7 @@ class TestDownloadsCogIntegration:
         }
         reddit_strategy.get_metadata.return_value = mock_metadata
 
-        await fixture_integration_cog_test.info.callback(
+        await fixture_integration_cog_test.metadata.callback(
             fixture_integration_cog_test,
             fixture_mock_ctx_test,
             url

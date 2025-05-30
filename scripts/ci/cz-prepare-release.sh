@@ -176,18 +176,31 @@ if command -v gh >/dev/null; then
     PR_BODY="Release preparation triggered by @$(git config user.name). Once merged, create a GitHub release for '${VERSION}' to publish."
 
     echo "[running] gh pr create --title \"${PR_TITLE}\" --body \"${PR_BODY}\" --assignee \"@me\" --label \"release\" --fill --base main --head \"${RELEASE_BRANCH}\""
-    gh pr create \
+    if ! gh pr create \
         --title "${PR_TITLE}" \
         --body "${PR_BODY}" \
         --assignee "@me" \
         --label "release" \
         --fill \
         --base main \
-        --head "${RELEASE_BRANCH}" || {
-            echo "❌ PR creation failed"
-            echo "Check GitHub CLI configuration and permissions"
-            exit 1
-        }
+        --head "${RELEASE_BRANCH}"; then
+            echo "❌ PR creation failed - attempting to push branch and retry"
+            echo "-- Pushing branch to remote --"
+            git push origin "${RELEASE_BRANCH}"
+            echo "-- Retrying PR creation --"
+            gh pr create \
+                --title "${PR_TITLE}" \
+                --body "${PR_BODY}" \
+                --assignee "@me" \
+                --label "release" \
+                --fill \
+                --base main \
+                --head "${RELEASE_BRANCH}" || {
+                    echo "❌ PR creation failed after push"
+                    echo "Check GitHub CLI configuration and permissions"
+                    exit 1
+                }
+        fi
 else
     echo "⚠️  GitHub CLI not found. Create PR manually:"
     echo "   https://github.com/bossjones/boss-bot/compare/${RELEASE_BRANCH}?expand=1"

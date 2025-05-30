@@ -1,3 +1,25 @@
+## v0.8.0 (2025-05-29)
+
+### Feat
+
+- Add comprehensive FastMCP documentation and guides
+- Add smoke testing commands and update dependencies for pytest
+- Enhance download manager to handle cancellation gracefully
+- Add comprehensive logging testing guide and configuration for boss-bot
+- Add MyPy configuration and logging typing documentation
+- Implement thread-safe logging configuration and testing framework
+- Add comprehensive logging setup guide and implementation for thread-safe logging
+- Integrate Instagram configuration validation into boss-bot project
+- Introduce new cursor rules for various agents and workflows
+- Update pre-commit and relint configurations; add contributor listing functionality
+- Add detailed documentation for AsyncGalleryDL configuration
+
+### Refactor
+
+- Enhance type annotations and error handling in bot help and video extraction
+- Update CLI and health check modules for backward compatibility
+- Update check-type paths and enhance error handling in download strategies
+
 ## v0.7.0 (2025-05-28)
 
 ### Feat

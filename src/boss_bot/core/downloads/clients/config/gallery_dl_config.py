@@ -7,11 +7,12 @@ import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
+from loguru import logger
 from pydantic import BaseModel, Field, SecretStr, field_validator
 
 from boss_bot.core.downloads.clients.aio_gallery_dl_utils import get_default_gallery_dl_config_locations
 
-logger = logging.getLogger(__name__)
+# logger = logging.getLogger(__name__)
 
 
 class TwitterConfig(BaseModel):

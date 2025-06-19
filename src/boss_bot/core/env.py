@@ -153,7 +153,7 @@ class BossSettings(BaseSettings):
     max_queue_size: int = Field(50, description="Maximum queue size for downloads", validation_alias="MAX_QUEUE_SIZE")
 
     # Monitoring Configuration
-    log_level: str = Field("INFO", description="Logging level", validation_alias="LOG_LEVEL")
+    log_level: str = Field("DEBUG", description="Logging level", validation_alias="LOG_LEVEL")
     enable_metrics: bool = Field(True, description="Enable Prometheus metrics", validation_alias="ENABLE_METRICS")
     metrics_port: int = Field(9090, description="Port for Prometheus metrics", validation_alias="METRICS_PORT")
     enable_health_check: bool = Field(

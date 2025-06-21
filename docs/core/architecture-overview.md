@@ -26,6 +26,7 @@ graph TB
     subgraph "Core Business Logic"
         QM[Queue Manager]
         DM[Download Manager]
+        CM[Compression Manager]
         STRAT[Download Strategies]
         HAND[Platform Handlers]
     end
@@ -46,13 +47,16 @@ graph TB
     DC --> EVENTS
     COGS --> QM
     COGS --> DM
+    COGS --> CM
     DM --> STRAT
+    DM --> CM
     STRAT --> HAND
     COGS --> AGENTS
     AGENTS --> CHAINS
     CHAINS --> TOOLS
     QM --> STORAGE
     DM --> STORAGE
+    CM --> STORAGE
     MONITOR --> CONFIG
 ```
 
@@ -102,6 +106,7 @@ class DownloadCog(commands.Cog):
 **Current Cogs:**
 - **DownloadCog**: Media download commands (`$download`, `$dl`)
 - **QueueCog**: Queue management commands (`$queue`, `$clear`, `$pause`)
+- **AdminCog**: Bot information and help commands (`$info`, `$help-detailed`, `$commands`)
 
 ### 3. Event Handlers (`src/boss_bot/bot/events/`)
 
@@ -172,6 +177,105 @@ class TwitterDownloadStrategy(BaseDownloadStrategy):
 - Better testing and error handling
 - Performance improvements
 
+## Compression System Architecture
+
+### CompressionManager (`src/boss_bot/core/compression/manager.py`)
+
+The compression system provides automatic media compression with Discord file size limits in mind:
+
+```python
+class CompressionManager:
+    """Main compression manager that orchestrates all compression operations."""
+
+    def __init__(self, settings: BossSettings):
+        self.settings = settings
+        self.file_detector = FileTypeDetector()
+
+        # Initialize processors
+        self.video_processor = VideoProcessor(settings)
+        self.audio_processor = AudioProcessor(settings)
+        self.image_processor = ImageProcessor(settings)
+
+    async def compress_file(
+        self,
+        input_path: Path,
+        output_path: Path | None = None,
+        target_size_mb: int | None = None,
+        compression_settings: CompressionSettings | None = None,
+    ) -> CompressionResult:
+        """Compress a media file with automatic type detection."""
+```
+
+**Key Features:**
+- Automatic file type detection
+- Target size-based compression (default 50MB for Discord)
+- Concurrent batch processing
+- Hardware acceleration support
+- Detailed compression statistics
+
+### Media Processors (`src/boss_bot/core/compression/processors/`)
+
+**Processor Architecture:**
+
+```python
+class BaseProcessor(ABC):
+    """Abstract base class for media processors."""
+
+    @abstractmethod
+    async def compress(self, input_path: Path, target_size_mb: int, output_path: Path) -> CompressionResult:
+        """Compress media file."""
+
+    @abstractmethod
+    async def get_media_info(self, input_path: Path) -> MediaInfo:
+        """Get media file information."""
+```
+
+**Implemented Processors:**
+- **VideoProcessor**: FFmpeg-based video compression with bitrate calculation
+- **AudioProcessor**: Audio compression with quality preservation
+- **ImageProcessor**: PIL/Pillow-based image compression and optimization
+
+### File Type Detection (`src/boss_bot/core/compression/utils/file_detector.py`)
+
+Automatic media type detection:
+
+```python
+class FileTypeDetector:
+    """Detects and categorizes file types for compression."""
+
+    def get_media_type(self, file_path: Path) -> MediaType:
+        """Determine the media type of a file."""
+        # Supports VIDEO, AUDIO, IMAGE, UNKNOWN
+
+# Supported file types:
+# Video: mp4, avi, mkv, mov, flv, wmv, webm, mpeg, 3gp, m4v, mpg, ogv
+# Audio: mp3, wav, m4a, flac, aac, ogg, wma, opus, amr, 3ga
+# Image: jpg, jpeg, png, gif, webp, bmp, tiff, tif, svg, heic, heif
+```
+
+### Compression Configuration
+
+**Environment Variables:**
+- `COMPRESSION_TARGET_SIZE_MB`: Default target size (50MB)
+- `COMPRESSION_FFMPEG_PRESET`: FFmpeg preset for video compression (slow)
+- `COMPRESSION_MAX_CONCURRENT`: Maximum concurrent operations (3)
+- `COMPRESSION_MIN_VIDEO_BITRATE_KBPS`: Minimum video bitrate (125kbps)
+- `COMPRESSION_MIN_AUDIO_BITRATE_KBPS`: Minimum audio bitrate (32kbps)
+- `COMPRESSION_IMAGE_MIN_QUALITY`: Minimum image quality (10%)
+
+**Usage Integration:**
+```python
+# In Discord commands or download workflows
+compression_manager = CompressionManager(settings)
+result = await compression_manager.compress_file(
+    input_path=downloaded_file,
+    target_size_mb=25  # Discord Nitro limit
+)
+
+if result.success:
+    await ctx.send(file=discord.File(result.output_path))
+```
+
 ## Configuration Management
 
 ### BossSettings (`src/boss_bot/core/env.py`)
@@ -189,6 +293,14 @@ class BossSettings(BaseSettings):
     # Download configuration
     download_dir: Path = Path("./downloads")
     max_file_size: int = 100_000_000  # 100MB
+
+    # Compression configuration
+    compression_target_size_mb: int = 50
+    compression_ffmpeg_preset: str = "slow"
+    compression_max_concurrent: int = 3
+    compression_min_video_bitrate_kbps: int = 125
+    compression_min_audio_bitrate_kbps: int = 32
+    compression_image_min_quality: int = 10
 
     # Feature flags (experimental)
     twitter_use_api_client: bool = False

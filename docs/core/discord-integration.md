@@ -51,6 +51,7 @@ class BossBot(commands.Bot):
         # Load cogs
         await self.load_extension('boss_bot.bot.cogs.downloads')
         await self.load_extension('boss_bot.bot.cogs.queue')
+        await self.load_extension('boss_bot.bot.cogs.admin')
 
         # Initialize services
         await self.queue_manager.start()
@@ -485,6 +486,209 @@ async def setup(bot):
     """Setup function for loading the cog."""
     await bot.add_cog(QueueCog(bot))
 ```
+
+### Admin and Information Cog
+
+```python
+# src/boss_bot/bot/cogs/admin.py
+import discord
+from discord.ext import commands
+from boss_bot.bot.client import BossBot
+
+class AdminCog(commands.Cog):
+    """Cog for admin and general bot information commands."""
+
+    def __init__(self, bot: BossBot):
+        self.bot = bot
+
+    @commands.command(name="info")
+    async def show_info(self, ctx: commands.Context):
+        """Display bot information including prefix and available commands."""
+        embed = discord.Embed(
+            title="🤖 Boss-Bot Information",
+            description="A Discord Media Download Assistant",
+            color=discord.Color.blue(),
+        )
+
+        # Bot basic info
+        embed.add_field(
+            name="📋 Bot Details",
+            value=f"**Version:** {self.bot.version}\n"
+            f"**Prefix:** `{self.bot.command_prefix}`\n"
+            f"**Servers:** {len(self.bot.guilds)}\n"
+            f"**Users:** {len(self.bot.users)}",
+            inline=True,
+        )
+
+        # Supported platforms
+        embed.add_field(
+            name="🌐 Supported Platforms",
+            value="• Twitter/X 🐦\n• Reddit 🤖\n• Instagram 📷\n• YouTube 📺\n• And more!",
+            inline=True,
+        )
+
+        # Quick help
+        embed.add_field(
+            name="❓ Need Help?",
+            value=f"Use `{self.bot.command_prefix}help` for all commands\n"
+            f"Use `{self.bot.command_prefix}commands` for command list\n"
+            f"Use `{self.bot.command_prefix}prefixes` for prefix info",
+            inline=False,
+        )
+
+        embed.set_footer(text="Boss-Bot | Made with discord.py")
+        await ctx.send(embed=embed)
+
+    @commands.command(name="commands")
+    async def list_commands(self, ctx: commands.Context):
+        """List all available commands organized by category."""
+        embed = discord.Embed(
+            title="📚 Available Commands",
+            description=f"All commands use the prefix: `{self.bot.command_prefix}`",
+            color=discord.Color.purple(),
+        )
+
+        # Download commands
+        download_commands = [
+            f"`{self.bot.command_prefix}download <url>` - Download media from supported platforms",
+            f"`{self.bot.command_prefix}metadata <url>` - Get metadata about a URL without downloading",
+            f"`{self.bot.command_prefix}status` - Show current download status",
+            f"`{self.bot.command_prefix}strategies` - Show download strategy configuration",
+            f"`{self.bot.command_prefix}validate-config [platform]` - Validate platform configuration",
+            f"`{self.bot.command_prefix}config-summary [platform]` - Show platform config summary",
+        ]
+
+        embed.add_field(
+            name="📥 Download Commands",
+            value="\n".join(download_commands),
+            inline=False,
+        )
+
+        # Queue commands
+        queue_commands = [
+            f"`{self.bot.command_prefix}queue [page]` - Show download queue",
+            f"`{self.bot.command_prefix}clear` - Clear the download queue",
+            f"`{self.bot.command_prefix}remove <id>` - Remove item from queue",
+            f"`{self.bot.command_prefix}pause` - Pause download processing",
+            f"`{self.bot.command_prefix}resume` - Resume download processing",
+        ]
+
+        embed.add_field(
+            name="📋 Queue Commands",
+            value="\n".join(queue_commands),
+            inline=False,
+        )
+
+        # Admin/Help commands
+        admin_commands = [
+            f"`{self.bot.command_prefix}info` - Show bot information",
+            f"`{self.bot.command_prefix}prefixes` - Show command prefixes",
+            f"`{self.bot.command_prefix}commands` - Show this command list",
+            f"`{self.bot.command_prefix}help [command]` - Get detailed help",
+        ]
+
+        embed.add_field(
+            name="ℹ️ Information Commands",
+            value="\n".join(admin_commands),
+            inline=False,
+        )
+
+        embed.set_footer(text="Use `help <command>` for detailed information about a specific command")
+        await ctx.send(embed=embed)
+
+    @commands.command(name="help-detailed")
+    async def detailed_help(self, ctx: commands.Context, command_name: str = None):
+        """Provide detailed help for a specific command or general usage."""
+        if not command_name:
+            # General help overview
+            embed = discord.Embed(
+                title="🆘 Boss-Bot Help",
+                description="Welcome to Boss-Bot! Here's how to get started:",
+                color=discord.Color.gold(),
+            )
+
+            embed.add_field(
+                name="🚀 Quick Start",
+                value=f"1. Copy any supported URL\n"
+                f"2. Use `{self.bot.command_prefix}download <url>`\n"
+                f"3. Wait for your download to complete!",
+                inline=False,
+            )
+
+            embed.add_field(
+                name="💡 Pro Tips",
+                value=f"• Use `{self.bot.command_prefix}metadata <url>` to preview content before downloading\n"
+                f"• Check `{self.bot.command_prefix}queue` to see pending downloads\n"
+                f"• Use `{self.bot.command_prefix}strategies` to see platform configurations",
+                inline=False,
+            )
+
+            await ctx.send(embed=embed)
+            return
+
+        # Help for specific command
+        command = self.bot.get_command(command_name)
+        if not command:
+            await ctx.send(
+                f"❌ Command `{command_name}` not found. Use `{self.bot.command_prefix}commands` to see all available commands."
+            )
+            return
+
+        embed = discord.Embed(
+            title=f"📖 Help: {command.name}",
+            description=command.help or "No description available.",
+            color=discord.Color.blue(),
+        )
+
+        # Command signature
+        embed.add_field(
+            name="📝 Usage",
+            value=f"`{self.bot.command_prefix}{command.qualified_name} {command.signature}`",
+            inline=False,
+        )
+
+        # Add examples for common commands
+        examples = self._get_command_examples(command.name)
+        if examples:
+            embed.add_field(
+                name="💡 Examples",
+                value=examples,
+                inline=False,
+            )
+
+        await ctx.send(embed=embed)
+
+    def _get_command_examples(self, command_name: str) -> str | None:
+        """Get usage examples for specific commands."""
+        examples = {
+            "download": f"`{self.bot.command_prefix}download https://twitter.com/user/status/123`\n"
+            f"`{self.bot.command_prefix}download https://reddit.com/r/pics/comments/abc/`\n"
+            f"`{self.bot.command_prefix}download https://youtube.com/watch?v=VIDEO_ID`",
+            "metadata": f"`{self.bot.command_prefix}metadata https://twitter.com/user/status/123`\n"
+            f"`{self.bot.command_prefix}metadata https://instagram.com/p/POST_ID/`",
+            "queue": f"`{self.bot.command_prefix}queue`\n`{self.bot.command_prefix}queue 2`",
+            "remove": f"`{self.bot.command_prefix}remove download123`",
+            "validate-config": f"`{self.bot.command_prefix}validate-config`\n"
+            f"`{self.bot.command_prefix}validate-config instagram`",
+        }
+        return examples.get(command_name)
+
+async def setup(bot: BossBot):
+    """Load the AdminCog."""
+    await bot.add_cog(AdminCog(bot))
+```
+
+**Key Features of AdminCog:**
+- **Bot Information**: `$info` command shows bot version, server count, and supported platforms
+- **Command Discovery**: `$commands` provides organized command listing by category
+- **Enhanced Help**: `$help-detailed` offers comprehensive help with examples
+- **Prefix Information**: `$prefixes` shows current command prefix configuration
+- **Error Handling**: Each command includes proper error handling with user-friendly messages
+
+**Command Categories:**
+- **Download Commands**: Media downloading and metadata retrieval
+- **Queue Commands**: Queue management and status monitoring
+- **Information Commands**: Bot information and help system
 
 ## Error Handling Patterns
 

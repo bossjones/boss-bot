@@ -435,8 +435,14 @@ UPLOAD_ENABLE_PROGRESS_UPDATES=true        # Show upload progress messages
 TWITTER_USE_API_CLIENT=false
 REDDIT_USE_API_CLIENT=false
 INSTAGRAM_USE_API_CLIENT=false
-YOUTUBE_USE_API_CLIENT=false
-DOWNLOAD_API_FALLBACK_TO_CLI=true
+YOUTUBE_USE_API_CLIENT=false           # Enable enhanced YouTube API-direct downloads
+DOWNLOAD_API_FALLBACK_TO_CLI=true      # Auto-fallback to CLI on API errors
+
+# YouTube-specific Configuration
+# ==========================================
+# These are automatically managed by the YouTube strategy
+# .yt_download_history.json     - Download deduplication tracking
+# .yt_performance_metrics.json  - Performance monitoring data
 
 # ==========================================
 # External Tool Configuration
@@ -810,6 +816,88 @@ async def download_command(self, ctx: commands.Context, url: str, upload: bool =
         if self.settings.upload_cleanup_after_success and upload_result.success:
             # Clean up temporary files
             shutil.rmtree(download_dir)
+```
+
+## YouTube-Specific Configuration
+
+### Enhanced YouTube Features
+
+The YouTube download system includes advanced features that require specific configuration:
+
+```python
+# YouTube Strategy Configuration
+youtube_use_api_client: bool = Field(
+    default=False,
+    description="Enable enhanced YouTube API-direct downloads with advanced features"
+)
+```
+
+**YouTube Feature Overview:**
+
+1. **API vs CLI Mode**
+   - `YOUTUBE_USE_API_CLIENT=true`: Enable API-direct downloads with enhanced features
+   - `YOUTUBE_USE_API_CLIENT=false`: Use stable CLI-based approach (default)
+   - `DOWNLOAD_API_FALLBACK_TO_CLI=true`: Auto-fallback to CLI on API errors
+
+2. **Organized Directory Structure**
+   - Automatic organization: `.downloads/yt-dlp/youtube/{channel_name}/`
+   - Channel name sanitization for filesystem compatibility
+   - Consistent metadata files (info.json, description, thumbnails)
+
+3. **Quality Optimization for Discord**
+   - Quality ladder: 720p (50MB) → 480p (25MB) → 360p (10MB)
+   - Automatic format selection based on Discord file size limits
+   - Web-optimized MP4 output with `+faststart` flag
+
+4. **Deduplication System**
+   - Automatic duplicate detection via `.yt_download_history.json`
+   - Video ID extraction from all YouTube URL formats
+   - Force redownload option: `force_redownload=True`
+   - History management (max 1000 entries, auto-cleanup)
+
+5. **Performance Monitoring**
+   - Real-time download tracking via `.yt_performance_metrics.json`
+   - Method comparison (API vs CLI vs fallback)
+   - Statistics accessible via `$yt-stats` command
+   - Metrics retention (max 500 entries, auto-rotation)
+
+### YouTube Commands Configuration
+
+```bash
+# Enable enhanced YouTube functionality
+export YOUTUBE_USE_API_CLIENT=true
+export DOWNLOAD_API_FALLBACK_TO_CLI=true
+
+# Available YouTube commands:
+# $yt-download <url> [quality] [audio_only]    - Enhanced YouTube downloads
+# $yt-playlist <url> [quality] [max_videos]    - Playlist downloads (max 25)
+# $yt-stats                                     - Performance statistics
+```
+
+**Quality Options:**
+- `4K`, `2160p`: Ultra-high definition
+- `1440p`, `2K`: High definition
+- `1080p`, `FHD`: Full HD
+- `720p`, `HD`: HD (default, optimized for Discord)
+- `480p`: Standard definition
+- `360p`: Low definition
+- `best`: Best available quality
+- `worst`: Lowest available quality
+
+**Example Configurations:**
+
+```bash
+# Conservative setup (stable CLI mode)
+export YOUTUBE_USE_API_CLIENT=false
+export DOWNLOAD_API_FALLBACK_TO_CLI=true
+
+# Enhanced setup (API mode with fallback)
+export YOUTUBE_USE_API_CLIENT=true
+export DOWNLOAD_API_FALLBACK_TO_CLI=true
+
+# Aggressive setup (API only, no fallback)
+export YOUTUBE_USE_API_CLIENT=true
+export DOWNLOAD_API_FALLBACK_TO_CLI=false
 ```
 
 ### Upload Performance Tuning

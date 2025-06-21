@@ -288,7 +288,7 @@ async def test_download_command_fallback_to_queue_direct(
     fixture_download_cog.strategies = fixture_mock_strategies
 
     # Mock the bot managers for fallback
-    fixture_download_cog.bot.download_manager.validate_url = mocker.Mock(return_value=True)
+    fixture_download_cog.bot.download_manager.validate_url = mocker.AsyncMock(return_value=True)
     fixture_download_cog.bot.queue_manager.add_to_queue = mocker.AsyncMock()
 
     await fixture_download_cog.download.callback(
@@ -319,7 +319,7 @@ async def test_download_command_invalid_url_direct(
     fixture_download_cog.strategies = fixture_mock_strategies
 
     # Mock the bot managers to reject invalid URL
-    fixture_download_cog.bot.download_manager.validate_url = mocker.Mock(return_value=False)
+    fixture_download_cog.bot.download_manager.validate_url = mocker.AsyncMock(return_value=False)
 
     await fixture_download_cog.download.callback(
         fixture_download_cog,

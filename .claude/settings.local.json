@@ -40,7 +40,8 @@
       "mcp__mcp-server-yt-dlp__fetch_yt_dlp_documentation",
       "mcp__mcp-server-yt-dlp__search_yt_dlp_documentation",
       "mcp__mcp-server-yt-dlp__search_yt_dlp_code",
-      "mcp__mcp-server-yt-dlp__fetch_generic_url_content"
+      "mcp__mcp-server-yt-dlp__fetch_generic_url_content",
+      "Bash(git add:*)"
     ],
     "deny": []
   },

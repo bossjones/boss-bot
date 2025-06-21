@@ -767,9 +767,22 @@ class AdminCog(commands.Cog):
             f"`{self.bot.command_prefix}config-summary [platform]` - Show platform config summary",
         ]
 
+        # YouTube-specific commands
+        youtube_commands = [
+            f"`{self.bot.command_prefix}yt-download <url> [quality] [audio_only]` - YouTube download with quality options",
+            f"`{self.bot.command_prefix}yt-playlist <url> [quality] [max_videos]` - Download YouTube playlist (max 25 videos)",
+            f"`{self.bot.command_prefix}yt-stats` - Show YouTube download performance statistics",
+        ]
+
         embed.add_field(
             name="📥 Download Commands",
             value="\n".join(download_commands),
+            inline=False,
+        )
+
+        embed.add_field(
+            name="📺 YouTube Commands",
+            value="\n".join(youtube_commands),
             inline=False,
         )
 
@@ -873,6 +886,12 @@ class AdminCog(commands.Cog):
             "download": f"`{self.bot.command_prefix}download https://twitter.com/user/status/123`\n"
             f"`{self.bot.command_prefix}download https://reddit.com/r/pics/comments/abc/`\n"
             f"`{self.bot.command_prefix}download https://youtube.com/watch?v=VIDEO_ID`",
+            "yt-download": f"`{self.bot.command_prefix}yt-download https://youtube.com/watch?v=VIDEO_ID`\n"
+            f"`{self.bot.command_prefix}yt-download https://youtube.com/watch?v=VIDEO_ID 1080p`\n"
+            f"`{self.bot.command_prefix}yt-download https://youtube.com/watch?v=VIDEO_ID 720p True`",
+            "yt-playlist": f"`{self.bot.command_prefix}yt-playlist https://youtube.com/playlist?list=PLAYLIST_ID`\n"
+            f"`{self.bot.command_prefix}yt-playlist https://youtube.com/playlist?list=PLAYLIST_ID 480p 5`",
+            "yt-stats": f"`{self.bot.command_prefix}yt-stats`",
             "metadata": f"`{self.bot.command_prefix}metadata https://twitter.com/user/status/123`\n"
             f"`{self.bot.command_prefix}metadata https://instagram.com/p/POST_ID/`",
             "queue": f"`{self.bot.command_prefix}queue`\n`{self.bot.command_prefix}queue 2`",
@@ -896,8 +915,189 @@ async def setup(bot: BossBot):
 
 **Command Categories:**
 - **Download Commands**: Media downloading and metadata retrieval
+- **YouTube Commands**: YouTube-specific downloads with enhanced features
 - **Queue Commands**: Queue management and status monitoring
 - **Information Commands**: Bot information and help system
+
+## YouTube-Specific Commands
+
+Boss-Bot provides specialized YouTube commands that offer enhanced functionality beyond the basic `$download` command.
+
+### YouTube Download Command
+
+```
+$yt-download <url> [quality] [audio_only]
+```
+
+**Enhanced YouTube downloads with quality control and format options:**
+
+```python
+@commands.command(name="yt-download")
+async def youtube_download(self, ctx: commands.Context, url: str, quality: str = "720p", audio_only: bool = False):
+    """YouTube-specific download with quality and format options.
+
+    Args:
+        url: YouTube URL (video, shorts, playlist)
+        quality: Video quality (4K, 1080p, 720p, 480p, 360p, best, worst)
+        audio_only: Download audio only (default: False)
+
+    Examples:
+        $yt-download https://youtube.com/watch?v=VIDEO_ID
+        $yt-download https://youtube.com/watch?v=VIDEO_ID 1080p
+        $yt-download https://youtube.com/watch?v=VIDEO_ID 720p True
+    """
+```
+
+**Key Features:**
+- **Quality Selection**: Choose from 4K, 1080p, 720p, 480p, 360p, best, worst
+- **Audio-Only Mode**: Extract audio only with `audio_only=True`
+- **Organized Storage**: Files stored in `yt-dlp/youtube/{channel_name}/` structure
+- **Discord Optimization**: Quality ladder optimized for Discord file size limits
+- **Detailed Metadata**: Shows title, channel, duration, views, likes
+- **Deduplication**: Automatically detects and skips previously downloaded videos
+
+**Example Usage:**
+```
+User: $yt-download https://youtube.com/watch?v=dQw4w9WgXcQ 1080p
+
+Bot: 📺 Downloading YouTube content with quality: 1080p
+Bot: 🔗 URL: https://youtube.com/watch?v=dQw4w9WgXcQ
+Bot: 🚀 Using experimental API-direct approach
+Bot: ✅ YouTube download completed!
+Bot: 📝 Title: Never Gonna Give You Up
+Bot: 👤 Channel: RickAstleyVEVO
+Bot: ⏱️ Duration: 3:33
+Bot: 👁️ Views: 1,234,567,890
+Bot: ❤️ Likes: 12,345,678
+Bot: 📁 Organized in: yt-dlp/youtube/RickAstleyVEVO/
+Bot: 📤 Processing files for upload...
+Bot: 🎉 Successfully uploaded 1 file to Discord!
+```
+
+### YouTube Playlist Command
+
+```
+$yt-playlist <url> [quality] [max_videos]
+```
+
+**Download YouTube playlists with video limits:**
+
+```python
+@commands.command(name="yt-playlist")
+async def youtube_playlist(self, ctx: commands.Context, url: str, quality: str = "720p", max_videos: int = 10):
+    """Download YouTube playlist with video limit.
+
+    Args:
+        url: YouTube playlist URL
+        quality: Video quality for all videos (default: 720p)
+        max_videos: Maximum number of videos to download (default: 10, max: 25)
+
+    Examples:
+        $yt-playlist https://youtube.com/playlist?list=PLAYLIST_ID
+        $yt-playlist https://youtube.com/playlist?list=PLAYLIST_ID 480p 5
+    """
+```
+
+**Features:**
+- **Batch Processing**: Download multiple videos from a playlist
+- **Video Limits**: Safety limit of 25 videos maximum per command
+- **Consistent Quality**: Apply same quality setting to all videos
+- **Organized Storage**: Each video stored in appropriate channel subdirectory
+- **Progress Tracking**: Real-time feedback during playlist processing
+
+**Example Usage:**
+```
+User: $yt-playlist https://youtube.com/playlist?list=PLrW43fNmb-HHN8UCE4RVBCN61o_yNWZEN 720p 3
+
+Bot: 📺 Starting YouTube playlist download (max 3 videos, quality: 720p)
+Bot: 🔗 Playlist: https://youtube.com/playlist?list=PLrW43fNmb-HHN8UCE4RVBCN61o_yNWZEN
+Bot: ⚠️ Note: Playlist downloads may take several minutes
+Bot: ✅ Playlist download completed!
+Bot: 📝 Playlist: My Favorite Videos
+Bot: 👤 Channel: Example Channel
+Bot: 📤 Processing playlist files for upload...
+Bot: 🎉 Successfully uploaded 3 files to Discord!
+```
+
+### YouTube Statistics Command
+
+```
+$yt-stats
+```
+
+**View performance statistics for YouTube downloads:**
+
+```python
+@commands.command(name="yt-stats")
+async def youtube_stats(self, ctx: commands.Context):
+    """Show YouTube download performance statistics.
+
+    Examples:
+        $yt-stats
+    """
+```
+
+**Statistics Provided:**
+- **Total Downloads**: Number of videos downloaded
+- **Average Duration**: Mean download time across all downloads
+- **Method Breakdown**: API vs CLI vs CLI-fallback usage percentages
+- **Performance Records**: Fastest and slowest downloads
+- **Success Rates**: Download success/failure ratios
+
+**Example Output:**
+```
+User: $yt-stats
+
+Bot: 📊 YouTube Performance Statistics
+
+📈 Total Downloads: 142
+⏱️ Average Duration: 8.3s
+
+🔧 Download Methods:
+🚀 API: 98 (69.0%)
+🖥️ CLI: 32 (22.5%)
+🔄 CLI_FALLBACK: 12 (8.5%)
+
+🏆 Fastest: 2.1s (api)
+🐌 Slowest: 45.7s (cli_fallback)
+```
+
+### YouTube Features Overview
+
+**Organized Directory Structure:**
+```
+.downloads/
+├── 12345_123456789/          # Individual request folders
+├── gallery-dl/               # Gallery-dl downloads
+│   ├── reddit/
+│   └── twitter/
+└── yt-dlp/                   # YouTube organized downloads
+    └── youtube/              # Platform subdirectory
+        ├── PewDiePie/        # Channel-based organization
+        │   ├── video1.mp4
+        │   ├── video1.info.json
+        │   └── video1.webp
+        ├── MrBeast/
+        └── LinusTechTips/
+```
+
+**Quality Optimization for Discord:**
+- **720p**: Best quality within 50MB limit (Discord Nitro)
+- **480p**: Fallback for 25MB limit (Discord Basic)
+- **360p**: Final fallback for 10MB limit
+- **Format Ladder**: `best[height<=720][filesize<50M]/best[height<=480][filesize<25M]/best[height<=360][filesize<10M]`
+
+**Deduplication System:**
+- **Automatic Detection**: Prevents re-downloading the same video
+- **User Notification**: Informs about duplicate attempts
+- **Force Redownload**: Option to bypass with `force_redownload=True`
+- **Download History**: Persistent tracking in `.yt_download_history.json`
+
+**Performance Monitoring:**
+- **Real-time Tracking**: Measures download duration and method used
+- **Historical Data**: Stores metrics in `.yt_performance_metrics.json`
+- **Method Comparison**: Tracks API vs CLI performance differences
+- **Statistics API**: Accessible via `yt-stats` command
 
 ## Error Handling Patterns
 

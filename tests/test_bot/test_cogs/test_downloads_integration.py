@@ -63,7 +63,8 @@ class TestDownloadsCogIntegration:
         mock_result.error = None
         mock_result.title = "Test Tweet"
         mock_result.download_method = "cli"
-        twitter_strategy.download.return_value = mock_result
+        mock_result.raw_metadata = None  # Explicitly set to None to avoid subscript issues
+        twitter_strategy.download = mocker.AsyncMock(return_value=mock_result)
 
         # Mock upload manager to avoid upload processing in tests
         fixture_integration_cog_test.upload_manager = mocker.Mock()
@@ -113,7 +114,8 @@ class TestDownloadsCogIntegration:
         mock_result.error = None
         mock_result.title = "Test Reddit Post"
         mock_result.download_method = "api"
-        reddit_strategy.download.return_value = mock_result
+        mock_result.raw_metadata = None  # Explicitly set to None to avoid subscript issues
+        reddit_strategy.download = mocker.AsyncMock(return_value=mock_result)
 
         # Mock upload manager to avoid upload processing in tests
         fixture_integration_cog_test.upload_manager = mocker.Mock()
@@ -163,7 +165,8 @@ class TestDownloadsCogIntegration:
         mock_result.error = None
         mock_result.title = "Test YouTube Video"
         mock_result.download_method = "cli"
-        youtube_strategy.download.return_value = mock_result
+        mock_result.raw_metadata = None  # Explicitly set to None to avoid subscript issues
+        youtube_strategy.download = mocker.AsyncMock(return_value=mock_result)
 
         # Mock upload manager to avoid upload processing in tests
         fixture_integration_cog_test.upload_manager = mocker.Mock()
@@ -207,7 +210,8 @@ class TestDownloadsCogIntegration:
         mock_result = Mock()
         mock_result.error = "Download failed: Network error"
         mock_result.title = None
-        twitter_strategy.download.return_value = mock_result
+        mock_result.raw_metadata = None  # Explicitly set to None to avoid subscript issues
+        twitter_strategy.download = mocker.AsyncMock(return_value=mock_result)
 
         # Mock upload manager to avoid upload processing in tests
         fixture_integration_cog_test.upload_manager = mocker.Mock()
@@ -241,7 +245,7 @@ class TestDownloadsCogIntegration:
         # Configure twitter strategy to support the URL but throw exception
         twitter_strategy = fixture_integration_cog_test.strategies["twitter"]
         twitter_strategy.supports_url.return_value = True
-        twitter_strategy.download.side_effect = Exception("Strategy crashed")
+        twitter_strategy.download = mocker.AsyncMock(side_effect=Exception("Strategy crashed"))
 
         # Mock upload manager to avoid upload processing in tests
         fixture_integration_cog_test.upload_manager = mocker.Mock()
@@ -277,7 +281,7 @@ class TestDownloadsCogIntegration:
             strategy.supports_url.return_value = False
 
         # Mock bot managers for fallback
-        fixture_integration_cog_test.bot.download_manager.validate_url.return_value = True
+        fixture_integration_cog_test.bot.download_manager.validate_url = mocker.AsyncMock(return_value=True)
         fixture_integration_cog_test.bot.queue_manager.add_to_queue = AsyncMock()
 
         await fixture_integration_cog_test.download.callback(

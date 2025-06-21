@@ -126,6 +126,108 @@ class YouTubeHandler(BaseDownloadHandler):
         return metadata
 ```
 
+### Enhanced YouTube Strategy Pattern
+
+The YouTube strategy has been significantly enhanced with advanced features for Discord integration:
+
+```python
+# src/boss_bot/core/downloads/strategies/youtube_strategy.py
+class YouTubeDownloadStrategy(BaseDownloadStrategy):
+    """Enhanced YouTube strategy with organized storage and deduplication."""
+
+    def _get_youtube_config(self) -> dict[str, Any]:
+        """Get optimized yt-dlp configuration for Discord workflow."""
+        return {
+            # Organized directory structure
+            "outtmpl": {
+                "default": f"{self.download_dir}/yt-dlp/youtube/%(uploader|Unknown)s/%(title).100s-%(id)s.%(ext)s",
+                "infojson": f"{self.download_dir}/yt-dlp/youtube/%(uploader|Unknown)s/%(title).100s-%(id)s.info.json",
+                "thumbnail": f"{self.download_dir}/yt-dlp/youtube/%(uploader|Unknown)s/%(title).100s-%(id)s.%(ext)s",
+                "description": f"{self.download_dir}/yt-dlp/youtube/%(uploader|Unknown)s/%(title).100s-%(id)s.description"
+            },
+
+            # Quality ladder optimized for Discord limits
+            "format": "best[height<=720][filesize<50M]/best[height<=480][filesize<25M]/best[height<=360][filesize<10M]",
+
+            # Enhanced metadata preservation
+            "writeinfojson": True,
+            "writedescription": True,
+            "writethumbnail": True,
+            "writesubtitles": False,  # Skip subtitles for Discord uploads
+
+            # Performance optimization
+            "noplaylist": True,
+            "ignoreerrors": False,
+            "retries": 3,
+            "fragment_retries": 3,
+            "socket_timeout": 120,
+            "read_timeout": 300,
+
+            # Discord-friendly video settings
+            "merge_output_format": "mp4",
+            "postprocessor_args": ["-movflags", "+faststart"]  # Web-optimized MP4
+        }
+
+    async def download(self, url: str, **kwargs) -> MediaMetadata:
+        """Download with deduplication and performance tracking."""
+        # Check for duplicates unless force_redownload is specified
+        duplicate_check = self._check_deduplication(url, **kwargs)
+        if duplicate_check:
+            logger.info(f"Skipping duplicate download: {url}")
+            return duplicate_check
+
+        # Performance tracking
+        start_time = time.time()
+
+        # Enhanced error handling with YouTube-specific patterns
+        try:
+            metadata = await self._download_via_api_with_fallbacks(url, **kwargs)
+
+            # Record performance metrics
+            download_duration = time.time() - start_time
+            if not metadata.error:
+                video_id = self._extract_youtube_video_id(url)
+                if video_id:
+                    self._record_download(video_id, metadata)
+                    self._record_performance_metrics(video_id, download_duration, metadata.download_method)
+
+            return metadata
+        except Exception as e:
+            download_duration = time.time() - start_time
+            logger.error(f"YouTube download failed after {download_duration:.2f}s: {e}")
+            raise
+```
+
+**Key Strategy Enhancements:**
+
+1. **Organized Directory Structure**
+   - `yt-dlp/youtube/{channel_name}/` hierarchy
+   - Automatic channel name sanitization for filesystem compatibility
+   - Consistent with gallery-dl organization patterns
+
+2. **Discord Optimization**
+   - Quality ladder: 720p (50MB) → 480p (25MB) → 360p (10MB)
+   - MP4 format with web optimization (`+faststart`)
+   - Automatic format selection based on Discord limits
+
+3. **Deduplication System**
+   - Video ID extraction from URLs (supports all YouTube URL formats)
+   - Persistent download history in `.yt_download_history.json`
+   - Automatic duplicate detection with user notification
+   - Force redownload option with `force_redownload=True`
+
+4. **Performance Monitoring**
+   - Real-time download duration tracking
+   - Method performance comparison (API vs CLI vs fallback)
+   - Historical metrics storage in `.yt_performance_metrics.json`
+   - Statistics accessible via Discord commands
+
+5. **Enhanced Error Handling**
+   - YouTube-specific error patterns (age-restriction, copyright, private videos)
+   - Retry logic with exponential backoff
+   - Fatal vs retryable error classification
+   - Automatic API-to-CLI fallback when enabled
+
 ### Handler Registration and Discovery
 
 ```python
@@ -921,6 +1023,12 @@ $download-only https://youtube.com/watch?v=VIDEO_ID
 
 # Explicit upload control
 $download https://reddit.com/r/pics/comments/abc123/ upload=False
+
+# YouTube-specific commands with enhanced features
+$yt-download https://youtube.com/watch?v=VIDEO_ID 1080p          # High quality
+$yt-download https://youtube.com/watch?v=VIDEO_ID 720p True     # Audio only
+$yt-playlist https://youtube.com/playlist?list=PLAYLIST_ID 720p 5 # Playlist (5 videos)
+$yt-stats                                                        # Performance stats
 ```
 
 **Workflow Messages:**

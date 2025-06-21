@@ -6,10 +6,10 @@ from __future__ import annotations
 from pathlib import Path
 from typing import List, Optional
 
-from core.compression.models import CompressionResult
 from discord.ext import commands
 
 from boss_bot.core.compression.manager import CompressionManager
+from boss_bot.core.compression.models import CompressionResult
 from boss_bot.core.env import BossSettings
 from boss_bot.core.uploads.models import MediaFile, UploadResult
 from boss_bot.core.uploads.processors.discord_processor import DiscordUploadProcessor

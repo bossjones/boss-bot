@@ -27,7 +27,7 @@ async def test_download_command(mocker: MockerFixture, fixture_mock_bot_test: Bo
     url = "https://example.com/video.mp4"
 
     # Set up mock behaviors
-    fixture_mock_bot_test.download_manager.validate_url.return_value = True
+    fixture_mock_bot_test.download_manager.validate_url = mocker.AsyncMock(return_value=True)
     fixture_mock_bot_test.queue_manager.add_to_queue = mocker.AsyncMock()
 
     # Call the download command's callback directly
@@ -51,7 +51,7 @@ async def test_download_command_invalid_url(mocker: MockerFixture, fixture_mock_
     url = "invalid_url"
 
     # Set up mock behavior for invalid URL
-    fixture_mock_bot_test.download_manager.validate_url.return_value = False
+    fixture_mock_bot_test.download_manager.validate_url = mocker.AsyncMock(return_value=False)
 
     # Call the download command's callback directly
     await fixture_download_cog_test.download.callback(fixture_download_cog_test, ctx, url)

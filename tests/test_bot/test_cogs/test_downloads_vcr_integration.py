@@ -110,8 +110,8 @@ class TestDownloadsCogVCRIntegration:
         """
         url = "https://x.com/HelldiversAlert/status/1927338030467002589"
 
-        # Execute the info command
-        await fixture_vcr_cog_test.info.callback(
+        # Execute the metadata command
+        await fixture_vcr_cog_test.metadata.callback(
             fixture_vcr_cog_test,
             fixture_mock_ctx_test,
             url
@@ -127,7 +127,7 @@ class TestDownloadsCogVCRIntegration:
         # Should contain metadata indicators
         assert any(
             indicator in all_messages.lower()
-            for indicator in ["info", "content", "twitter", "x.com", "🐦"]
+            for indicator in ["metadata", "content", "twitter", "x.com", "🐦"]
         ), f"Expected metadata indicators in messages: {all_messages}"
 
     @pytest.mark.default_cassette("test_twitter_api_mode_helldiversalert.yaml")

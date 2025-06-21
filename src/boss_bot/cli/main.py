@@ -7,6 +7,12 @@
 # SOURCE: https://github.com/tiangolo/typer/issues/88#issuecomment-1732469681
 from __future__ import annotations
 
+# main.py or boss-bot application entry point
+from boss_bot.monitoring.logging import early_init
+
+# 🔥 STEP 1: Call early_init() FIRST - before ANY other imports
+early_init()
+
 import asyncio
 import inspect
 import json
@@ -45,8 +51,19 @@ if TYPE_CHECKING:
     from boss_bot.core.downloads.clients.aio_gallery_dl import AsyncGalleryDL
     from boss_bot.core.downloads.clients.aio_yt_dlp import AsyncYtDlp
 
+# 🔥 STEP 3: Configure full logging features after imports
+from boss_bot.core.env import BossSettings
+from boss_bot.monitoring.logging import setup_boss_bot_logging
+
+# Initialize boss-bot settings
+settings = BossSettings()
+
+# Configure logging with boss-bot integration
+LOGGER = setup_boss_bot_logging(settings)
+
+
 # Set up logging
-LOGGER = logging.getLogger(__name__)
+# LOGGER = logging.getLogger(__name__)
 
 APP = AsyncTyper()
 console = Console()
@@ -1520,6 +1537,24 @@ def _show_new_config_preview(new_config: str, config_path: Path) -> None:
         pass
 
     cprint("\n[dim]Run without --dry-run to create this configuration file[/dim]")
+
+
+@APP.command()
+def logtree() -> None:
+    """Display the current logging hierarchy using logging_tree"""
+    try:
+        from logging_tree import printout
+
+        cprint("\n[bold blue]📊 Logging Tree Hierarchy[/bold blue]", style="bold blue")
+        cprint("=" * 50, style="blue")
+        cprint("")
+        printout()
+        cprint("")
+        cprint("[dim]This shows the current logger hierarchy and configuration[/dim]")
+    except ImportError:
+        cprint("[red]❌ logging_tree is not installed[/red]")
+        cprint("[yellow]Install with: pip install logging-tree[/yellow]")
+        raise typer.Exit(1)
 
 
 @APP.command()

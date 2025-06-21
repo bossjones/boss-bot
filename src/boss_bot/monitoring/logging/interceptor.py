@@ -221,7 +221,7 @@ def early_init() -> None:
         # Configure basic loguru handler with safety features - stdout only
         logger.add(
             sys.stdout,
-            level="INFO",
+            level="DEBUG",
             format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
             "<level>{level: <8}</level> | "
             "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - "
@@ -288,6 +288,8 @@ def early_init() -> None:
             log_instance = logging.getLogger(logger_name)
             log_instance.handlers = [intercept_handler]
             log_instance.propagate = False
+            # Set to DEBUG during early init to ensure all messages are captured
+            log_instance.setLevel(logging.DEBUG)
 
         # Mark as completed inside the lock
         _early_init_done = True
@@ -390,8 +392,11 @@ class ThreadSafeLogConfig(BaseModel):
         # Enable sensitive obfuscation for production
         enable_sensitive_obfuscation = settings.environment.value == "production"
 
+        # Override log level to DEBUG if debug mode is enabled
+        log_level = "DEBUG" if settings.debug else settings.log_level
+
         return cls(
-            log_level=settings.log_level,
+            log_level=log_level,
             enable_file_logging=enable_file_logging,
             log_file_path=log_file_path,
             enable_json_logging=enable_json_logging,
@@ -496,6 +501,8 @@ def configure_thread_safe_logging(config: ThreadSafeLogConfig | None = None) -> 
             log_instance.handlers = [intercept_handler]
             # Prevent propagation to avoid duplicate logs
             log_instance.propagate = False
+            # Explicitly set the log level to match configuration
+            log_instance.setLevel(log_level)
 
     # Configure loguru with thread/async/multiprocessing safety - stdout only
     # Choose formatter based on configuration
@@ -543,7 +550,7 @@ def configure_thread_safe_logging(config: ThreadSafeLogConfig | None = None) -> 
         )
 
     # Set up framework-specific loggers with thread safety
-    _setup_discord_logger(intercept_handler)
+    _setup_discord_logger(intercept_handler, log_level)
     _setup_uvicorn_logger(intercept_handler)
     _setup_gunicorn_logger(intercept_handler)
 
@@ -551,7 +558,7 @@ def configure_thread_safe_logging(config: ThreadSafeLogConfig | None = None) -> 
     return logger
 
 
-def _setup_discord_logger(intercept_handler: InterceptHandler) -> None:
+def _setup_discord_logger(intercept_handler: InterceptHandler, log_level: int = logging.INFO) -> None:
     """Configure Discord.py loggers to use thread-safe InterceptHandler."""
     discord_loggers = [
         "discord",
@@ -567,6 +574,8 @@ def _setup_discord_logger(intercept_handler: InterceptHandler) -> None:
         log_instance = logging.getLogger(logger_name)
         log_instance.handlers = [intercept_handler]
         log_instance.propagate = False
+        # Explicitly set the log level for Discord loggers
+        log_instance.setLevel(log_level)
 
 
 def _setup_uvicorn_logger(intercept_handler: InterceptHandler) -> None:

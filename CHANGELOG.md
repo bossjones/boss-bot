@@ -1,3 +1,15 @@
+## v0.10.0 (2025-06-21)
+
+### Feat
+
+- Add comprehensive documentation update command
+- Enhance media compression capabilities in BossBot
+- Implement compress and upload functionality for media files
+
+### Fix
+
+- Improve error handling in AsyncGalleryDL
+
 ## v0.9.0 (2025-06-21)
 
 ### Feat

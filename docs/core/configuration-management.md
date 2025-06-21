@@ -101,6 +101,55 @@ class BossSettings(BaseSettings):
     )
 
     # ==========================================
+    # Compression Configuration
+    # ==========================================
+
+    compression_target_size_mb: int = Field(
+        default=50,
+        description="Default target size for compression in MB (Discord limit consideration)"
+    )
+
+    compression_ffmpeg_preset: str = Field(
+        default="slow",
+        description="FFmpeg preset for video compression (ultrafast to veryslow)"
+    )
+
+    compression_ffmpeg_path: Optional[str] = Field(
+        default=None,
+        description="Custom path to ffmpeg binary (auto-detected if not specified)"
+    )
+
+    compression_ffprobe_path: Optional[str] = Field(
+        default=None,
+        description="Custom path to ffprobe binary (auto-detected if not specified)"
+    )
+
+    compression_max_concurrent: int = Field(
+        default=3,
+        description="Maximum concurrent compression operations"
+    )
+
+    compression_min_video_bitrate_kbps: int = Field(
+        default=125,
+        description="Minimum video bitrate in kbps (quality threshold)"
+    )
+
+    compression_min_audio_bitrate_kbps: int = Field(
+        default=32,
+        description="Minimum audio bitrate in kbps (quality threshold)"
+    )
+
+    compression_image_min_quality: int = Field(
+        default=10,
+        description="Minimum image quality percentage (1-100)"
+    )
+
+    compression_hardware_acceleration: bool = Field(
+        default=True,
+        description="Enable hardware acceleration for video compression"
+    )
+
+    # ==========================================
     # Feature Flags (Experimental)
     # ==========================================
 
@@ -328,6 +377,19 @@ DOWNLOAD_DIR="./downloads"
 MAX_FILE_SIZE=100000000  # 100MB
 MAX_CONCURRENT_DOWNLOADS=3
 DOWNLOAD_TIMEOUT=300
+
+# ==========================================
+# Compression Configuration
+# ==========================================
+COMPRESSION_TARGET_SIZE_MB=50               # Default target size for compression
+COMPRESSION_FFMPEG_PRESET="slow"           # FFmpeg preset (ultrafast, superfast, veryfast, faster, fast, medium, slow, slower, veryslow)
+COMPRESSION_FFMPEG_PATH=""                  # Custom ffmpeg path (leave empty for auto-detection)
+COMPRESSION_FFPROBE_PATH=""                 # Custom ffprobe path (leave empty for auto-detection)
+COMPRESSION_MAX_CONCURRENT=3                # Maximum concurrent compression operations
+COMPRESSION_MIN_VIDEO_BITRATE_KBPS=125      # Minimum video bitrate (quality threshold)
+COMPRESSION_MIN_AUDIO_BITRATE_KBPS=32       # Minimum audio bitrate (quality threshold)
+COMPRESSION_IMAGE_MIN_QUALITY=10            # Minimum image quality percentage (1-100)
+COMPRESSION_HARDWARE_ACCELERATION=true     # Enable hardware acceleration for video compression
 
 # ==========================================
 # Feature Flags (Experimental Features)

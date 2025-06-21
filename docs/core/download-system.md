@@ -582,4 +582,168 @@ async def download_multiple(urls: List[str], max_concurrent: int = 3):
     return await asyncio.gather(*tasks, return_exceptions=True)
 ```
 
-This download system provides both stability through the proven Handler pattern and innovation through the experimental Strategy pattern, enabling gradual adoption of new features while maintaining backward compatibility.
+## Compression Integration
+
+### Post-Download Compression
+
+Boss-Bot includes automatic compression capabilities to ensure downloaded media meets Discord file size limits:
+
+```python
+# Integration with download workflow
+async def download_and_compress(
+    self,
+    url: str,
+    target_size_mb: int = 25,  # Discord Nitro limit
+    **kwargs
+) -> CompressionResult:
+    """Download and automatically compress media."""
+
+    # Standard download process
+    metadata = await self.download_manager.download(url, **kwargs)
+
+    # Check if compression is needed
+    if metadata.file_size_bytes > (target_size_mb * 1024 * 1024):
+        # Initialize compression manager
+        compression_manager = CompressionManager(self.settings)
+
+        # Compress the downloaded file
+        compression_result = await compression_manager.compress_file(
+            input_path=metadata.file_path,
+            target_size_mb=target_size_mb
+        )
+
+        if compression_result.success:
+            # Update metadata with compressed file info
+            metadata.file_path = compression_result.output_path
+            metadata.file_size_bytes = compression_result.compressed_size_bytes
+            metadata.compression_ratio = compression_result.compression_ratio
+
+        return compression_result
+
+    return None  # No compression needed
+```
+
+### Compression Strategy Selection
+
+The system automatically selects appropriate compression strategies based on file type:
+
+```mermaid
+graph TB
+    subgraph "Compression Flow"
+        DOWNLOAD[Downloaded File] --> DETECT[File Type Detection]
+        DETECT --> VIDEO{Video?}
+        DETECT --> AUDIO{Audio?}
+        DETECT --> IMAGE{Image?}
+
+        VIDEO -->|Yes| VIDEOPROC[Video Processor]
+        AUDIO -->|Yes| AUDIOPROC[Audio Processor]
+        IMAGE -->|Yes| IMAGEPROC[Image Processor]
+
+        VIDEOPROC --> FFMPEG[FFmpeg Compression]
+        AUDIOPROC --> AUDIOCOMP[Audio Compression]
+        IMAGEPROC --> PILLOW[PIL/Pillow Optimization]
+
+        FFMPEG --> RESULT[Compressed File]
+        AUDIOCOMP --> RESULT
+        PILLOW --> RESULT
+    end
+```
+
+### Discord Integration
+
+```python
+# Discord cog integration example
+@commands.command(name="download")
+async def download_command(self, ctx: commands.Context, url: str):
+    """Download with automatic compression for Discord."""
+
+    # Determine target size based on user/server perks
+    target_size_mb = 25 if ctx.guild.premium_tier >= 2 else 8  # Nitro vs basic
+
+    # Download and compress
+    try:
+        metadata = await self.download_manager.download(url)
+
+        # Check if compression is needed
+        if metadata.file_size_bytes > (target_size_mb * 1024 * 1024):
+            processing_msg = await ctx.send("🔄 Compressing file for Discord...")
+
+            compression_result = await self.compression_manager.compress_file(
+                input_path=metadata.file_path,
+                target_size_mb=target_size_mb
+            )
+
+            if compression_result.success:
+                # Send compressed file
+                await ctx.send(
+                    f"✅ Compressed from {compression_result.original_size_mb:.1f}MB "
+                    f"to {compression_result.compressed_size_mb:.1f}MB "
+                    f"(ratio: {compression_result.compression_ratio:.2f})",
+                    file=discord.File(compression_result.output_path)
+                )
+            else:
+                await ctx.send(f"❌ Compression failed: {compression_result.error_message}")
+        else:
+            # Send original file
+            await ctx.send(file=discord.File(metadata.file_path))
+
+    except Exception as e:
+        await ctx.send(f"❌ Download failed: {e}")
+```
+
+### Compression Configuration
+
+**Environment Variables:**
+```bash
+# Compression settings
+export COMPRESSION_TARGET_SIZE_MB=50        # Default target size
+export COMPRESSION_FFMPEG_PRESET=slow       # Quality vs speed balance
+export COMPRESSION_MAX_CONCURRENT=3         # Concurrent operations
+export COMPRESSION_MIN_VIDEO_BITRATE_KBPS=125  # Minimum video quality
+export COMPRESSION_MIN_AUDIO_BITRATE_KBPS=32   # Minimum audio quality
+export COMPRESSION_IMAGE_MIN_QUALITY=10     # Minimum image quality (%)
+```
+
+**Validation and Feasibility:**
+```python
+# Pre-compression validation
+async def validate_compression_feasible(
+    self,
+    file_path: Path,
+    target_size_mb: int
+) -> Tuple[bool, str]:
+    """Check if compression to target size is possible."""
+
+    media_info = await self.compression_manager.get_media_info(file_path)
+
+    # Check current size vs target
+    current_size_mb = media_info.file_size_bytes / (1024 * 1024)
+    if current_size_mb <= target_size_mb:
+        return False, f"File already {current_size_mb:.1f}MB (target: {target_size_mb}MB)"
+
+    # Check minimum quality constraints
+    if media_info.duration_seconds:
+        required_bitrate = target_size_mb * 8 * 1000 / media_info.duration_seconds
+        min_bitrate = 125 + 32  # Video + audio minimum
+
+        if required_bitrate < min_bitrate:
+            return False, f"Required bitrate {required_bitrate:.0f}kbps below minimum {min_bitrate}kbps"
+
+    return True, ""
+```
+
+**Error Handling:**
+```python
+# Compression-specific error handling
+try:
+    result = await compression_manager.compress_file(input_path, target_size_mb)
+except CompressionError as e:
+    if "bitrate" in str(e).lower():
+        await ctx.send("❌ File too long for target size. Try a smaller target or longer video.")
+    elif "codec" in str(e).lower():
+        await ctx.send("❌ Unsupported video codec. Please try a different file.")
+    else:
+        await ctx.send(f"❌ Compression failed: {e}")
+```
+
+This download system provides both stability through the proven Handler pattern and innovation through the experimental Strategy pattern, enabling gradual adoption of new features while maintaining backward compatibility. The integrated compression system ensures all downloaded media can be shared within Discord's file size constraints while maintaining optimal quality.

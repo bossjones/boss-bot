@@ -19,7 +19,9 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import sys
 import tempfile
+import traceback
 from collections.abc import AsyncIterator
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -355,6 +357,14 @@ class AsyncGalleryDL:
                 raise RuntimeError(f"gallery-dl is not available: {e}") from e
             except Exception as e:
                 logger.error(f"Error downloading from {url}: {e}")
+                print(f"{e}")
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                print(f"Error Class: {e.__class__}")
+                output = f"[UNEXPECTED] {type(e).__name__}: {e}"
+                print(output)
+                print(f"exc_type: {exc_type}")
+                print(f"exc_value: {exc_value}")
+                traceback.print_tb(exc_traceback)
                 raise
 
         # Run in executor to avoid blocking

@@ -45,6 +45,14 @@ class BossSettings(BaseSettings):
         max_file_size_mb: Maximum file size in MB
         max_concurrent_downloads: Maximum concurrent downloads
         max_queue_size: Maximum queue size for downloads
+        compression_target_size_mb: Default target size for compression in MB
+        compression_ffmpeg_preset: FFmpeg preset for video compression
+        compression_ffmpeg_path: Custom path to ffmpeg binary
+        compression_ffprobe_path: Custom path to ffprobe binary
+        compression_max_concurrent: Maximum concurrent compression operations
+        compression_min_video_bitrate_kbps: Minimum video bitrate in kbps
+        compression_min_audio_bitrate_kbps: Minimum audio bitrate in kbps
+        compression_image_min_quality: Minimum image quality percentage
         log_level: Logging level
         enable_metrics: Enable Prometheus metrics
         metrics_port: Port for Prometheus metrics
@@ -103,6 +111,11 @@ class BossSettings(BaseSettings):
         "max_file_size_mb",
         "max_concurrent_downloads",
         "max_queue_size",
+        "compression_target_size_mb",
+        "compression_max_concurrent",
+        "compression_min_video_bitrate_kbps",
+        "compression_min_audio_bitrate_kbps",
+        "compression_image_min_quality",
         "metrics_port",
         "health_check_port",
         "rate_limit_requests",
@@ -151,6 +164,32 @@ class BossSettings(BaseSettings):
         5, description="Maximum concurrent downloads", validation_alias="MAX_CONCURRENT_DOWNLOADS"
     )
     max_queue_size: int = Field(50, description="Maximum queue size for downloads", validation_alias="MAX_QUEUE_SIZE")
+
+    # Compression Configuration
+    compression_target_size_mb: int = Field(
+        50, description="Default target size for compression in MB", validation_alias="COMPRESSION_TARGET_SIZE_MB"
+    )
+    compression_ffmpeg_preset: str = Field(
+        "slow", description="FFmpeg preset for video compression", validation_alias="COMPRESSION_FFMPEG_PRESET"
+    )
+    compression_ffmpeg_path: str | None = Field(
+        None, description="Custom path to ffmpeg binary", validation_alias="COMPRESSION_FFMPEG_PATH"
+    )
+    compression_ffprobe_path: str | None = Field(
+        None, description="Custom path to ffprobe binary", validation_alias="COMPRESSION_FFPROBE_PATH"
+    )
+    compression_max_concurrent: int = Field(
+        3, description="Maximum concurrent compression operations", validation_alias="COMPRESSION_MAX_CONCURRENT"
+    )
+    compression_min_video_bitrate_kbps: int = Field(
+        125, description="Minimum video bitrate in kbps", validation_alias="COMPRESSION_MIN_VIDEO_BITRATE_KBPS"
+    )
+    compression_min_audio_bitrate_kbps: int = Field(
+        32, description="Minimum audio bitrate in kbps", validation_alias="COMPRESSION_MIN_AUDIO_BITRATE_KBPS"
+    )
+    compression_image_min_quality: int = Field(
+        10, description="Minimum image quality percentage", validation_alias="COMPRESSION_IMAGE_MIN_QUALITY"
+    )
 
     # Monitoring Configuration
     log_level: str = Field("DEBUG", description="Logging level", validation_alias="LOG_LEVEL")
@@ -252,6 +291,14 @@ class BossSettings(BaseSettings):
             raise ValueError(f"Invalid log level. Must be one of {valid_levels}")
         return v.upper()
 
+    @field_validator("compression_ffmpeg_preset")
+    def validate_ffmpeg_preset(cls, v: str) -> str:
+        """Validate FFmpeg preset."""
+        valid_presets = {"ultrafast", "superfast", "veryfast", "faster", "fast", "medium", "slow", "slower", "veryslow"}
+        if v.lower() not in valid_presets:
+            raise ValueError(f"Invalid FFmpeg preset. Must be one of {valid_presets}")
+        return v.lower()
+
     @field_validator("storage_root")
     def validate_storage_root(cls, v: Path) -> Path:
         """Validate storage root path."""
@@ -263,6 +310,11 @@ class BossSettings(BaseSettings):
         "max_file_size_mb",
         "max_concurrent_downloads",
         "max_queue_size",
+        "compression_target_size_mb",
+        "compression_max_concurrent",
+        "compression_min_video_bitrate_kbps",
+        "compression_min_audio_bitrate_kbps",
+        "compression_image_min_quality",
         "metrics_port",
         "health_check_port",
         "rate_limit_requests",
@@ -294,6 +346,14 @@ class BossSettings(BaseSettings):
             f"max_file_size_mb={self.max_file_size_mb}, "
             f"max_concurrent_downloads={self.max_concurrent_downloads}, "
             f"max_queue_size={self.max_queue_size}, "
+            f"compression_target_size_mb={self.compression_target_size_mb}, "
+            f"compression_ffmpeg_preset={self.compression_ffmpeg_preset}, "
+            f"compression_ffmpeg_path={self.compression_ffmpeg_path}, "
+            f"compression_ffprobe_path={self.compression_ffprobe_path}, "
+            f"compression_max_concurrent={self.compression_max_concurrent}, "
+            f"compression_min_video_bitrate_kbps={self.compression_min_video_bitrate_kbps}, "
+            f"compression_min_audio_bitrate_kbps={self.compression_min_audio_bitrate_kbps}, "
+            f"compression_image_min_quality={self.compression_image_min_quality}, "
             f"log_level={self.log_level}, "
             f"enable_metrics={self.enable_metrics}, "
             f"metrics_port={self.metrics_port}, "

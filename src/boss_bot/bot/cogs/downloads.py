@@ -1,5 +1,6 @@
-"""Discord cog for handling downloads."""
+"""Discord cog for handling downloads with upload functionality."""
 
+import shutil
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -19,6 +20,7 @@ from boss_bot.core.downloads.strategies import (
     TwitterDownloadStrategy,
     YouTubeDownloadStrategy,
 )
+from boss_bot.core.uploads.manager import UploadManager
 
 
 class DownloadCog(commands.Cog):
@@ -33,6 +35,9 @@ class DownloadCog(commands.Cog):
 
         # Initialize feature flags
         self.feature_flags = DownloadFeatureFlags(bot.settings)
+
+        # Initialize upload manager
+        self.upload_manager = UploadManager(bot.settings)
 
         # Initialize strategies
         self.strategies: dict[str, BaseDownloadStrategy] = {}
@@ -72,8 +77,13 @@ class DownloadCog(commands.Cog):
         return None
 
     @commands.command(name="download")
-    async def download(self, ctx: commands.Context, url: str):
-        """Download content from various platforms using strategy pattern."""
+    async def download(self, ctx: commands.Context, url: str, upload: bool = True):
+        """Download content and optionally upload to Discord.
+
+        Args:
+            url: URL to download
+            upload: Whether to upload files to Discord (default: True)
+        """
         # Try to find a strategy that supports this URL
         strategy = self._get_strategy_for_url(url)
 
@@ -91,13 +101,24 @@ class DownloadCog(commands.Cog):
                 await ctx.send(f"🚀 Using experimental API-direct approach for {name}")
 
             try:
-                metadata = await strategy.download(url)
+                # Create unique download directory for this request
+                request_id = f"{ctx.author.id}_{ctx.message.id}"
+                download_subdir = self.download_dir / request_id
+                download_subdir.mkdir(exist_ok=True, parents=True)
 
-                # Check if download was successful (no error in metadata)
-                if metadata.error:
-                    await ctx.send(f"❌ {name} download failed: {metadata.error}")
-                else:
-                    await ctx.send(f"✅ {name} download completed! Files saved to `.downloads/`")
+                # Temporarily change strategy download directory
+                original_dir = strategy.download_dir
+                strategy.download_dir = download_subdir
+
+                try:
+                    metadata = await strategy.download(url)
+
+                    # Check if download was successful
+                    if metadata.error:
+                        await ctx.send(f"❌ {name} download failed: {metadata.error}")
+                        return
+
+                    await ctx.send(f"✅ {name} download completed!")
 
                     # Show basic metadata if available
                     if metadata.title:
@@ -107,6 +128,32 @@ class DownloadCog(commands.Cog):
                     if metadata.download_method:
                         method_emoji = "🚀" if metadata.download_method == "api" else "🖥️"
                         await ctx.send(f"{method_emoji} Downloaded using {metadata.download_method.upper()} method")
+
+                    # Process and upload files if requested
+                    if upload:
+                        await ctx.send("📤 Processing files for upload...")
+
+                        upload_result = await self.upload_manager.process_downloaded_files(download_subdir, ctx, name)
+
+                        if upload_result.success:
+                            await ctx.send(f"🎉 {upload_result.message}")
+                        else:
+                            await ctx.send(f"⚠️ Upload issues: {upload_result.message}")
+                            if upload_result.error:
+                                await ctx.send(f"Error details: {upload_result.error}")
+                    else:
+                        await ctx.send(f"📁 Files saved to: `{download_subdir.relative_to(Path.cwd())}`")
+
+                finally:
+                    # Restore original download directory
+                    strategy.download_dir = original_dir
+
+                    # Cleanup: Remove download directory after upload (optional)
+                    if upload and getattr(self.bot.settings, "upload_cleanup_after_success", True):
+                        try:
+                            shutil.rmtree(download_subdir)
+                        except Exception as cleanup_error:
+                            print(f"Cleanup warning: {cleanup_error}")
 
             except Exception as e:
                 await ctx.send(f"❌ Download error: {e!s}")
@@ -122,6 +169,11 @@ class DownloadCog(commands.Cog):
             await ctx.send(f"Added {url} to download queue.")
         except Exception as e:
             await ctx.send(str(e))
+
+    @commands.command(name="download-only")
+    async def download_only(self, ctx: commands.Context, url: str):
+        """Download content without uploading to Discord."""
+        await self.download(ctx, url, upload=False)
 
     def _get_platform_info(self, url: str) -> dict[str, str]:
         """Get platform-specific emoji and name for a URL.

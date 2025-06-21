@@ -53,6 +53,11 @@ class BossSettings(BaseSettings):
         compression_min_video_bitrate_kbps: Minimum video bitrate in kbps
         compression_min_audio_bitrate_kbps: Minimum audio bitrate in kbps
         compression_image_min_quality: Minimum image quality percentage
+        compression_max_upload_size_mb: Target compression size for Discord uploads in MB
+        upload_batch_size_mb: Maximum batch size for Discord uploads in MB
+        upload_max_files_per_batch: Maximum files per Discord message
+        upload_cleanup_after_success: Remove downloaded files after successful upload
+        upload_enable_progress_updates: Show upload progress messages
         log_level: Logging level
         enable_metrics: Enable Prometheus metrics
         metrics_port: Port for Prometheus metrics
@@ -116,6 +121,9 @@ class BossSettings(BaseSettings):
         "compression_min_video_bitrate_kbps",
         "compression_min_audio_bitrate_kbps",
         "compression_image_min_quality",
+        "compression_max_upload_size_mb",
+        "upload_batch_size_mb",
+        "upload_max_files_per_batch",
         "metrics_port",
         "health_check_port",
         "rate_limit_requests",
@@ -189,6 +197,27 @@ class BossSettings(BaseSettings):
     )
     compression_image_min_quality: int = Field(
         10, description="Minimum image quality percentage", validation_alias="COMPRESSION_IMAGE_MIN_QUALITY"
+    )
+    compression_max_upload_size_mb: int = Field(
+        50,
+        description="Target compression size for Discord uploads in MB",
+        validation_alias="COMPRESSION_MAX_UPLOAD_SIZE_MB",
+    )
+
+    # Upload Configuration
+    upload_batch_size_mb: int = Field(
+        20, description="Maximum batch size for Discord uploads in MB", validation_alias="UPLOAD_BATCH_SIZE_MB"
+    )
+    upload_max_files_per_batch: int = Field(
+        10, description="Maximum files per Discord message", validation_alias="UPLOAD_MAX_FILES_PER_BATCH"
+    )
+    upload_cleanup_after_success: bool = Field(
+        True,
+        description="Remove downloaded files after successful upload",
+        validation_alias="UPLOAD_CLEANUP_AFTER_SUCCESS",
+    )
+    upload_enable_progress_updates: bool = Field(
+        True, description="Show upload progress messages", validation_alias="UPLOAD_ENABLE_PROGRESS_UPDATES"
     )
 
     # Monitoring Configuration

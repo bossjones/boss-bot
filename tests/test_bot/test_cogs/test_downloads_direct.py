@@ -46,6 +46,7 @@ def fixture_mock_strategies(mocker):
         mock_strategy.supports_url = mocker.Mock(return_value=False)  # Default to False
         mock_strategy.download = mocker.AsyncMock()
         mock_strategy.get_metadata = mocker.AsyncMock()
+        mock_strategy.download_dir = Path("/tmp/downloads")  # Mock download directory
         mock_strategies[name] = mock_strategy
 
     return mock_strategies
@@ -78,6 +79,8 @@ def fixture_mock_ctx(mocker):
     ctx.channel.id = 67890
     ctx.guild = mocker.Mock()
     ctx.guild.id = 13579
+    ctx.message = mocker.Mock()
+    ctx.message.id = 123456789
     return ctx
 
 
@@ -99,19 +102,31 @@ async def test_download_command_twitter_success_direct(
     mocker
 ):
     """Test download command succeeds with Twitter URL using direct callback."""
-    # Configure Twitter strategy to support URL and succeed
-    twitter_strategy = fixture_mock_strategies["twitter"]
-    twitter_strategy.supports_url.return_value = True
-    twitter_strategy.download.return_value = fixture_mock_metadata
-
     # Replace cog strategies with mocks
     fixture_download_cog.strategies = fixture_mock_strategies
 
-    # Call the download command's callback directly
+    # Configure Twitter strategy to support URL and succeed
+    twitter_strategy = fixture_mock_strategies["twitter"]
+
+    # Configure Twitter strategy to support URL and succeed
+    twitter_strategy.supports_url.return_value = True
+    twitter_strategy.download = mocker.AsyncMock(return_value=fixture_mock_metadata)
+
+    # Ensure other strategies don't support this URL
+    for name, strategy in fixture_mock_strategies.items():
+        if name != "twitter":
+            strategy.supports_url.return_value = False
+
+    # Mock upload manager to avoid upload processing in tests
+    fixture_download_cog.upload_manager = mocker.Mock()
+    fixture_download_cog.upload_manager.process_downloaded_files = mocker.AsyncMock()
+
+    # Call the download command's callback directly with upload=False for simpler testing
     await fixture_download_cog.download.callback(
         fixture_download_cog,
         fixture_mock_ctx,
-        fixture_download_test_data['twitter_url']
+        fixture_download_test_data['twitter_url'],
+        upload=False
     )
 
     # Verify strategy was called
@@ -137,17 +152,27 @@ async def test_download_command_reddit_success_direct(
     mocker
 ):
     """Test download command succeeds with Reddit URL using direct callback."""
+    fixture_download_cog.strategies = fixture_mock_strategies
+
     # Configure Reddit strategy to support URL and succeed
     reddit_strategy = fixture_mock_strategies["reddit"]
     reddit_strategy.supports_url.return_value = True
-    reddit_strategy.download.return_value = fixture_mock_metadata
+    reddit_strategy.download = mocker.AsyncMock(return_value=fixture_mock_metadata)
 
-    fixture_download_cog.strategies = fixture_mock_strategies
+    # Ensure other strategies don't support this URL
+    for name, strategy in fixture_mock_strategies.items():
+        if name != "reddit":
+            strategy.supports_url.return_value = False
+
+    # Mock upload manager to avoid upload processing in tests
+    fixture_download_cog.upload_manager = mocker.Mock()
+    fixture_download_cog.upload_manager.process_downloaded_files = mocker.AsyncMock()
 
     await fixture_download_cog.download.callback(
         fixture_download_cog,
         fixture_mock_ctx,
-        fixture_download_test_data['reddit_url']
+        fixture_download_test_data['reddit_url'],
+        upload=False
     )
 
     # Verify strategy was called
@@ -169,6 +194,8 @@ async def test_download_command_strategy_failure_direct(
     mocker
 ):
     """Test download command handles strategy failure gracefully."""
+    fixture_download_cog.strategies = fixture_mock_strategies
+
     # Configure Twitter strategy to support URL but fail download
     twitter_strategy = fixture_mock_strategies["twitter"]
     twitter_strategy.supports_url.return_value = True
@@ -177,14 +204,26 @@ async def test_download_command_strategy_failure_direct(
     failed_metadata = mocker.Mock()
     failed_metadata.error = "Network timeout error"
     failed_metadata.title = None
-    twitter_strategy.download.return_value = failed_metadata
+    twitter_strategy.download = mocker.AsyncMock(return_value=failed_metadata)
 
-    fixture_download_cog.strategies = fixture_mock_strategies
+    # Ensure other strategies don't support this URL
+    for name, strategy in fixture_mock_strategies.items():
+        if name != "twitter":
+            strategy.supports_url.return_value = False
+
+    # Mock upload manager to avoid upload processing in tests
+    fixture_download_cog.upload_manager = mocker.Mock()
+    fixture_download_cog.upload_manager.process_downloaded_files = mocker.AsyncMock()
+
+    # Mock context message for download directory creation
+    fixture_mock_ctx.message = mocker.Mock()
+    fixture_mock_ctx.message.id = 123456789
 
     await fixture_download_cog.download.callback(
         fixture_download_cog,
         fixture_mock_ctx,
-        fixture_download_test_data['twitter_url']
+        fixture_download_test_data['twitter_url'],
+        upload=False
     )
 
     # Verify error handling
@@ -201,17 +240,31 @@ async def test_download_command_strategy_exception_direct(
     mocker
 ):
     """Test download command handles strategy exceptions."""
+    fixture_download_cog.strategies = fixture_mock_strategies
+
     # Configure Twitter strategy to support URL but throw exception
     twitter_strategy = fixture_mock_strategies["twitter"]
     twitter_strategy.supports_url.return_value = True
-    twitter_strategy.download.side_effect = Exception("Strategy crashed unexpectedly")
+    twitter_strategy.download = mocker.AsyncMock(side_effect=Exception("Strategy crashed unexpectedly"))
 
-    fixture_download_cog.strategies = fixture_mock_strategies
+    # Ensure other strategies don't support this URL
+    for name, strategy in fixture_mock_strategies.items():
+        if name != "twitter":
+            strategy.supports_url.return_value = False
+
+    # Mock upload manager to avoid upload processing in tests
+    fixture_download_cog.upload_manager = mocker.Mock()
+    fixture_download_cog.upload_manager.process_downloaded_files = mocker.AsyncMock()
+
+    # Mock context message for download directory creation
+    fixture_mock_ctx.message = mocker.Mock()
+    fixture_mock_ctx.message.id = 123456789
 
     await fixture_download_cog.download.callback(
         fixture_download_cog,
         fixture_mock_ctx,
-        fixture_download_test_data['twitter_url']
+        fixture_download_test_data['twitter_url'],
+        upload=False
     )
 
     # Verify exception handling

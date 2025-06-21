@@ -65,10 +65,19 @@ class TestDownloadsCogIntegration:
         mock_result.download_method = "cli"
         twitter_strategy.download.return_value = mock_result
 
+        # Mock upload manager to avoid upload processing in tests
+        fixture_integration_cog_test.upload_manager = mocker.Mock()
+        fixture_integration_cog_test.upload_manager.process_downloaded_files = mocker.AsyncMock()
+
+        # Mock context message for download directory creation
+        fixture_mock_ctx_test.message = mocker.Mock()
+        fixture_mock_ctx_test.message.id = 123456789
+
         await fixture_integration_cog_test.download.callback(
             fixture_integration_cog_test,
             fixture_mock_ctx_test,
-            url
+            url,
+            upload=False
         )
 
         # Verify Twitter strategy was selected and used
@@ -106,10 +115,19 @@ class TestDownloadsCogIntegration:
         mock_result.download_method = "api"
         reddit_strategy.download.return_value = mock_result
 
+        # Mock upload manager to avoid upload processing in tests
+        fixture_integration_cog_test.upload_manager = mocker.Mock()
+        fixture_integration_cog_test.upload_manager.process_downloaded_files = mocker.AsyncMock()
+
+        # Mock context message for download directory creation
+        fixture_mock_ctx_test.message = mocker.Mock()
+        fixture_mock_ctx_test.message.id = 123456789
+
         await fixture_integration_cog_test.download.callback(
             fixture_integration_cog_test,
             fixture_mock_ctx_test,
-            url
+            url,
+            upload=False
         )
 
         # Verify Reddit strategy was selected and used
@@ -147,10 +165,19 @@ class TestDownloadsCogIntegration:
         mock_result.download_method = "cli"
         youtube_strategy.download.return_value = mock_result
 
+        # Mock upload manager to avoid upload processing in tests
+        fixture_integration_cog_test.upload_manager = mocker.Mock()
+        fixture_integration_cog_test.upload_manager.process_downloaded_files = mocker.AsyncMock()
+
+        # Mock context message for download directory creation
+        fixture_mock_ctx_test.message = mocker.Mock()
+        fixture_mock_ctx_test.message.id = 123456789
+
         await fixture_integration_cog_test.download.callback(
             fixture_integration_cog_test,
             fixture_mock_ctx_test,
-            url
+            url,
+            upload=False
         )
 
         # Verify YouTube strategy was selected and used
@@ -182,10 +209,19 @@ class TestDownloadsCogIntegration:
         mock_result.title = None
         twitter_strategy.download.return_value = mock_result
 
+        # Mock upload manager to avoid upload processing in tests
+        fixture_integration_cog_test.upload_manager = mocker.Mock()
+        fixture_integration_cog_test.upload_manager.process_downloaded_files = mocker.AsyncMock()
+
+        # Mock context message for download directory creation
+        fixture_mock_ctx_test.message = mocker.Mock()
+        fixture_mock_ctx_test.message.id = 123456789
+
         await fixture_integration_cog_test.download.callback(
             fixture_integration_cog_test,
             fixture_mock_ctx_test,
-            url
+            url,
+            upload=False
         )
 
         # Verify error message was sent
@@ -207,10 +243,19 @@ class TestDownloadsCogIntegration:
         twitter_strategy.supports_url.return_value = True
         twitter_strategy.download.side_effect = Exception("Strategy crashed")
 
+        # Mock upload manager to avoid upload processing in tests
+        fixture_integration_cog_test.upload_manager = mocker.Mock()
+        fixture_integration_cog_test.upload_manager.process_downloaded_files = mocker.AsyncMock()
+
+        # Mock context message for download directory creation
+        fixture_mock_ctx_test.message = mocker.Mock()
+        fixture_mock_ctx_test.message.id = 123456789
+
         await fixture_integration_cog_test.download.callback(
             fixture_integration_cog_test,
             fixture_mock_ctx_test,
-            url
+            url,
+            upload=False
         )
 
         # Verify error message was sent

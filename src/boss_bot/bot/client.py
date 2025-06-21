@@ -122,11 +122,12 @@ class BossBot(commands.Bot):
         self.invite: str | None = None
         self.uptime: datetime.datetime | None = None
 
-        # Set up logging
-        logging.basicConfig(
-            level=getattr(logging, self.settings.log_level.upper()),
-            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        )
+        # Set up logging only if not already configured
+        if not logging.root.handlers:
+            logging.basicConfig(
+                level=getattr(logging, self.settings.log_level.upper()),
+                format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+            )
 
     async def setup_hook(self):
         """Initialize services and load extensions."""

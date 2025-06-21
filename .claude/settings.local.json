@@ -35,7 +35,8 @@
       "WebFetch(domain:modelcontextprotocol.io)",
       "Bash(mkdir:*)",
       "Bash(find:*)",
-      "Bash(just check-coverage)"
+      "Bash(just check-coverage)",
+      "Bash(just test-ci:*)"
     ],
     "deny": []
   },

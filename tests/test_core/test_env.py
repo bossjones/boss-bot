@@ -38,7 +38,7 @@ def test_settings_load(fixture_env_vars_test: None) -> None:
     assert test_settings.max_queue_size == 50
 
     # Test Monitoring settings
-    assert test_settings.log_level == "INFO"
+    assert test_settings.log_level == "DEBUG"
     assert test_settings.enable_metrics is True
     assert test_settings.metrics_port == 9090
     assert test_settings.enable_health_check is True

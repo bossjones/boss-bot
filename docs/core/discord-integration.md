@@ -204,27 +204,36 @@ class BaseCog(commands.Cog):
 
 ```python
 # src/boss_bot/bot/cogs/downloads.py
+import shutil
 import discord
+from pathlib import Path
 from discord.ext import commands
 from boss_bot.bot.cogs.base import BaseCog
 from boss_bot.core.downloads.exceptions import DownloadError, UnsupportedURLError, QuotaExceededError
+from boss_bot.core.uploads.manager import UploadManager
 from boss_bot.schemas.discord import MediaMetadata
 from typing import Optional
 
 class DownloadCog(BaseCog):
-    """Commands for downloading media from supported platforms."""
+    """Commands for downloading media with upload functionality."""
+
+    def __init__(self, bot):
+        super().__init__(bot)
+        # Initialize upload manager for automatic Discord uploads
+        self.upload_manager = UploadManager(bot.settings)
 
     @commands.command(name="download", aliases=["dl"])
-    async def download_command(self, ctx: commands.Context, url: str, quality: Optional[str] = None):
-        """Download media from a supported URL.
+    async def download_command(self, ctx: commands.Context, url: str, upload: bool = True):
+        """Download media and optionally upload to Discord.
 
         Args:
             url: URL to download from (Twitter, Reddit, Instagram, YouTube)
-            quality: Video quality (720p, 1080p, etc.) for YouTube downloads
+            upload: Whether to upload files to Discord (default: True)
 
         Examples:
             $download https://twitter.com/user/status/123
-            $download https://youtube.com/watch?v=abc 720p
+            $download https://youtube.com/watch?v=abc upload=False
+            $download https://reddit.com/r/pics/comments/abc123/
         """
         # Validate URL format
         if not url.startswith(('http://', 'https://')):
@@ -236,61 +245,93 @@ class DownloadCog(BaseCog):
             await ctx.send("⚠️ Bot is not fully operational. Please try again in a moment.")
             return
 
-        # Send initial response
-        processing_msg = await ctx.send(f"🔄 Processing download for: `{url}`")
+        # Try to find a strategy that supports this URL
+        strategy = self._get_strategy_for_url(url)
+
+        if not strategy:
+            await ctx.send("❌ URL not supported. Supported platforms: Twitter/X, Reddit, Instagram, YouTube")
+            return
+
+        # Get platform info for user messages
+        platform_info = self._get_platform_info(url)
+        name = platform_info.get("name", "Unknown")
+
+        # Show strategy status
+        if strategy.feature_flags.use_api_twitter and "twitter" in name.lower():
+            await ctx.send(f"🚀 Using experimental API-direct approach for {name}")
 
         try:
-            # Add to queue
-            queue_item = await self.queue_manager.add_to_queue(
-                url=url,
-                user_id=ctx.author.id,
-                guild_id=ctx.guild.id if ctx.guild else None,
-                channel_id=ctx.channel.id,
-                quality=quality
-            )
+            # Create unique download directory for this request
+            request_id = f"{ctx.author.id}_{ctx.message.id}"
+            download_subdir = self.download_dir / request_id
+            download_subdir.mkdir(exist_ok=True, parents=True)
 
-            # Update message with queue position
-            if queue_item.position > 0:
-                await processing_msg.edit(
-                    content=f"📋 Added to queue (position {queue_item.position}): `{url}`"
-                )
-            else:
-                await processing_msg.edit(content=f"⏳ Starting download: `{url}`")
+            # Temporarily change strategy download directory
+            original_dir = strategy.download_dir
+            strategy.download_dir = download_subdir
 
-            # Wait for completion
-            result = await queue_item.wait_for_completion(timeout=300)  # 5 minutes
+            try:
+                metadata = await strategy.download(url)
 
-            # Send success response
-            embed = self._create_success_embed(result, ctx.author)
-            await processing_msg.edit(content="✅ Download completed!", embed=embed)
+                # Check if download was successful
+                if metadata.error:
+                    await ctx.send(f"❌ {name} download failed: {metadata.error}")
+                    return
 
-        except QuotaExceededError:
-            await processing_msg.edit(
-                content="❌ Storage quota exceeded. Please contact an administrator."
-            )
+                await ctx.send(f"✅ {name} download completed!")
 
-        except UnsupportedURLError:
-            await processing_msg.edit(
-                content="❌ URL not supported. Supported platforms: Twitter, Reddit, Instagram, YouTube"
-            )
+                # Show basic metadata if available
+                if metadata.title:
+                    await ctx.send(f"📄 **Title:** {metadata.title}")
+                if metadata.author:
+                    await ctx.send(f"👤 **Author:** {metadata.author}")
+                if metadata.download_method:
+                    method_emoji = "🚀" if metadata.download_method == "api" else "🖥️"
+                    await ctx.send(f"{method_emoji} Downloaded using {metadata.download_method.upper()} method")
 
-        except asyncio.TimeoutError:
-            await processing_msg.edit(
-                content="⏱️ Download timed out. The file may be too large or the server is slow."
-            )
+                # Process and upload files if requested
+                if upload:
+                    await ctx.send("📤 Processing files for upload...")
 
-        except DownloadError as e:
-            await processing_msg.edit(content=f"❌ Download failed: {e}")
+                    upload_result = await self.upload_manager.process_downloaded_files(
+                        download_subdir, ctx, name
+                    )
+
+                    if upload_result.success:
+                        await ctx.send(f"🎉 {upload_result.message}")
+                    else:
+                        await ctx.send(f"⚠️ Upload issues: {upload_result.message}")
+                        if upload_result.error:
+                            await ctx.send(f"Error details: {upload_result.error}")
+                else:
+                    await ctx.send(f"📁 Files saved to: `{download_subdir.relative_to(Path.cwd())}`")
+
+            finally:
+                # Restore original download directory
+                strategy.download_dir = original_dir
+
+                # Cleanup: Remove download directory after upload (optional)
+                if upload and getattr(self.bot.settings, "upload_cleanup_after_success", True):
+                    try:
+                        shutil.rmtree(download_subdir)
+                    except Exception as cleanup_error:
+                        print(f"Cleanup warning: {cleanup_error}")
 
         except Exception as e:
-            # Log unexpected errors
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.error(f"Unexpected download error: {e}", exc_info=True)
+            await ctx.send(f"❌ Download error: {e!s}")
 
-            await processing_msg.edit(
-                content="❌ An unexpected error occurred. Please try again later."
-            )
+    @commands.command(name="download-only")
+    async def download_only_command(self, ctx: commands.Context, url: str):
+        """Download content without uploading to Discord.
+
+        Args:
+            url: URL to download from
+
+        Examples:
+            $download-only https://twitter.com/user/status/123
+            $download-only https://youtube.com/watch?v=abc
+        """
+        await self.download_command(ctx, url, upload=False)
 
     def _create_success_embed(self, metadata: MediaMetadata, user: discord.User) -> discord.Embed:
         """Create embed for successful download."""
@@ -386,6 +427,173 @@ class DownloadCog(BaseCog):
 async def setup(bot):
     """Setup function for loading the cog."""
     await bot.add_cog(DownloadCog(bot))
+```
+
+## Upload System Integration
+
+### Upload Workflow
+
+The Discord bot now includes an integrated upload system that automatically processes downloaded media and uploads it to Discord with intelligent compression and batching:
+
+```mermaid
+graph TB
+    subgraph "Upload Workflow"
+        DOWNLOAD[Download Complete] --> DETECT[Find Media Files]
+        DETECT --> ANALYZE[Analyze File Sizes]
+        ANALYZE --> COMPRESS{Files > 25MB?}
+        COMPRESS -->|Yes| COMPRESSION[Compress Files]
+        COMPRESS -->|No| BATCH[Create Upload Batches]
+        COMPRESSION --> BATCH
+        BATCH --> UPLOAD[Upload to Discord]
+        UPLOAD --> CLEANUP[Cleanup Files]
+    end
+```
+
+### Upload Manager Integration
+
+```python
+# Upload system integration in DownloadCog
+class DownloadCog(BaseCog):
+    def __init__(self, bot):
+        super().__init__(bot)
+        # Initialize upload manager for automatic Discord uploads
+        self.upload_manager = UploadManager(bot.settings)
+
+    async def process_download_with_upload(self, ctx, url, platform_name):
+        """Process download and handle upload workflow."""
+
+        # Step 1: Download to temporary directory
+        download_subdir = self.create_unique_download_dir(ctx)
+
+        try:
+            # Step 2: Execute download
+            metadata = await strategy.download(url)
+
+            # Step 3: Process files for upload
+            upload_result = await self.upload_manager.process_downloaded_files(
+                download_subdir, ctx, platform_name
+            )
+
+            # Step 4: Handle results
+            if upload_result.success:
+                await ctx.send(f"🎉 Upload complete: {upload_result.successful_uploads}/{upload_result.files_processed} files")
+            else:
+                await ctx.send(f"⚠️ Upload issues: {upload_result.message}")
+
+        finally:
+            # Step 5: Cleanup if configured
+            if self.bot.settings.upload_cleanup_after_success:
+                shutil.rmtree(download_subdir)
+```
+
+### Upload Features
+
+**Intelligent File Processing:**
+- **Media Detection**: Automatically finds video, audio, and image files
+- **Size Analysis**: Categorizes files by Discord upload limits (25MB default)
+- **Smart Compression**: Compresses oversized files using the compression system
+- **Batch Optimization**: Groups files into optimal Discord message batches
+
+**Discord Integration:**
+- **Progress Updates**: Real-time feedback during processing
+- **Batch Uploads**: Respects Discord's 10 file per message limit
+- **Retry Logic**: Automatic retries with exponential backoff
+- **Rate Limiting**: Handles Discord API rate limits gracefully
+
+**User Experience:**
+```python
+# User-friendly upload messages
+@commands.command(name="download")
+async def download_command(self, ctx: commands.Context, url: str, upload: bool = True):
+    """Enhanced download command with upload feedback."""
+
+    # Download phase
+    await ctx.send(f"✅ {platform_name} download completed!")
+
+    if upload:
+        # Upload phase with detailed feedback
+        await ctx.send("📤 Processing files for upload...")
+        await ctx.send(f"📊 Found {total_files} media files ({total_size_mb:.1f}MB total)")
+
+        if oversized_files:
+            await ctx.send(f"🗜️ {len(oversized_files)} files need compression")
+
+        # Per-file compression feedback
+        await ctx.send(f"🗜️ Compressing {filename} ({original_mb:.1f}MB → target: {target_mb}MB)")
+        await ctx.send(f"✅ Compressed successfully! ({original_mb}MB → {compressed_mb}MB, ratio: {ratio:.2f})")
+
+        # Upload batches
+        await ctx.send(f"📎 Uploading batch 1/3: file1.mp4, file2.jpg (15.2MB)")
+        await ctx.send(f"🎯 {platform_name} media files:", files=discord_files)
+
+        # Final result
+        await ctx.send(f"🎉 Upload complete: {successful_uploads}/{total_files} files uploaded")
+```
+
+### Upload Configuration
+
+The upload system is highly configurable through environment variables:
+
+```python
+# Upload-specific settings in BossSettings
+class BossSettings(BaseSettings):
+    # Upload behavior
+    upload_cleanup_after_success: bool = True    # Remove files after upload
+    upload_enable_progress_updates: bool = True  # Show detailed progress
+
+    # Batch configuration
+    upload_batch_size_mb: int = 20              # Max batch size (under Discord limit)
+    upload_max_files_per_batch: int = 10        # Max files per message
+
+    # Compression integration
+    compression_max_upload_size_mb: int = 50    # Target compression size for uploads
+```
+
+### Error Handling
+
+The upload system includes comprehensive error handling:
+
+```python
+# Upload error scenarios
+async def handle_upload_errors(self, upload_result, ctx):
+    """Handle various upload error scenarios."""
+
+    if not upload_result.success:
+        if "too large" in upload_result.message:
+            await ctx.send("💡 Files too large even after compression. Consider external storage.")
+        elif "rate limit" in upload_result.message:
+            await ctx.send("⏳ Discord rate limit reached. Upload will continue automatically.")
+        elif upload_result.failed_uploads > 0:
+            success_rate = upload_result.successful_uploads / upload_result.files_processed
+            await ctx.send(f"⚠️ Partial upload success: {success_rate:.1%} files uploaded")
+        else:
+            await ctx.send(f"❌ Upload failed: {upload_result.error}")
+```
+
+### Command Examples
+
+**Basic Usage:**
+```
+$download https://twitter.com/user/status/123        # Download and upload (default)
+$download https://youtube.com/watch?v=abc upload=True # Explicit upload
+$download-only https://reddit.com/r/pics/comments/def # Download only, no upload
+```
+
+**Upload Workflow Messages:**
+```
+User: $download https://twitter.com/example/status/123
+
+Bot: ✅ Twitter/X download completed!
+Bot: 📤 Processing files for upload...
+Bot: 📊 Found 3 media files (45.2MB total)
+Bot: 🗜️ 1 files need compression
+Bot: 🗜️ Compressing video.mp4 (32.1MB → target: 23.8MB)
+Bot: ✅ Compressed successfully! (32MB → 24MB, ratio: 0.75)
+Bot: 📎 Uploading batch 1/1: video_compressed.mp4, image1.jpg, image2.png (23.1MB)
+Bot: 🎯 Twitter/X media files: [attached files]
+Bot: ℹ️ Compression Info:
+     🗜️ video_compressed.mp4 (compressed from video.mp4)
+Bot: 🎉 Upload complete: 3/3 files uploaded
 ```
 
 ### Queue Management Cog
@@ -550,7 +758,8 @@ class AdminCog(commands.Cog):
 
         # Download commands
         download_commands = [
-            f"`{self.bot.command_prefix}download <url>` - Download media from supported platforms",
+            f"`{self.bot.command_prefix}download <url> [upload=True]` - Download media and upload to Discord",
+            f"`{self.bot.command_prefix}download-only <url>` - Download media without uploading to Discord",
             f"`{self.bot.command_prefix}metadata <url>` - Get metadata about a URL without downloading",
             f"`{self.bot.command_prefix}status` - Show current download status",
             f"`{self.bot.command_prefix}strategies` - Show download strategy configuration",

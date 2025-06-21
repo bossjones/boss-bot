@@ -1,3 +1,11 @@
+## v0.11.0 (2025-06-21)
+
+### Feat
+
+- Enhance download strategies with directory management
+- Expand upload system documentation and configuration
+- Add upload functionality to downloads cog
+
 ## v0.10.0 (2025-06-21)
 
 ### Feat

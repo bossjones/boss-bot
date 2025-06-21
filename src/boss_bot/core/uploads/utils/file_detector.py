@@ -6,6 +6,8 @@ import mimetypes
 from pathlib import Path
 from typing import List
 
+from loguru import logger
+
 from boss_bot.core.uploads.models import MediaFile, MediaType
 
 
@@ -39,13 +41,17 @@ class MediaFileDetector:
         Returns:
             List of MediaFile objects found in the directory
         """
+        logger.debug(f"Starting media file search in directory: {directory}")
         media_files = []
 
         if not directory.exists() or not directory.is_dir():
+            logger.debug(f"Directory does not exist or is not a directory: {directory}")
             return media_files
 
+        logger.debug(f"Recursively searching for media files in: {directory}")
         for file_path in directory.rglob("*"):
             if file_path.is_file() and self._is_media_file(file_path):
+                logger.debug(f"Found media file: {file_path}")
                 media_type = self._determine_media_type(file_path)
 
                 try:
@@ -54,10 +60,12 @@ class MediaFileDetector:
                         path=file_path, filename=file_path.name, size_bytes=file_size, media_type=media_type
                     )
                     media_files.append(media_file)
-                except OSError:
-                    # Skip files we can't access
+                    logger.debug(f"Added media file: {file_path.name} ({media_type.value}, {file_size} bytes)")
+                except OSError as e:
+                    logger.warning(f"Could not access file {file_path}: {e}")
                     continue
 
+        logger.debug(f"Found {len(media_files)} media files in {directory}")
         return media_files
 
     def _is_media_file(self, file_path: Path) -> bool:
@@ -70,7 +78,9 @@ class MediaFileDetector:
             True if the file is a media file, False otherwise
         """
         suffix = file_path.suffix.lower()
-        return suffix in self.video_extensions or suffix in self.audio_extensions or suffix in self.image_extensions
+        is_media = suffix in self.video_extensions or suffix in self.audio_extensions or suffix in self.image_extensions
+        logger.trace(f"Checking if {file_path.name} is media file: {is_media} (extension: {suffix})")
+        return is_media
 
     def _determine_media_type(self, file_path: Path) -> MediaType:
         """Determine the type of media file based on extension.
@@ -84,13 +94,16 @@ class MediaFileDetector:
         suffix = file_path.suffix.lower()
 
         if suffix in self.video_extensions:
-            return MediaType.VIDEO
+            media_type = MediaType.VIDEO
         elif suffix in self.audio_extensions:
-            return MediaType.AUDIO
+            media_type = MediaType.AUDIO
         elif suffix in self.image_extensions:
-            return MediaType.IMAGE
+            media_type = MediaType.IMAGE
         else:
-            return MediaType.UNKNOWN
+            media_type = MediaType.UNKNOWN
+
+        logger.trace(f"Determined media type for {file_path.name}: {media_type.value} (extension: {suffix})")
+        return media_type
 
     def filter_by_type(self, media_files: list[MediaFile], media_type: MediaType) -> list[MediaFile]:
         """Filter media files by type.
@@ -102,7 +115,9 @@ class MediaFileDetector:
         Returns:
             Filtered list containing only files of the specified type
         """
-        return [f for f in media_files if f.media_type == media_type]
+        filtered_files = [f for f in media_files if f.media_type == media_type]
+        logger.debug(f"Filtered {len(media_files)} files by type {media_type.value}: {len(filtered_files)} matches")
+        return filtered_files
 
     def get_total_size(self, media_files: list[MediaFile]) -> int:
         """Calculate total size of media files in bytes.
@@ -113,4 +128,6 @@ class MediaFileDetector:
         Returns:
             Total size in bytes
         """
-        return sum(f.size_bytes for f in media_files)
+        total_size = sum(f.size_bytes for f in media_files)
+        logger.debug(f"Calculated total size for {len(media_files)} files: {total_size} bytes")
+        return total_size

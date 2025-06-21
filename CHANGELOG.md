@@ -1,3 +1,15 @@
+## v0.9.0 (2025-06-21)
+
+### Feat
+
+- Update logging configuration and enhance test settings
+- Introduce standardized slash command creation and documentation
+- Add AdminCog for bot information and help commands
+
+### Fix
+
+- Enhance PR creation process in cz-prepare-release.sh
+
 ## v0.8.0 (2025-05-29)
 
 ### Feat

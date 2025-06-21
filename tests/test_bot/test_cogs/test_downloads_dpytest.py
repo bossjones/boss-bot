@@ -50,6 +50,7 @@ def fixture_mock_strategies(mocker):
         mock_strategy.supports_url = mocker.Mock(return_value=False)  # Default to False
         mock_strategy.download = mocker.AsyncMock()
         mock_strategy.get_metadata = mocker.AsyncMock()
+        mock_strategy.download_dir = Path("/tmp/downloads")  # Mock download directory
         mock_strategies[name] = mock_strategy
 
     return mock_strategies
@@ -101,9 +102,15 @@ async def test_download_command_twitter_success_dpytest(
     ctx.author.id = 12345
     ctx.channel = mocker.Mock()
     ctx.channel.id = 67890
+    ctx.message = mocker.Mock()
+    ctx.message.id = 123456789
+
+    # Mock upload manager to avoid upload processing in tests
+    cog.upload_manager = mocker.Mock()
+    cog.upload_manager.process_downloaded_files = mocker.AsyncMock()
 
     # Call download command directly
-    await cog.download.callback(cog, ctx, fixture_download_test_data['twitter_url'])
+    await cog.download.callback(cog, ctx, fixture_download_test_data['twitter_url'], upload=False)
 
     # Verify strategy was called
     twitter_strategy.supports_url.assert_called_with(fixture_download_test_data['twitter_url'])
@@ -141,9 +148,15 @@ async def test_download_command_reddit_success_dpytest(
     ctx.author.id = 12345
     ctx.channel = mocker.Mock()
     ctx.channel.id = 67890
+    ctx.message = mocker.Mock()
+    ctx.message.id = 123456789
+
+    # Mock upload manager to avoid upload processing in tests
+    cog.upload_manager = mocker.Mock()
+    cog.upload_manager.process_downloaded_files = mocker.AsyncMock()
 
     # Call download command directly
-    await cog.download.callback(cog, ctx, fixture_download_test_data['reddit_url'])
+    await cog.download.callback(cog, ctx, fixture_download_test_data['reddit_url'], upload=False)
 
     # Verify strategy was called
     reddit_strategy.supports_url.assert_called_with(fixture_download_test_data['reddit_url'])
@@ -185,9 +198,15 @@ async def test_download_command_strategy_failure_dpytest(
     ctx.author.id = 12345
     ctx.channel = mocker.Mock()
     ctx.channel.id = 67890
+    ctx.message = mocker.Mock()
+    ctx.message.id = 123456789
+
+    # Mock upload manager to avoid upload processing in tests
+    cog.upload_manager = mocker.Mock()
+    cog.upload_manager.process_downloaded_files = mocker.AsyncMock()
 
     # Call download command directly
-    await cog.download.callback(cog, ctx, fixture_download_test_data['twitter_url'])
+    await cog.download.callback(cog, ctx, fixture_download_test_data['twitter_url'], upload=False)
 
     # Verify error handling
     call_args = [call[0][0] for call in ctx.send.call_args_list]
@@ -380,6 +399,8 @@ async def test_download_command_concurrent_usage_dpytest(
     ctx1.author.id = 12345
     ctx1.channel = mocker.Mock()
     ctx1.channel.id = 67890
+    ctx1.message = mocker.Mock()
+    ctx1.message.id = 123456789
 
     ctx2 = mocker.Mock(spec=commands.Context)
     ctx2.send = mocker.AsyncMock()
@@ -387,11 +408,17 @@ async def test_download_command_concurrent_usage_dpytest(
     ctx2.author.id = 54321
     ctx2.channel = mocker.Mock()
     ctx2.channel.id = 98765
+    ctx2.message = mocker.Mock()
+    ctx2.message.id = 987654321
+
+    # Mock upload manager to avoid upload processing in tests
+    cog.upload_manager = mocker.Mock()
+    cog.upload_manager.process_downloaded_files = mocker.AsyncMock()
 
     # Simulate concurrent download requests
     await asyncio.gather(
-        cog.download.callback(cog, ctx1, fixture_download_test_data['twitter_url']),
-        cog.download.callback(cog, ctx2, fixture_download_test_data['reddit_url'])
+        cog.download.callback(cog, ctx1, fixture_download_test_data['twitter_url'], upload=False),
+        cog.download.callback(cog, ctx2, fixture_download_test_data['reddit_url'], upload=False)
     )
 
     # Verify downloads were processed
@@ -433,6 +460,8 @@ async def test_download_command_permission_handling_dpytest(
     admin_ctx.author.id = 12345
     admin_ctx.channel = mocker.Mock()
     admin_ctx.channel.id = 67890
+    admin_ctx.message = mocker.Mock()
+    admin_ctx.message.id = 123456789
     admin_ctx.author.guild_permissions = discord.Permissions.all()
 
     regular_ctx = mocker.Mock(spec=commands.Context)
@@ -441,17 +470,23 @@ async def test_download_command_permission_handling_dpytest(
     regular_ctx.author.id = 54321
     regular_ctx.channel = mocker.Mock()
     regular_ctx.channel.id = 98765
+    regular_ctx.message = mocker.Mock()
+    regular_ctx.message.id = 987654321
     regular_ctx.author.guild_permissions = discord.Permissions.none()
 
+    # Mock upload manager to avoid upload processing in tests
+    cog.upload_manager = mocker.Mock()
+    cog.upload_manager.process_downloaded_files = mocker.AsyncMock()
+
     # Test admin access
-    await cog.download.callback(cog, admin_ctx, fixture_download_test_data['twitter_url'])
+    await cog.download.callback(cog, admin_ctx, fixture_download_test_data['twitter_url'], upload=False)
 
     # Verify admin can use command
     admin_args = [call[0][0] for call in admin_ctx.send.call_args_list]
     assert any("🐦 Downloading Twitter/X content:" in arg for arg in admin_args)
 
     # Test regular user access
-    await cog.download.callback(cog, regular_ctx, fixture_download_test_data['twitter_url'])
+    await cog.download.callback(cog, regular_ctx, fixture_download_test_data['twitter_url'], upload=False)
 
     # Regular users should also be able to use download command (no special permissions required)
     regular_args = [call[0][0] for call in regular_ctx.send.call_args_list]
@@ -492,6 +527,8 @@ async def test_command_isolation_dpytest(
     download_ctx.author.id = 23456
     download_ctx.channel = mocker.Mock()
     download_ctx.channel.id = 78901
+    download_ctx.message = mocker.Mock()
+    download_ctx.message.id = 123456789
 
     status_ctx = mocker.Mock(spec=commands.Context)
     status_ctx.send = mocker.AsyncMock()
@@ -500,13 +537,17 @@ async def test_command_isolation_dpytest(
     status_ctx.channel = mocker.Mock()
     status_ctx.channel.id = 89012
 
+    # Mock upload manager to avoid upload processing in tests
+    cog.upload_manager = mocker.Mock()
+    cog.upload_manager.process_downloaded_files = mocker.AsyncMock()
+
     # Run metadata command
     await cog.metadata.callback(cog, info_ctx, fixture_download_test_data['twitter_url'])
     info_args = [call[0][0] for call in info_ctx.send.call_args_list]
     assert any("🐦 **Twitter/X Content Info**" in arg for arg in info_args)
 
     # Run download command - should be independent
-    await cog.download.callback(cog, download_ctx, fixture_download_test_data['twitter_url'])
+    await cog.download.callback(cog, download_ctx, fixture_download_test_data['twitter_url'], upload=False)
     download_args = [call[0][0] for call in download_ctx.send.call_args_list]
     assert any("✅ Twitter/X download completed!" in arg for arg in download_args)
 

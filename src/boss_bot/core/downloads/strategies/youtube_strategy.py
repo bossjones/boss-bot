@@ -32,7 +32,8 @@ class YouTubeDownloadStrategy(BaseDownloadStrategy):
             feature_flags: Feature flags for download implementation choice
             download_dir: Directory where downloads should be saved
         """
-        super().__init__(download_dir)
+        # Initialize with internal variable to allow property override
+        self._download_dir = download_dir
         self.feature_flags = feature_flags
 
         # ✅ Keep existing handler (no changes to existing functionality)
@@ -40,6 +41,20 @@ class YouTubeDownloadStrategy(BaseDownloadStrategy):
 
         # 🆕 New API client (lazy loaded only when needed)
         self._api_client: AsyncYtDlp | None = None
+
+    @property
+    def download_dir(self) -> Path:
+        """Get current download directory."""
+        return self._download_dir
+
+    @download_dir.setter
+    def download_dir(self, value: Path) -> None:
+        """Set download directory and invalidate API client to force recreation."""
+        self._download_dir = value
+        # Update CLI handler download directory
+        self.cli_handler.download_dir = value
+        # Invalidate API client so it gets recreated with new directory
+        self._api_client = None
 
     @property
     def api_client(self) -> AsyncYtDlp:

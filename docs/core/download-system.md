@@ -747,3 +747,317 @@ except CompressionError as e:
 ```
 
 This download system provides both stability through the proven Handler pattern and innovation through the experimental Strategy pattern, enabling gradual adoption of new features while maintaining backward compatibility. The integrated compression system ensures all downloaded media can be shared within Discord's file size constraints while maintaining optimal quality.
+
+## Upload System Integration
+
+### Enhanced Download Workflow
+
+The download system now integrates seamlessly with the upload system to provide a complete download-to-Discord workflow:
+
+```mermaid
+graph TB
+    subgraph "Enhanced Download Workflow"
+        USER[Discord User] --> CMD[Download Command]
+        CMD --> VALIDATE[URL Validation]
+        VALIDATE --> STRATEGY[Select Strategy]
+        STRATEGY --> DOWNLOAD[Execute Download]
+        DOWNLOAD --> SUCCESS{Download Success?}
+        SUCCESS -->|No| ERROR[Send Error Message]
+        SUCCESS -->|Yes| UPLOAD_CHECK{Upload Requested?}
+        UPLOAD_CHECK -->|No| SAVE[Save to Directory]
+        UPLOAD_CHECK -->|Yes| UPLOAD_FLOW[Upload Workflow]
+
+        subgraph "Upload Workflow"
+            UPLOAD_FLOW --> DETECT[Detect Media Files]
+            DETECT --> ANALYZE[Analyze File Sizes]
+            ANALYZE --> COMPRESS{Files > Discord Limit?}
+            COMPRESS -->|Yes| COMPRESSION[Compress Files]
+            COMPRESS -->|No| BATCH[Create Upload Batches]
+            COMPRESSION --> BATCH
+            BATCH --> DISCORD_UPLOAD[Upload to Discord]
+            DISCORD_UPLOAD --> CLEANUP[Cleanup Files]
+        end
+
+        SAVE --> END[Complete]
+        CLEANUP --> END
+        ERROR --> END
+    end
+```
+
+### Download-Upload Integration Architecture
+
+```python
+# Integration architecture in download cog
+class DownloadCog(commands.Cog):
+    """Enhanced download cog with upload integration."""
+
+    def __init__(self, bot):
+        self.bot = bot
+        self.settings = bot.settings
+
+        # Core download components
+        self.download_manager = DownloadManager(bot.settings)
+        self.strategies = self._initialize_strategies()
+
+        # New upload integration
+        self.upload_manager = UploadManager(bot.settings)
+
+    async def download_with_upload(self, ctx, url, upload=True):
+        """Unified download and upload workflow."""
+
+        # Phase 1: Download to isolated directory
+        request_id = f"{ctx.author.id}_{ctx.message.id}"
+        download_dir = self.download_manager.create_isolated_dir(request_id)
+
+        try:
+            # Execute download using strategy pattern
+            metadata = await self.execute_download(url, download_dir)
+
+            if metadata.error:
+                await ctx.send(f"❌ Download failed: {metadata.error}")
+                return
+
+            await ctx.send(f"✅ Download completed!")
+
+            # Phase 2: Upload processing (if requested)
+            if upload:
+                upload_result = await self.upload_manager.process_downloaded_files(
+                    download_dir, ctx, metadata.platform
+                )
+
+                if upload_result.success:
+                    await ctx.send(f"🎉 {upload_result.message}")
+                else:
+                    await ctx.send(f"⚠️ {upload_result.message}")
+
+        finally:
+            # Phase 3: Cleanup
+            if upload and self.settings.upload_cleanup_after_success:
+                shutil.rmtree(download_dir)
+```
+
+### Upload-Aware Download Configuration
+
+The download system now includes upload-specific configuration options:
+
+```python
+# Enhanced BossSettings with upload integration
+class BossSettings(BaseSettings):
+    # Download configuration (existing)
+    download_dir: Path = Field(default=Path("./downloads"))
+    max_concurrent_downloads: int = Field(default=3)
+
+    # Upload integration configuration (new)
+    upload_cleanup_after_success: bool = Field(
+        default=True,
+        description="Remove downloaded files after successful upload",
+        validation_alias="UPLOAD_CLEANUP_AFTER_SUCCESS"
+    )
+    upload_enable_progress_updates: bool = Field(
+        default=True,
+        description="Show upload progress messages",
+        validation_alias="UPLOAD_ENABLE_PROGRESS_UPDATES"
+    )
+    upload_batch_size_mb: int = Field(
+        default=20,
+        description="Maximum batch size for Discord uploads in MB",
+        validation_alias="UPLOAD_BATCH_SIZE_MB"
+    )
+    upload_max_files_per_batch: int = Field(
+        default=10,
+        description="Maximum files per Discord message",
+        validation_alias="UPLOAD_MAX_FILES_PER_BATCH"
+    )
+
+    # Compression for upload optimization
+    compression_max_upload_size_mb: int = Field(
+        default=50,
+        description="Target compression size for Discord uploads in MB",
+        validation_alias="COMPRESSION_MAX_UPLOAD_SIZE_MB"
+    )
+```
+
+### Command Interface Changes
+
+The download commands now support upload functionality:
+
+```python
+# Updated command signatures
+@commands.command(name="download")
+async def download_command(self, ctx: commands.Context, url: str, upload: bool = True):
+    """Download content and optionally upload to Discord.
+
+    Args:
+        url: URL to download
+        upload: Whether to upload files to Discord (default: True)
+
+    Examples:
+        $download https://twitter.com/user/status/123         # Download and upload
+        $download https://youtube.com/watch?v=abc upload=False # Download only
+    """
+
+@commands.command(name="download-only")
+async def download_only_command(self, ctx: commands.Context, url: str):
+    """Download content without uploading to Discord.
+
+    Args:
+        url: URL to download
+
+    Examples:
+        $download-only https://twitter.com/user/status/123
+    """
+    await self.download_command(ctx, url, upload=False)
+```
+
+### Upload Integration Examples
+
+**Basic Usage:**
+```bash
+# Download and upload (default behavior)
+$download https://twitter.com/user/status/123
+
+# Download only (no upload)
+$download-only https://youtube.com/watch?v=VIDEO_ID
+
+# Explicit upload control
+$download https://reddit.com/r/pics/comments/abc123/ upload=False
+```
+
+**Workflow Messages:**
+```
+User: $download https://twitter.com/example/status/123
+
+Bot: ✅ Twitter/X download completed!
+Bot: 📤 Processing files for upload...
+Bot: 📊 Found 2 media files (15.3MB total)
+Bot: 📎 Uploading batch 1/1: image1.jpg, video1.mp4 (15.3MB)
+Bot: 🎯 Twitter/X media files: [files attached]
+Bot: 🎉 Upload complete: 2/2 files uploaded
+```
+
+### Temporary Directory Management
+
+The enhanced download system uses temporary directories for upload processing:
+
+```python
+# Temporary directory strategy
+class DownloadManager:
+    """Enhanced download manager with upload integration."""
+
+    def create_isolated_download_dir(self, request_id: str) -> Path:
+        """Create isolated directory for download-upload workflow."""
+        download_subdir = self.download_dir / request_id
+        download_subdir.mkdir(exist_ok=True, parents=True)
+        return download_subdir
+
+    async def download_with_isolation(self, url: str, isolated_dir: Path):
+        """Download to isolated directory for upload processing."""
+        strategy = self.get_strategy_for_url(url)
+
+        # Temporarily change strategy download directory
+        original_dir = strategy.download_dir
+        strategy.download_dir = isolated_dir
+
+        try:
+            return await strategy.download(url)
+        finally:
+            # Restore original directory
+            strategy.download_dir = original_dir
+```
+
+### Error Handling and Fallbacks
+
+Enhanced error handling for download-upload workflows:
+
+```python
+# Comprehensive error handling
+async def handle_download_upload_errors(self, ctx, url, upload=True):
+    """Handle errors in download-upload workflow."""
+
+    try:
+        # Download phase
+        metadata = await self.execute_download(url)
+
+        if metadata.error:
+            await ctx.send(f"❌ Download failed: {metadata.error}")
+            return
+
+        # Upload phase (if requested)
+        if upload:
+            upload_result = await self.upload_manager.process_downloaded_files(
+                download_dir, ctx, metadata.platform
+            )
+
+            if not upload_result.success:
+                # Fallback: Save files locally
+                await ctx.send(f"⚠️ Upload failed: {upload_result.message}")
+                await ctx.send(f"📁 Files saved locally to: `{download_dir}`")
+
+                # Don't cleanup on upload failure
+                return
+
+    except DownloadError as e:
+        await ctx.send(f"❌ Download error: {e}")
+    except Exception as e:
+        logger.error(f"Unexpected error in download-upload workflow: {e}")
+        await ctx.send("❌ An unexpected error occurred. Files may be saved locally.")
+```
+
+### Performance Optimizations
+
+Upload integration includes several performance optimizations:
+
+**Concurrent Processing:**
+```python
+# Concurrent download and upload preparation
+async def optimized_download_upload(self, url, ctx):
+    """Optimized workflow with concurrent operations."""
+
+    # Start download
+    download_task = asyncio.create_task(strategy.download(url))
+
+    # Prepare upload manager while downloading
+    upload_manager = UploadManager(self.settings)
+
+    # Wait for download completion
+    metadata = await download_task
+
+    # Process upload immediately
+    if not metadata.error:
+        upload_result = await upload_manager.process_downloaded_files(
+            download_dir, ctx, metadata.platform
+        )
+```
+
+**Smart Batching:**
+```python
+# Intelligent batching for large downloads
+async def batch_large_downloads(self, media_files, ctx):
+    """Handle large downloads with smart batching."""
+
+    # Analyze total size
+    total_size_mb = sum(f.size_mb for f in media_files)
+
+    if total_size_mb > 100:  # Large download
+        await ctx.send(f"📦 Large download detected ({total_size_mb:.1f}MB). Processing in batches...")
+
+        # Process in smaller batches for better UX
+        batch_size = 5
+        for i in range(0, len(media_files), batch_size):
+            batch = media_files[i:i + batch_size]
+            await self.process_upload_batch(batch, ctx, i // batch_size + 1)
+```
+
+### Integration Benefits
+
+The upload integration provides several key benefits:
+
+1. **Seamless User Experience**: Single command for download-to-Discord workflow
+2. **Automatic Compression**: Oversized files are automatically compressed for Discord
+3. **Intelligent Batching**: Files are optimally grouped for Discord's limits
+4. **Progress Feedback**: Real-time updates on download and upload progress
+5. **Error Resilience**: Graceful handling of upload failures with local fallback
+6. **Resource Management**: Automatic cleanup of temporary files
+7. **Configuration Flexibility**: Extensive customization options
+
+This integration transforms the download system from a simple file retrieval tool into a comprehensive media sharing solution optimized for Discord's platform constraints.

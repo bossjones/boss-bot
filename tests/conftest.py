@@ -172,6 +172,12 @@ def fixture_settings_test(fixture_env_vars_test: MonkeyPatch) -> BossSettings:
         debug=True,
         environment=Environment.DEVELOPMENT,
 
+        # Upload Settings
+        upload_batch_size_mb=20,
+        upload_max_files_per_batch=10,
+        upload_cleanup_after_success=True,
+        upload_enable_progress_updates=True,
+
         # Additional API Keys and Settings
         cohere_api_key="test-cohere-key",
         debug_aider=True,

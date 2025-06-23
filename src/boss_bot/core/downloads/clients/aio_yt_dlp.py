@@ -79,9 +79,9 @@ class AsyncYtDlp:
             "fragment_retries": 3,  # Retry fragments
         }
 
-        # Add output directory
+        # Add output directory with gallery-dl style structure
         if self.output_dir:
-            options["outtmpl"] = str(self.output_dir / "%(uploader)s/%(title)s.%(ext)s")
+            options["outtmpl"] = str(self.output_dir / "yt-dlp/youtube/%(uploader)s/%(title)s.%(ext)s")
 
         # Add cookies file
         if self.cookies_file:
@@ -155,7 +155,16 @@ class AsyncYtDlp:
         # Update options for this download
         if options:
             original_params = self._yt_dlp.params.copy()
-            self._yt_dlp.params.update(options)
+
+            # Handle outtmpl option specially to avoid conflicts
+            processed_options = options.copy()
+            if "outtmpl" in processed_options:
+                outtmpl_value = processed_options["outtmpl"]
+                if isinstance(outtmpl_value, str):
+                    # Convert string outtmpl to dict format expected by yt-dlp
+                    processed_options["outtmpl"] = {"default": outtmpl_value}
+
+            self._yt_dlp.params.update(processed_options)
 
         try:
             # Extract info and download

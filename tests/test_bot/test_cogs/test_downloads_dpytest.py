@@ -231,7 +231,7 @@ async def test_download_command_fallback_to_queue_dpytest(
     cog.strategies = fixture_mock_strategies
 
     # Mock the bot managers for fallback
-    fixture_bot_test.download_manager.validate_url = mocker.Mock(return_value=True)
+    fixture_bot_test.download_manager.validate_url = mocker.AsyncMock(return_value=True)
     fixture_bot_test.queue_manager.add_to_queue = mocker.AsyncMock()
 
     # Create mock context

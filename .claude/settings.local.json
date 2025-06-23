@@ -36,7 +36,13 @@
       "Bash(mkdir:*)",
       "Bash(find:*)",
       "Bash(just check-coverage)",
-      "Bash(just test-ci:*)"
+      "Bash(just test-ci:*)",
+      "mcp__mcp-server-yt-dlp__fetch_yt_dlp_documentation",
+      "mcp__mcp-server-yt-dlp__search_yt_dlp_documentation",
+      "mcp__mcp-server-yt-dlp__search_yt_dlp_code",
+      "mcp__mcp-server-yt-dlp__fetch_generic_url_content",
+      "Bash(git add:*)",
+      "mcp__github__get_file_contents"
     ],
     "deny": []
   },

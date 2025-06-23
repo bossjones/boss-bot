@@ -1,3 +1,4 @@
+# pylint: disable=no-member
 """
 Thread-safe, async-safe, and multiprocessing-safe logging interceptor for boss-bot.
 

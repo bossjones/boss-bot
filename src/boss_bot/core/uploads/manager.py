@@ -1,3 +1,4 @@
+# pylint: disable=unexpected-keyword-arg
 """Main upload manager for coordinating media file uploads."""
 
 from __future__ import annotations
@@ -8,6 +9,7 @@ from typing import List, Optional
 from discord.ext import commands
 
 from boss_bot.core.compression.manager import CompressionManager
+from boss_bot.core.compression.models import CompressionResult
 from boss_bot.core.env import BossSettings
 from boss_bot.core.uploads.models import MediaFile, UploadResult
 from boss_bot.core.uploads.processors.discord_processor import DiscordUploadProcessor
@@ -121,8 +123,8 @@ class UploadManager:
                 # Calculate target size slightly under Discord limit
                 target_size_mb = self.size_analyzer.discord_limit_mb * 0.95
 
-                compression_result = await self.compression_manager.compress_file(
-                    media_file.path, target_size_mb=target_size_mb, output_dir=media_file.path.parent
+                compression_result: CompressionResult = await self.compression_manager.compress_file(
+                    media_file.path, target_size_mb=target_size_mb
                 )
 
                 if compression_result.success:

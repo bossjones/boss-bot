@@ -3,9 +3,13 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
+import re
+import time
+from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from boss_bot.core.downloads.feature_flags import DownloadFeatureFlags
 from boss_bot.core.downloads.handlers.base_handler import MediaMetadata
@@ -56,23 +60,43 @@ class YouTubeDownloadStrategy(BaseDownloadStrategy):
         # Invalidate API client so it gets recreated with new directory
         self._api_client = None
 
+    def _get_youtube_config(self) -> dict[str, Any]:
+        """Get optimized yt-dlp configuration for Discord workflow."""
+        return {
+            # Directory structure using yt-dlp's built-in outtmpl
+            "outtmpl": {
+                "default": f"{self.download_dir}/yt-dlp/youtube/%(uploader|Unknown)s/%(title).100s-%(id)s.%(ext)s",
+                "infojson": f"{self.download_dir}/yt-dlp/youtube/%(uploader|Unknown)s/%(title).100s-%(id)s.info.json",
+                "thumbnail": f"{self.download_dir}/yt-dlp/youtube/%(uploader|Unknown)s/%(title).100s-%(id)s.%(ext)s",
+                "description": f"{self.download_dir}/yt-dlp/youtube/%(uploader|Unknown)s/%(title).100s-%(id)s.description",
+            },
+            # Quality ladder optimized for Discord limits (25MB default, 50MB boost)
+            "format": "best[height<=720][filesize<50M]/best[height<=480][filesize<25M]/best[height<=360][filesize<10M]",
+            # Metadata preservation
+            "writeinfojson": True,
+            "writedescription": True,
+            "writethumbnail": True,
+            "writesubtitles": False,  # Skip subtitles for Discord uploads
+            # Performance optimization
+            "noplaylist": True,
+            "ignoreerrors": False,
+            "retries": 3,
+            "fragment_retries": 3,
+            "socket_timeout": 120,
+            "read_timeout": 300,
+            # Discord-friendly video settings
+            "merge_output_format": "mp4",
+            "postprocessor_args": ["-movflags", "+faststart"],  # Web-optimized MP4
+        }
+
     @property
     def api_client(self) -> AsyncYtDlp:
         """Lazy load API client only when needed."""
         if self._api_client is None:
             from boss_bot.core.downloads.clients import AsyncYtDlp
 
-            # Configure client for YouTube downloads with quality selection
-            config = {
-                "format": "best[height<=720]",  # Default to 720p
-                "writeinfojson": True,  # Write metadata JSON
-                "writedescription": True,  # Write description
-                "writethumbnail": True,  # Write thumbnail
-                "noplaylist": True,  # Single video by default
-                "retries": 3,  # Retry on failure
-                "fragment_retries": 3,  # Retry fragments
-                "merge_output_format": "mp4",  # Prefer mp4 format
-            }
+            # Use enhanced configuration
+            config = self._get_youtube_config()
 
             self._api_client = AsyncYtDlp(
                 config=config,
@@ -116,11 +140,11 @@ class YouTubeDownloadStrategy(BaseDownloadStrategy):
         return self.cli_handler.supports_url(url)
 
     async def download(self, url: str, **kwargs) -> MediaMetadata:
-        """Download using feature-flagged approach.
+        """Download using feature-flagged approach with deduplication.
 
         Args:
             url: YouTube URL to download
-            **kwargs: Additional download options (quality, format, etc.)
+            **kwargs: Additional download options (quality, format, force_redownload, etc.)
 
         Returns:
             MediaMetadata with download results
@@ -128,17 +152,55 @@ class YouTubeDownloadStrategy(BaseDownloadStrategy):
         if not self.supports_url(url):
             raise ValueError(f"URL not supported by YouTube strategy: {url}")
 
-        # Feature flag: choose implementation
-        if self.feature_flags.use_api_youtube:
-            try:
-                return await self._download_via_api(url, **kwargs)
-            except Exception as e:
-                if self.feature_flags.api_fallback_to_cli:
-                    logger.warning(f"YouTube API download failed, falling back to CLI: {e}")
-                    return await self._download_via_cli(url, **kwargs)
-                raise
-        else:
-            return await self._download_via_cli(url, **kwargs)
+        # Check for duplicates unless force_redownload is specified
+        duplicate_check = self._check_deduplication(url, **kwargs)
+        if duplicate_check:
+            logger.info(f"Skipping duplicate download: {url}")
+            return duplicate_check
+
+        # Feature flag: choose implementation with performance tracking
+        start_time = time.time()
+        download_method = "unknown"
+
+        try:
+            if self.feature_flags.use_api_youtube:
+                try:
+                    download_method = "api"
+                    metadata = await self._download_via_api(url, **kwargs)
+                except Exception as e:
+                    if self.feature_flags.api_fallback_to_cli:
+                        logger.warning(f"YouTube API download failed, falling back to CLI: {e}")
+                        download_method = "cli_fallback"
+                        metadata = await self._download_via_cli(url, **kwargs)
+                    else:
+                        raise
+            else:
+                download_method = "cli"
+                metadata = await self._download_via_cli(url, **kwargs)
+
+            # Add performance metrics to metadata
+            download_duration = time.time() - start_time
+            metadata.download_method = download_method
+
+            # Log performance metrics
+            logger.info(f"YouTube download completed in {download_duration:.2f}s using {download_method} method")
+
+            # Record successful download for deduplication
+            if not metadata.error:
+                video_id = self._extract_youtube_video_id(url)
+                if video_id:
+                    self._record_download(video_id, metadata)
+                    # Store performance metrics in history
+                    self._record_performance_metrics(video_id, download_duration, download_method)
+
+            return metadata
+
+        except Exception as e:
+            # Log failed download performance
+            download_duration = time.time() - start_time
+            logger.error(f"YouTube download failed after {download_duration:.2f}s using {download_method} method: {e}")
+            # Don't record failed downloads
+            raise
 
     async def get_metadata(self, url: str, **kwargs) -> MediaMetadata:
         """Get metadata using feature-flagged approach.
@@ -206,7 +268,7 @@ class YouTubeDownloadStrategy(BaseDownloadStrategy):
         return await loop.run_in_executor(None, self.cli_handler.get_metadata, url, **kwargs)
 
     async def _download_via_api(self, url: str, **kwargs) -> MediaMetadata:
-        """Use new API client.
+        """Use new API client with enhanced error handling.
 
         Args:
             url: YouTube URL to download
@@ -215,51 +277,7 @@ class YouTubeDownloadStrategy(BaseDownloadStrategy):
         Returns:
             MediaMetadata from API client
         """
-        # Update client configuration with download options
-        download_options = {}
-
-        # Quality selection
-        quality = kwargs.get("quality", "720p")
-        audio_only = kwargs.get("audio_only", False)
-
-        if audio_only:
-            download_options.update(
-                {
-                    "format": "bestaudio",
-                    "postprocessors": [
-                        {
-                            "key": "FFmpegExtractAudio",
-                            "preferredcodec": kwargs.get("audio_format", "mp3"),
-                            "preferredquality": kwargs.get("audio_quality", "192"),
-                        }
-                    ],
-                }
-            )
-        else:
-            if quality == "best":
-                download_options["format"] = "best"
-            elif quality == "worst":
-                download_options["format"] = "worst"
-            elif quality in ["4K", "2160p"]:
-                download_options["format"] = "best[height<=2160]"
-            elif quality in ["1440p", "2K"]:
-                download_options["format"] = "best[height<=1440]"
-            elif quality in ["1080p", "FHD"]:
-                download_options["format"] = "best[height<=1080]"
-            elif quality in ["720p", "HD"]:
-                download_options["format"] = "best[height<=720]"
-            elif quality in ["480p"]:
-                download_options["format"] = "best[height<=480]"
-            elif quality in ["360p"]:
-                download_options["format"] = "best[height<=360]"
-
-        async with self.api_client as client:
-            # Download and convert API response to MediaMetadata
-            async for item in client.download(url, **download_options):
-                return self._convert_api_response_to_metadata(item)
-
-        # If no results, raise an error
-        raise RuntimeError("No download results from YouTube API")
+        return await self._download_via_api_with_fallbacks(url, **kwargs)
 
     async def _get_metadata_via_api(self, url: str, **kwargs) -> MediaMetadata:
         """Get metadata using API client.
@@ -307,6 +325,407 @@ class YouTubeDownloadStrategy(BaseDownloadStrategy):
             filename=api_response.get("filename", ""),
             raw_metadata=api_response.get("raw_metadata", api_response),
         )
+
+    def _sanitize_channel_name(self, uploader: str) -> str:
+        """Clean channel name for filesystem compatibility.
+
+        Args:
+            uploader: Raw uploader/channel name from yt-dlp
+
+        Returns:
+            Filesystem-safe channel name
+
+        Examples:
+            "MrBeast" -> "MrBeast"
+            "Channel: Name/Test" -> "Channel_Name_Test"
+            "[Deleted]" -> "Unknown_Channel"
+        """
+        if not uploader or uploader.lower() in ["unknown", "[deleted]", "na"]:
+            return "Unknown_Channel"
+
+        # Remove/replace problematic characters for filesystem
+        sanitized = re.sub(r'[<>:"/\\|?*]', "_", uploader)
+        sanitized = re.sub(r"[\[\]]", "", sanitized)  # Remove brackets
+        sanitized = sanitized.strip(". ")  # Remove leading/trailing dots/spaces
+        sanitized = re.sub(r"_+", "_", sanitized)  # Collapse multiple underscores
+
+        return sanitized[:100]  # Limit length for filesystem compatibility
+
+    def _extract_youtube_video_id(self, url: str) -> str | None:
+        """Extract video ID from YouTube URL for fallback naming.
+
+        Args:
+            url: YouTube URL (video, shorts, embed, etc.)
+
+        Returns:
+            Video ID or None if not extractable
+
+        Examples:
+            "https://www.youtube.com/watch?v=dQw4w9WgXcQ" -> "dQw4w9WgXcQ"
+            "https://youtu.be/dQw4w9WgXcQ" -> "dQw4w9WgXcQ"
+            "https://www.youtube.com/shorts/iJw5lVbIwao" -> "iJw5lVbIwao"
+        """
+        patterns = [
+            r"(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/shorts/)([^&\n?#]+)",
+            r"youtube\.com/embed/([^&\n?#]+)",
+            r"youtube\.com/v/([^&\n?#]+)",
+        ]
+
+        for pattern in patterns:
+            match = re.search(pattern, url)
+            if match:
+                return match.group(1)
+
+        return None
+
+    def _extract_channel_info_from_metadata(self, metadata: dict[str, Any]) -> tuple[str, str]:
+        """Extract reliable channel information from yt-dlp metadata.
+
+        Args:
+            metadata: Raw yt-dlp metadata dictionary
+
+        Returns:
+            Tuple of (channel_name, channel_id) with fallbacks applied
+
+        Priority order:
+            1. uploader (display name) - most user-friendly
+            2. channel (formal name) - alternative display name
+            3. uploader_id (channel ID) - guaranteed unique
+            4. "Unknown_Channel" - ultimate fallback
+        """
+        # Extract channel name with priority fallbacks
+        channel_name = None
+        for field in ["uploader", "channel", "uploader_id"]:
+            if metadata.get(field):
+                channel_name = str(metadata[field])
+                break
+
+        if not channel_name:
+            channel_name = "Unknown_Channel"
+
+        # Sanitize for filesystem compatibility
+        sanitized_name = self._sanitize_channel_name(channel_name)
+
+        # Extract channel ID for deduplication support
+        channel_id = metadata.get("uploader_id", metadata.get("channel_id", "unknown"))
+
+        return sanitized_name, channel_id
+
+    def _get_deduplication_file(self) -> Path:
+        """Get path to deduplication tracking file.
+
+        Returns:
+            Path to JSON file storing download history
+        """
+        return self.download_dir / ".yt_download_history.json"
+
+    def _load_download_history(self) -> dict[str, dict[str, Any]]:
+        """Load download history from file.
+
+        Returns:
+            Dictionary mapping video IDs to download metadata
+        """
+        history_file = self._get_deduplication_file()
+        if not history_file.exists():
+            return {}
+
+        try:
+            with open(history_file, encoding="utf-8") as f:
+                return json.load(f)
+        except (OSError, json.JSONDecodeError) as e:
+            logger.warning(f"Failed to load download history: {e}")
+            return {}
+
+    def _save_download_history(self, history: dict[str, dict[str, Any]]) -> None:
+        """Save download history to file.
+
+        Args:
+            history: Dictionary mapping video IDs to download metadata
+        """
+        history_file = self._get_deduplication_file()
+        history_file.parent.mkdir(parents=True, exist_ok=True)
+
+        try:
+            with open(history_file, "w", encoding="utf-8") as f:
+                json.dump(history, f, indent=2, ensure_ascii=False)
+        except OSError as e:
+            logger.warning(f"Failed to save download history: {e}")
+
+    def _record_download(self, video_id: str, metadata: MediaMetadata) -> None:
+        """Record a successful download in history.
+
+        Args:
+            video_id: YouTube video ID
+            metadata: Download metadata
+        """
+        history = self._load_download_history()
+
+        history[video_id] = {
+            "title": metadata.title,
+            "uploader": metadata.uploader,
+            "download_date": datetime.now().isoformat(),
+            "url": metadata.url,
+            "files": metadata.files or [],
+            "download_method": metadata.download_method or "unknown",
+        }
+
+        # Keep only last 1000 entries to prevent file from growing too large
+        if len(history) > 1000:
+            # Remove oldest entries
+            sorted_items = sorted(history.items(), key=lambda x: x[1].get("download_date", ""), reverse=True)
+            history = dict(sorted_items[:1000])
+
+        self._save_download_history(history)
+
+    def _record_performance_metrics(self, video_id: str, duration: float, method: str) -> None:
+        """Record performance metrics for a download.
+
+        Args:
+            video_id: YouTube video ID
+            duration: Download duration in seconds
+            method: Download method used (api, cli, cli_fallback)
+        """
+        metrics_file = self.download_dir / ".yt_performance_metrics.json"
+
+        # Load existing metrics
+        metrics = {}
+        if metrics_file.exists():
+            try:
+                with open(metrics_file, encoding="utf-8") as f:
+                    metrics = json.load(f)
+            except (OSError, json.JSONDecodeError) as e:
+                logger.warning(f"Failed to load performance metrics: {e}")
+                metrics = {}
+
+        # Add new metric
+        metrics[video_id] = {"duration": duration, "method": method, "timestamp": datetime.now().isoformat()}
+
+        # Keep only last 500 entries to prevent file from growing too large
+        if len(metrics) > 500:
+            sorted_items = sorted(metrics.items(), key=lambda x: x[1].get("timestamp", ""), reverse=True)
+            metrics = dict(sorted_items[:500])
+
+        # Save metrics
+        try:
+            metrics_file.parent.mkdir(parents=True, exist_ok=True)
+            with open(metrics_file, "w", encoding="utf-8") as f:
+                json.dump(metrics, f, indent=2, ensure_ascii=False)
+        except OSError as e:
+            logger.warning(f"Failed to save performance metrics: {e}")
+
+    def get_performance_stats(self) -> dict[str, Any]:
+        """Get performance statistics for YouTube downloads.
+
+        Returns:
+            Dictionary with performance statistics
+        """
+        metrics_file = self.download_dir / ".yt_performance_metrics.json"
+
+        if not metrics_file.exists():
+            return {
+                "total_downloads": 0,
+                "avg_duration": 0.0,
+                "method_breakdown": {},
+                "fastest_download": None,
+                "slowest_download": None,
+            }
+
+        try:
+            with open(metrics_file, encoding="utf-8") as f:
+                metrics = json.load(f)
+        except (OSError, json.JSONDecodeError) as e:
+            logger.warning(f"Failed to load performance metrics: {e}")
+            return {"error": "Failed to load metrics"}
+
+        if not metrics:
+            return {
+                "total_downloads": 0,
+                "avg_duration": 0.0,
+                "method_breakdown": {},
+                "fastest_download": None,
+                "slowest_download": None,
+            }
+
+        # Calculate statistics
+        durations = [metric["duration"] for metric in metrics.values()]
+        methods = [metric["method"] for metric in metrics.values()]
+
+        method_breakdown = {}
+        for method in methods:
+            method_breakdown[method] = method_breakdown.get(method, 0) + 1
+
+        # Find fastest and slowest
+        sorted_by_duration = sorted(metrics.items(), key=lambda x: x[1]["duration"])
+        fastest = sorted_by_duration[0] if sorted_by_duration else None
+        slowest = sorted_by_duration[-1] if sorted_by_duration else None
+
+        return {
+            "total_downloads": len(metrics),
+            "avg_duration": sum(durations) / len(durations) if durations else 0.0,
+            "method_breakdown": method_breakdown,
+            "fastest_download": {
+                "video_id": fastest[0],
+                "duration": fastest[1]["duration"],
+                "method": fastest[1]["method"],
+            }
+            if fastest
+            else None,
+            "slowest_download": {
+                "video_id": slowest[0],
+                "duration": slowest[1]["duration"],
+                "method": slowest[1]["method"],
+            }
+            if slowest
+            else None,
+        }
+
+    def _is_video_downloaded(self, video_id: str) -> dict[str, Any] | None:
+        """Check if video has been downloaded before.
+
+        Args:
+            video_id: YouTube video ID to check
+
+        Returns:
+            Download metadata if found, None otherwise
+        """
+        history = self._load_download_history()
+        return history.get(video_id)
+
+    def _check_deduplication(self, url: str, **kwargs) -> MediaMetadata | None:
+        """Check if video should be skipped due to deduplication.
+
+        Args:
+            url: YouTube URL to check
+            **kwargs: Download options (may include force_redownload)
+
+        Returns:
+            MediaMetadata with existing info if duplicate, None if should download
+        """
+        # Allow bypassing deduplication
+        if kwargs.get("force_redownload", False):
+            return None
+
+        # Extract video ID
+        video_id = self._extract_youtube_video_id(url)
+        if not video_id:
+            return None
+
+        # Check if already downloaded
+        existing_download = self._is_video_downloaded(video_id)
+        if not existing_download:
+            return None
+
+        logger.info(f"Video {video_id} already downloaded on {existing_download.get('download_date')}")
+
+        # Return metadata indicating duplicate
+        return MediaMetadata(
+            platform="youtube",
+            url=url,
+            title=existing_download.get("title", ""),
+            uploader=existing_download.get("uploader", ""),
+            files=existing_download.get("files", []),
+            download_method=existing_download.get("download_method", ""),
+            error=None,
+            raw_metadata={"duplicate": True, "original_download": existing_download},
+        )
+
+    async def _download_via_api_with_fallbacks(self, url: str, **kwargs) -> MediaMetadata:
+        """Enhanced API download with YouTube-specific error handling.
+
+        Args:
+            url: YouTube URL to download
+            **kwargs: Download options
+
+        Returns:
+            MediaMetadata from API client
+
+        Raises:
+            RuntimeError: If download fails after all retry attempts
+        """
+        # Update client configuration with download options
+        download_options = {}
+
+        # Quality selection
+        quality = kwargs.get("quality", "720p")
+        audio_only = kwargs.get("audio_only", False)
+
+        if audio_only:
+            download_options.update(
+                {
+                    "format": "bestaudio",
+                    "postprocessors": [
+                        {
+                            "key": "FFmpegExtractAudio",
+                            "preferredcodec": kwargs.get("audio_format", "mp3"),
+                            "preferredquality": kwargs.get("audio_quality", "192"),
+                        }
+                    ],
+                }
+            )
+        else:
+            if quality == "best":
+                download_options["format"] = "best"
+            elif quality == "worst":
+                download_options["format"] = "worst"
+            elif quality in ["4K", "2160p"]:
+                download_options["format"] = "best[height<=2160]"
+            elif quality in ["1440p", "2K"]:
+                download_options["format"] = "best[height<=1440]"
+            elif quality in ["1080p", "FHD"]:
+                download_options["format"] = "best[height<=1080]"
+            elif quality in ["720p", "HD"]:
+                download_options["format"] = "best[height<=720]"
+            elif quality in ["480p"]:
+                download_options["format"] = "best[height<=480]"
+            elif quality in ["360p"]:
+                download_options["format"] = "best[height<=360]"
+
+        max_retries = 3
+        retry_delay = 2.0
+
+        for attempt in range(max_retries):
+            try:
+                async with self.api_client as client:
+                    # Download and convert API response to MediaMetadata
+                    async for item in client.download(url, **download_options):
+                        return self._convert_api_response_to_metadata(item)
+
+                # If no results, raise an error
+                raise RuntimeError("No download results from YouTube API")
+
+            except Exception as e:
+                error_message = str(e).lower()
+
+                # Check for YouTube-specific errors that shouldn't be retried
+                youtube_fatal_errors = [
+                    "video unavailable",
+                    "private video",
+                    "deleted video",
+                    "video not found",
+                    "age restricted",
+                    "copyright",
+                    "account terminated",
+                    "channel doesn't exist",
+                    "livestream",
+                    "premiere",
+                ]
+
+                is_fatal = any(fatal_error in error_message for fatal_error in youtube_fatal_errors)
+
+                if is_fatal:
+                    logger.warning(f"YouTube fatal error detected, not retrying: {e}")
+                    raise RuntimeError(f"YouTube video not accessible: {e}")
+
+                # For non-fatal errors, retry with exponential backoff
+                if attempt < max_retries - 1:
+                    logger.warning(
+                        f"YouTube API download attempt {attempt + 1} failed, retrying in {retry_delay}s: {e}"
+                    )
+                    await asyncio.sleep(retry_delay)
+                    retry_delay *= 2  # Exponential backoff
+                else:
+                    logger.error(f"YouTube API download failed after {max_retries} attempts: {e}")
+                    raise RuntimeError(f"YouTube download failed after {max_retries} attempts: {e}")
 
     def __repr__(self) -> str:
         """String representation."""

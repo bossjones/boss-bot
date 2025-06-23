@@ -40,6 +40,8 @@ class TestYouTubeHandler:
             "https://youtu.be/dQw4w9WgXcQ",
             "https://www.youtube.com/embed/dQw4w9WgXcQ",
             "https://www.youtube.com/v/dQw4w9WgXcQ",
+            "https://www.youtube.com/shorts/iJw5lVbIwao",  # YouTube Shorts
+            "https://youtube.com/shorts/dQw4w9WgXcQ",  # YouTube Shorts without www
             "https://www.youtube.com/playlist?list=PLrUhA8hnVy",
             "https://www.youtube.com/channel/UC123456789",
             "https://www.youtube.com/user/username",

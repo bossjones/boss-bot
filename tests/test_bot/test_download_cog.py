@@ -25,7 +25,7 @@ async def test_download_command_invalid_url(mocker: MockerFixture, fixture_mock_
     url = "invalid_url"
 
     # Set up mock behavior for invalid URL
-    fixture_mock_bot_test.download_manager.validate_url.return_value = False
+    fixture_mock_bot_test.download_manager.validate_url = mocker.AsyncMock(return_value=False)
 
     # Call the download command's callback directly
     await fixture_download_cog_test.download.callback(fixture_download_cog_test, ctx, url)
@@ -47,7 +47,7 @@ async def test_download_command_valid_url(mocker: MockerFixture, fixture_mock_bo
     url = "https://example.com/video.mp4"
 
     # Set up mock behaviors
-    fixture_mock_bot_test.download_manager.validate_url.return_value = True
+    fixture_mock_bot_test.download_manager.validate_url = mocker.AsyncMock(return_value=True)
     fixture_mock_bot_test.queue_manager.add_to_queue = mocker.AsyncMock()
 
     # Call the download command's callback directly
@@ -72,7 +72,7 @@ async def test_download_command_queue_full(mocker: MockerFixture, fixture_mock_b
     url = "https://example.com/video.mp4"
 
     # Set up mock behaviors
-    fixture_mock_bot_test.download_manager.validate_url.return_value = True
+    fixture_mock_bot_test.download_manager.validate_url = mocker.AsyncMock(return_value=True)
     queue_full_error = Exception("Queue is currently full")
     fixture_mock_bot_test.queue_manager.add_to_queue.side_effect = queue_full_error
 

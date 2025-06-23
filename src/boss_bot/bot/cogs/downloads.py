@@ -118,6 +118,14 @@ class DownloadCog(commands.Cog):
                         await ctx.send(f"❌ {name} download failed: {metadata.error}")
                         return
 
+                    # Check if this was a duplicate
+                    if metadata.raw_metadata and metadata.raw_metadata.get("duplicate"):
+                        original_download = metadata.raw_metadata.get("original_download", {})
+                        download_date = original_download.get("download_date", "unknown date")
+                        await ctx.send(f"🔄 {name} content already downloaded on {download_date[:10]}")
+                        await ctx.send("💡 Use `force_redownload=True` parameter to download again")
+                        return
+
                     await ctx.send(f"✅ {name} download completed!")
 
                     # Show basic metadata if available
@@ -129,11 +137,28 @@ class DownloadCog(commands.Cog):
                         method_emoji = "🚀" if metadata.download_method == "api" else "🖥️"
                         await ctx.send(f"{method_emoji} Downloaded using {metadata.download_method.upper()} method")
 
+                    # For YouTube, show organized directory info
+                    if name == "YouTube" and hasattr(strategy, "_extract_channel_info_from_metadata"):
+                        if metadata.raw_metadata:
+                            channel_name, channel_id = strategy._extract_channel_info_from_metadata(
+                                metadata.raw_metadata
+                            )
+                            await ctx.send(f"📁 **Channel:** {channel_name}")
+
                     # Process and upload files if requested
                     if upload:
                         await ctx.send("📤 Processing files for upload...")
 
-                        upload_result = await self.upload_manager.process_downloaded_files(download_subdir, ctx, name)
+                        # For YouTube strategy, check for organized structure
+                        upload_dir = download_subdir
+                        if name == "YouTube":
+                            # Look for yt-dlp organized structure
+                            ytdlp_dir = download_subdir / "yt-dlp" / "youtube"
+                            if ytdlp_dir.exists():
+                                upload_dir = ytdlp_dir
+                                await ctx.send("📂 Using organized YouTube directory structure")
+
+                        upload_result = await self.upload_manager.process_downloaded_files(upload_dir, ctx, name)
 
                         if upload_result.success:
                             await ctx.send(f"🎉 {upload_result.message}")
@@ -142,7 +167,13 @@ class DownloadCog(commands.Cog):
                             if upload_result.error:
                                 await ctx.send(f"Error details: {upload_result.error}")
                     else:
-                        await ctx.send(f"📁 Files saved to: `{download_subdir.relative_to(Path.cwd())}`")
+                        # Show appropriate directory path
+                        display_dir = download_subdir
+                        if name == "YouTube":
+                            ytdlp_dir = download_subdir / "yt-dlp" / "youtube"
+                            if ytdlp_dir.exists():
+                                display_dir = ytdlp_dir
+                        await ctx.send(f"📁 Files saved to: `{display_dir.relative_to(Path.cwd())}`")
 
                 finally:
                     # Restore original download directory
@@ -160,7 +191,7 @@ class DownloadCog(commands.Cog):
             return
 
         # Fallback to existing queue-based system for unsupported URLs
-        if not self.bot.download_manager.validate_url(url):
+        if not await self.bot.download_manager.validate_url(url):
             await ctx.send("Invalid URL provided.")
             return
 
@@ -174,6 +205,302 @@ class DownloadCog(commands.Cog):
     async def download_only(self, ctx: commands.Context, url: str):
         """Download content without uploading to Discord."""
         await self.download(ctx, url, upload=False)
+
+    @commands.command(name="yt-download")
+    async def youtube_download(self, ctx: commands.Context, url: str, quality: str = "720p", audio_only: bool = False):
+        """YouTube-specific download with quality and format options.
+
+        Args:
+            url: YouTube URL (video, shorts, playlist)
+            quality: Video quality (4K, 1080p, 720p, 480p, 360p, best, worst)
+            audio_only: Download audio only (default: False)
+
+        Examples:
+            $yt-download https://youtube.com/watch?v=VIDEO_ID
+            $yt-download https://youtube.com/watch?v=VIDEO_ID 1080p
+            $yt-download https://youtube.com/watch?v=VIDEO_ID 720p True
+        """
+        # Check if URL is YouTube
+        if not ("youtube.com" in url.lower() or "youtu.be" in url.lower()):
+            await ctx.send("❌ This command is for YouTube URLs only. Use `$download` for other platforms.")
+            return
+
+        # Get YouTube strategy
+        strategy = self.strategies.get("youtube")
+        if not strategy:
+            await ctx.send("❌ YouTube strategy not available")
+            return
+
+        platform_info = self._get_platform_info(url)
+        emoji = platform_info["emoji"]
+        name = platform_info["name"]
+
+        # Validate quality parameter
+        valid_qualities = ["4K", "2160p", "1440p", "2K", "1080p", "FHD", "720p", "HD", "480p", "360p", "best", "worst"]
+        if quality not in valid_qualities:
+            await ctx.send(f"❌ Invalid quality: {quality}. Valid options: {', '.join(valid_qualities)}")
+            return
+
+        await ctx.send(
+            f"{emoji} Downloading {name} content with quality: {quality}{' (audio-only)' if audio_only else ''}"
+        )
+        await ctx.send(f"🔗 URL: {url}")
+
+        # Show feature flag status
+        if self.feature_flags.is_api_enabled_for_platform("youtube"):
+            await ctx.send("🚀 Using experimental API-direct approach")
+
+        try:
+            # Create unique download directory
+            request_id = f"{ctx.author.id}_{ctx.message.id}"
+            download_subdir = self.download_dir / request_id
+            download_subdir.mkdir(exist_ok=True, parents=True)
+
+            # Update strategy download directory
+            original_dir = strategy.download_dir
+            strategy.download_dir = download_subdir
+
+            try:
+                # Download with YouTube-specific options
+                metadata = await strategy.download(url, quality=quality, audio_only=audio_only)
+
+                if metadata.error:
+                    await ctx.send(f"❌ {name} download failed: {metadata.error}")
+                    return
+
+                # Check if this was a duplicate
+                if metadata.raw_metadata and metadata.raw_metadata.get("duplicate"):
+                    original_download = metadata.raw_metadata.get("original_download", {})
+                    download_date = original_download.get("download_date", "unknown date")
+                    await ctx.send(f"🔄 {name} content already downloaded on {download_date[:10]}")
+                    await ctx.send("💡 Use `force_redownload=True` parameter to download again")
+                    return
+
+                await ctx.send(f"✅ {name} download completed!")
+
+                # Show detailed metadata
+                if metadata.title:
+                    title_preview = metadata.title[:100] + "..." if len(metadata.title) > 100 else metadata.title
+                    await ctx.send(f"📝 **Title:** {title_preview}")
+
+                if metadata.uploader:
+                    await ctx.send(f"👤 **Channel:** {metadata.uploader}")
+
+                if metadata.duration:
+                    await ctx.send(f"⏱️ **Duration:** {metadata.duration}")
+
+                if metadata.view_count:
+                    await ctx.send(f"👁️ **Views:** {metadata.view_count:,}")
+
+                if metadata.like_count:
+                    await ctx.send(f"❤️ **Likes:** {metadata.like_count:,}")
+
+                if metadata.download_method:
+                    method_emoji = "🚀" if metadata.download_method == "api" else "🖥️"
+                    await ctx.send(f"{method_emoji} Downloaded using {metadata.download_method.upper()} method")
+
+                # Show organized directory info
+                if hasattr(strategy, "_extract_channel_info_from_metadata") and metadata.raw_metadata:
+                    channel_name, channel_id = strategy._extract_channel_info_from_metadata(metadata.raw_metadata)
+                    await ctx.send(f"📁 **Organized in:** yt-dlp/youtube/{channel_name}/")
+
+                # Process and upload files
+                await ctx.send("📤 Processing files for upload...")
+
+                # Check for organized structure
+                upload_dir = download_subdir
+                ytdlp_dir = download_subdir / "yt-dlp" / "youtube"
+                if ytdlp_dir.exists():
+                    upload_dir = ytdlp_dir
+                    await ctx.send("📂 Using organized YouTube directory structure")
+
+                upload_result = await self.upload_manager.process_downloaded_files(upload_dir, ctx, name)
+
+                if upload_result.success:
+                    await ctx.send(f"🎉 {upload_result.message}")
+                else:
+                    await ctx.send(f"⚠️ Upload issues: {upload_result.message}")
+                    if upload_result.error:
+                        await ctx.send(f"Error details: {upload_result.error}")
+
+            finally:
+                # Restore original download directory
+                strategy.download_dir = original_dir
+
+                # Cleanup
+                if getattr(self.bot.settings, "upload_cleanup_after_success", True):
+                    try:
+                        shutil.rmtree(download_subdir)
+                    except Exception as cleanup_error:
+                        print(f"Cleanup warning: {cleanup_error}")
+
+        except Exception as e:
+            await ctx.send(f"❌ YouTube download error: {e!s}")
+
+    @commands.command(name="yt-playlist")
+    async def youtube_playlist(self, ctx: commands.Context, url: str, quality: str = "720p", max_videos: int = 10):
+        """Download YouTube playlist with video limit.
+
+        Args:
+            url: YouTube playlist URL
+            quality: Video quality for all videos (default: 720p)
+            max_videos: Maximum number of videos to download (default: 10, max: 25)
+
+        Examples:
+            $yt-playlist https://youtube.com/playlist?list=PLAYLIST_ID
+            $yt-playlist https://youtube.com/playlist?list=PLAYLIST_ID 480p 5
+        """
+        # Check if URL is YouTube playlist
+        if not ("youtube.com" in url.lower() and "playlist" in url.lower()):
+            await ctx.send("❌ This command is for YouTube playlist URLs only.")
+            return
+
+        # Validate max_videos parameter
+        if max_videos < 1 or max_videos > 25:
+            await ctx.send("❌ max_videos must be between 1 and 25")
+            return
+
+        # Get YouTube strategy
+        strategy = self.strategies.get("youtube")
+        if not strategy:
+            await ctx.send("❌ YouTube strategy not available")
+            return
+
+        # Validate quality parameter
+        valid_qualities = ["4K", "2160p", "1440p", "2K", "1080p", "FHD", "720p", "HD", "480p", "360p", "best", "worst"]
+        if quality not in valid_qualities:
+            await ctx.send(f"❌ Invalid quality: {quality}. Valid options: {', '.join(valid_qualities)}")
+            return
+
+        await ctx.send(f"📺 Starting YouTube playlist download (max {max_videos} videos, quality: {quality})")
+        await ctx.send(f"🔗 Playlist: {url}")
+        await ctx.send("⚠️ **Note:** Playlist downloads may take several minutes")
+
+        # Show feature flag status
+        if self.feature_flags.is_api_enabled_for_platform("youtube"):
+            await ctx.send("🚀 Using experimental API-direct approach")
+
+        try:
+            # Create unique download directory
+            request_id = f"{ctx.author.id}_{ctx.message.id}"
+            download_subdir = self.download_dir / request_id
+            download_subdir.mkdir(exist_ok=True, parents=True)
+
+            # Update strategy download directory
+            original_dir = strategy.download_dir
+            strategy.download_dir = download_subdir
+
+            try:
+                # Download playlist with options
+                metadata = await strategy.download(
+                    url, quality=quality, max_playlist_items=max_videos, extract_flat=False
+                )
+
+                if metadata.error:
+                    await ctx.send(f"❌ Playlist download failed: {metadata.error}")
+                    return
+
+                await ctx.send("✅ Playlist download completed!")
+
+                # Show playlist metadata if available
+                if metadata.title:
+                    title_preview = metadata.title[:100] + "..." if len(metadata.title) > 100 else metadata.title
+                    await ctx.send(f"📝 **Playlist:** {title_preview}")
+
+                if metadata.uploader:
+                    await ctx.send(f"👤 **Channel:** {metadata.uploader}")
+
+                if metadata.download_method:
+                    method_emoji = "🚀" if metadata.download_method == "api" else "🖥️"
+                    await ctx.send(f"{method_emoji} Downloaded using {metadata.download_method.upper()} method")
+
+                # Process and upload files
+                await ctx.send("📤 Processing playlist files for upload...")
+
+                # Check for organized structure
+                upload_dir = download_subdir
+                ytdlp_dir = download_subdir / "yt-dlp" / "youtube"
+                if ytdlp_dir.exists():
+                    upload_dir = ytdlp_dir
+                    await ctx.send("📂 Using organized YouTube directory structure")
+
+                upload_result = await self.upload_manager.process_downloaded_files(upload_dir, ctx, "YouTube Playlist")
+
+                if upload_result.success:
+                    await ctx.send(f"🎉 {upload_result.message}")
+                else:
+                    await ctx.send(f"⚠️ Upload issues: {upload_result.message}")
+                    if upload_result.error:
+                        await ctx.send(f"Error details: {upload_result.error}")
+
+            finally:
+                # Restore original download directory
+                strategy.download_dir = original_dir
+
+                # Cleanup
+                if getattr(self.bot.settings, "upload_cleanup_after_success", True):
+                    try:
+                        shutil.rmtree(download_subdir)
+                    except Exception as cleanup_error:
+                        print(f"Cleanup warning: {cleanup_error}")
+
+        except Exception as e:
+            await ctx.send(f"❌ Playlist download error: {e!s}")
+
+    @commands.command(name="yt-stats")
+    async def youtube_stats(self, ctx: commands.Context):
+        """Show YouTube download performance statistics.
+
+        Examples:
+            $yt-stats
+        """
+        # Get YouTube strategy
+        strategy = self.strategies.get("youtube")
+        if not strategy:
+            await ctx.send("❌ YouTube strategy not available")
+            return
+
+        try:
+            stats = strategy.get_performance_stats()
+
+            if "error" in stats:
+                await ctx.send(f"❌ Failed to get performance stats: {stats['error']}")
+                return
+
+            if stats["total_downloads"] == 0:
+                await ctx.send("📊 **YouTube Performance Stats**\n\nNo downloads recorded yet.")
+                return
+
+            lines = [
+                "📊 **YouTube Performance Statistics**",
+                "",
+                f"📈 **Total Downloads:** {stats['total_downloads']}",
+                f"⏱️ **Average Duration:** {stats['avg_duration']:.2f}s",
+                "",
+            ]
+
+            # Method breakdown
+            if stats["method_breakdown"]:
+                lines.append("🔧 **Download Methods:**")
+                for method, count in stats["method_breakdown"].items():
+                    percentage = (count / stats["total_downloads"]) * 100
+                    emoji = "🚀" if method == "api" else "🖥️" if method == "cli" else "🔄"
+                    lines.append(f"{emoji} {method.upper()}: {count} ({percentage:.1f}%)")
+                lines.append("")
+
+            # Performance records
+            if stats["fastest_download"]:
+                fastest = stats["fastest_download"]
+                lines.append(f"🏆 **Fastest:** {fastest['duration']:.2f}s ({fastest['method']})")
+
+            if stats["slowest_download"]:
+                slowest = stats["slowest_download"]
+                lines.append(f"🐌 **Slowest:** {slowest['duration']:.2f}s ({slowest['method']})")
+
+            await ctx.send("\n".join(lines))
+
+        except Exception as e:
+            await ctx.send(f"❌ Error getting YouTube stats: {e!s}")
 
     def _get_platform_info(self, url: str) -> dict[str, str]:
         """Get platform-specific emoji and name for a URL.
@@ -508,6 +835,69 @@ class DownloadCog(commands.Cog):
             print(f"Unexpected error in strategies command: {error}")
             embed = discord.Embed(
                 description="An unexpected error occurred while getting strategy information.",
+                color=discord.Color.red(),
+            )
+            await ctx.send(embed=embed)
+
+    @youtube_download.error
+    async def youtube_download_error_handler(self, ctx: commands.Context, error: commands.CommandError):
+        """Handle errors for the yt-download command."""
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(
+                description=f"Please provide a YouTube URL. Usage: `{self.bot.command_prefix}yt-download <url> [quality] [audio_only]`",
+                color=discord.Color.orange(),
+            )
+            await ctx.send(embed=embed)
+        elif isinstance(error, commands.CommandOnCooldown):
+            embed = discord.Embed(
+                description=f"Command is on cooldown. Try again in {error.retry_after:.1f} seconds.",
+                color=discord.Color.orange(),
+            )
+            await ctx.send(embed=embed)
+        else:
+            print(f"Unexpected error in yt-download command: {error}")
+            embed = discord.Embed(
+                description="An unexpected error occurred while processing YouTube download.",
+                color=discord.Color.red(),
+            )
+            await ctx.send(embed=embed)
+
+    @youtube_playlist.error
+    async def youtube_playlist_error_handler(self, ctx: commands.Context, error: commands.CommandError):
+        """Handle errors for the yt-playlist command."""
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(
+                description=f"Please provide a YouTube playlist URL. Usage: `{self.bot.command_prefix}yt-playlist <url> [quality] [max_videos]`",
+                color=discord.Color.orange(),
+            )
+            await ctx.send(embed=embed)
+        elif isinstance(error, commands.CommandOnCooldown):
+            embed = discord.Embed(
+                description=f"Command is on cooldown. Try again in {error.retry_after:.1f} seconds.",
+                color=discord.Color.orange(),
+            )
+            await ctx.send(embed=embed)
+        else:
+            print(f"Unexpected error in yt-playlist command: {error}")
+            embed = discord.Embed(
+                description="An unexpected error occurred while processing YouTube playlist download.",
+                color=discord.Color.red(),
+            )
+            await ctx.send(embed=embed)
+
+    @youtube_stats.error
+    async def youtube_stats_error_handler(self, ctx: commands.Context, error: commands.CommandError):
+        """Handle errors for the yt-stats command."""
+        if isinstance(error, commands.CommandOnCooldown):
+            embed = discord.Embed(
+                description=f"Command is on cooldown. Try again in {error.retry_after:.1f} seconds.",
+                color=discord.Color.orange(),
+            )
+            await ctx.send(embed=embed)
+        else:
+            print(f"Unexpected error in yt-stats command: {error}")
+            embed = discord.Embed(
+                description="An unexpected error occurred while getting YouTube statistics.",
                 color=discord.Color.red(),
             )
             await ctx.send(embed=embed)

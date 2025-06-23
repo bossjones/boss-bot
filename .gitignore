@@ -390,3 +390,4 @@ pyproject.toml.new
 typingcov_cobertura/
 typingcov_txt/
 typingcov_xml/
+.downloads

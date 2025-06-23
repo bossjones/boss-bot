@@ -1,3 +1,21 @@
+## v0.12.0 (2025-06-23)
+
+### Feat
+
+- Add support for YouTube Shorts in download handler and tests
+- Introduce MCP Client Library Implementation Plan and LangGraph Lookup Command
+- Add comprehensive dpytest tests for YouTube download command
+- Enhance YouTube download commands and documentation
+- Enhance YouTube download workflow and directory management
+
+### Fix
+
+- Update UploadManager to include type hint for compression result and improve pylint configuration
+
+### Refactor
+
+- Update YouTube download tests for clarity and structure validation
+
 ## v0.11.0 (2025-06-21)
 
 ### Feat

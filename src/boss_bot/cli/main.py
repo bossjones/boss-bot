@@ -377,7 +377,7 @@ def _mask_sensitive_config(config_data: dict) -> dict:
 @APP.command()
 def fetch(
     urls: list[str] = typer.Argument(..., help="One or more URLs to download"),
-    output_dir: str = typer.Option("./downloads", "--output", "-o", help="Output directory for downloads"),
+    output_dir: str = typer.Option("./.downloads", "--output", "-o", help="Output directory for downloads"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose output"),
     dry_run: bool = typer.Option(False, "--dry-run", help="Show what would be downloaded without actually downloading"),
 ) -> None:
@@ -547,9 +547,9 @@ async def _download_with_ytdlp_api(client: AsyncYtDlp, url: str, output_dir: Pat
         if verbose:
             cprint(f"[dim]Using yt-dlp API client for {url}[/dim]")
 
-        # Configure download options
+        # Configure download options with gallery-dl style structure
         options = {
-            "outtmpl": str(output_dir / "%(uploader)s - %(title)s.%(ext)s"),
+            "outtmpl": str(output_dir / "yt-dlp/youtube/%(uploader)s/%(title)s.%(ext)s"),
             "writeinfojson": True,
             "embed_metadata": True,
         }

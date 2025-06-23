@@ -159,6 +159,7 @@ class YouTubeHandler(BaseDownloadHandler):
             r"^https?://(?:www\.)?youtube\.com/embed/[\w-]+",  # Embed URL
             r"^https?://(?:www\.)?youtube\.com/v/[\w-]+",  # Old format
             r"^https?://youtu\.be/[\w-]+",  # Short URL
+            r"^https?://(?:www\.)?youtube\.com/shorts/[\w-]+",  # YouTube Shorts
             r"^https?://(?:www\.)?youtube\.com/playlist\?list=[\w-]+",  # Playlist
             r"^https?://(?:www\.)?youtube\.com/channel/[\w-]+",  # Channel
             r"^https?://(?:www\.)?youtube\.com/user/[\w-]+",  # User channel

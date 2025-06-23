@@ -125,7 +125,7 @@ graph TB
         subgraph "Memory Namespaces"
             UserPrefs[(User Preferences<br/>- Posting schedules<br/>- Content styles<br/>- Platform priorities)]
             CampaignHistory[(Campaign History<br/>- Past campaigns<br/>- Performance data<br/>- Successful patterns)]
-            BrandGuidelines[(Brand Guidelines<br/>- Voice & tone<br/>- Visual standards<br/>- Compliance rules)]
+            BrandGuidelines[(Brand Guidelines<br/>- Voice and tone<br/>- Visual standards<br/>- Compliance rules)]
             PlatformInsights[(Platform Insights<br/>- Algorithm changes<br/>- Trending formats<br/>- Audience behavior)]
         end
 
@@ -174,8 +174,8 @@ graph TB
     subgraph "Example: Hashtag Learning"
         HashtagUse[Agent Uses Hashtag]
         HashtagPerf[Track Performance]
-        HashtagStore[Store Results:<br/>"#AIArt → 45% engagement<br/>for tech audience"]
-        HashtagRetrieve[Future Use:<br/>Similar content →<br/>Suggest #AIArt]
+        HashtagStore[Store Results:<br/>AIArt leads to 45% engagement<br/>for tech audience]
+        HashtagRetrieve[Future Use:<br/>Similar content gets<br/>AIArt suggestion]
 
         HashtagUse --> HashtagPerf
         HashtagPerf --> HashtagStore
@@ -186,7 +186,7 @@ graph TB
     subgraph "Example: Time Learning"
         PostTime[Post at 2PM EST]
         TimePerf[Monitor Engagement]
-        TimeStore[Store Pattern:<br/>"Tech content performs<br/>best 2-4PM EST weekdays"]
+        TimeStore[Store Pattern:<br/>Tech content performs<br/>best 2-4PM EST weekdays]
         TimeRetrieve[Future Posts:<br/>Auto-schedule tech<br/>content accordingly]
 
         PostTime --> TimePerf

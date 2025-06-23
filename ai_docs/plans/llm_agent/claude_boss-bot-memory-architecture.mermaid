@@ -1,0 +1,101 @@
+graph TB
+    %% Memory Architecture Overview
+    subgraph "LangMem Integration"
+        subgraph "Memory Namespaces"
+            UserPrefs[(User Preferences<br/>- Posting schedules<br/>- Content styles<br/>- Platform priorities)]
+            CampaignHistory[(Campaign History<br/>- Past campaigns<br/>- Performance data<br/>- Successful patterns)]
+            BrandGuidelines[(Brand Guidelines<br/>- Voice & tone<br/>- Visual standards<br/>- Compliance rules)]
+            PlatformInsights[(Platform Insights<br/>- Algorithm changes<br/>- Trending formats<br/>- Audience behavior)]
+        end
+
+        subgraph "Memory Operations"
+            Store[AsyncPostgresStore<br/>- Vector embeddings<br/>- Semantic search<br/>- Time-based retrieval]
+            Index[Embedding Index<br/>- OpenAI embeddings<br/>- 1536 dimensions<br/>- Similarity search]
+        end
+    end
+
+    %% Learning Patterns
+    subgraph "Learning Mechanisms"
+        subgraph "Pattern Recognition"
+            EngagementPatterns[Engagement Patterns<br/>- High-performing content<br/>- Optimal timing<br/>- Audience preferences]
+            FailurePatterns[Failure Patterns<br/>- Low engagement<br/>- Platform violations<br/>- Technical issues]
+        end
+
+        subgraph "Adaptive Behaviors"
+            ContentAdaptation[Content Adaptation<br/>- Style refinement<br/>- Topic selection<br/>- Format optimization]
+            TimingOptimization[Timing Optimization<br/>- Post scheduling<br/>- Frequency adjustment<br/>- Time zone targeting]
+        end
+    end
+
+    %% Memory Flow
+    Agent[Any Agent] --> MemoryTools{Memory Tools}
+    MemoryTools --> ManageTool[manage_memory_tool<br/>- Store new insights<br/>- Update preferences<br/>- Track outcomes]
+    MemoryTools --> SearchTool[search_memory_tool<br/>- Retrieve context<br/>- Find similar cases<br/>- Get best practices]
+
+    ManageTool --> Store
+    SearchTool --> Index
+    Index --> Store
+
+    %% Learning Pipeline
+    subgraph "Continuous Learning"
+        Collection[Data Collection<br/>- User interactions<br/>- Content performance<br/>- Platform feedback]
+        Analysis[Pattern Analysis<br/>- Statistical analysis<br/>- Trend detection<br/>- Anomaly identification]
+        Integration[Knowledge Integration<br/>- Update strategies<br/>- Refine prompts<br/>- Adjust parameters]
+    end
+
+    Collection --> Analysis
+    Analysis --> Integration
+    Integration --> MemoryUpdate[Memory Update]
+    MemoryUpdate --> UserPrefs
+    MemoryUpdate --> PlatformInsights
+
+    %% Practical Examples
+    subgraph "Example: Hashtag Learning"
+        HashtagUse[Agent Uses Hashtag]
+        HashtagPerf[Track Performance]
+        HashtagStore[Store Results:<br/>"#AIArt → 45% engagement<br/>for tech audience"]
+        HashtagRetrieve[Future Use:<br/>Similar content →<br/>Suggest #AIArt]
+
+        HashtagUse --> HashtagPerf
+        HashtagPerf --> HashtagStore
+        HashtagStore --> CampaignHistory
+        CampaignHistory --> HashtagRetrieve
+    end
+
+    subgraph "Example: Time Learning"
+        PostTime[Post at 2PM EST]
+        TimePerf[Monitor Engagement]
+        TimeStore[Store Pattern:<br/>"Tech content performs<br/>best 2-4PM EST weekdays"]
+        TimeRetrieve[Future Posts:<br/>Auto-schedule tech<br/>content accordingly]
+
+        PostTime --> TimePerf
+        TimePerf --> TimeStore
+        TimeStore --> PlatformInsights
+        PlatformInsights --> TimeRetrieve
+    end
+
+    %% Privacy & Compliance
+    subgraph "Privacy Controls"
+        DataRetention[Data Retention<br/>- 90-day default<br/>- User configurable<br/>- GDPR compliant]
+        AccessControl[Access Control<br/>- User-scoped data<br/>- Role permissions<br/>- Audit logging]
+        Anonymization[Anonymization<br/>- PII removal<br/>- Aggregate insights<br/>- Statistical only]
+    end
+
+    Store --> DataRetention
+    Store --> AccessControl
+    Analysis --> Anonymization
+
+    %% Feedback Integration
+    UserFeedback[User Feedback<br/>- Corrections<br/>- Preferences<br/>- Quality ratings] --> RapidLearning[Rapid Learning<br/>- Immediate updates<br/>- Priority weighting<br/>- Conflict resolution]
+    RapidLearning --> MemoryUpdate
+
+    %% Styling
+    classDef memoryStyle fill:#e3f2fd,stroke:#0d47a1,stroke-width:2px
+    classDef learningStyle fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef exampleStyle fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef privacyStyle fill:#fff3e0,stroke:#e65100,stroke-width:2px
+
+    class UserPrefs,CampaignHistory,BrandGuidelines,PlatformInsights,Store,Index memoryStyle
+    class EngagementPatterns,FailurePatterns,ContentAdaptation,TimingOptimization,Collection,Analysis,Integration learningStyle
+    class HashtagUse,HashtagPerf,HashtagStore,HashtagRetrieve,PostTime,TimePerf,TimeStore,TimeRetrieve exampleStyle
+    class DataRetention,AccessControl,Anonymization privacyStyle

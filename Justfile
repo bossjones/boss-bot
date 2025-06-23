@@ -24,6 +24,8 @@ import "justfiles/firecrawl.just"
 import "justfiles/audit.just"
 import "justfiles/test.just"
 import "justfiles/smoke-test.just"
+import "justfiles/langgraph-cli.just"
+import "justfiles/langgraph-gen.just"
 # display help information
 default:
 	@just --list

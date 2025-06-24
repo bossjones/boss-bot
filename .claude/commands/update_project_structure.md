@@ -1,0 +1,1 @@
+RUN `tree -L 7 -I "*.pyc|__pycache__|.git|.pytest_cache|.ruff_cache|.mypy_cache|.coverage|htmlcov|.venv|.env|*.egg-info|build|dist|node_modules|.DS_Store|images" src/` then write a markdown file with the structure in docs/project_structure.md. If the structure is not up to date, update it and add a comment to each line explaining what the module does.

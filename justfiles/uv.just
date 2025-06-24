@@ -88,3 +88,8 @@ uv-tree:
 # Run a Python script with UV
 run-python +args:
     {{UV_RUN}} python {{args}}
+
+
+upgrade-langchain:
+    uv lock --upgrade-package langchain-anthropic --upgrade-package langchain-aws --upgrade-package langchain-community --upgrade-package langchain-core --upgrade-package langchain-google-genai --upgrade-package langchain-groq --upgrade-package langchain-mcp-adapters --upgrade-package langchain-openai --upgrade-package langchain-postgres --upgrade-package langchain-text-splitters --upgrade-package 'langchain[anthropic,community,huggingface,openai,perplexity,xai]' --upgrade-package langchainhub --upgrade-package langgraph-api --upgrade-package langgraph-checkpoint-sqlite --upgrade-package langgraph-gen --upgrade-package langgraph-sdk --upgrade-package langgraph --upgrade-package 'langsmith[pytest]'
+    uv sync

@@ -26,6 +26,7 @@ import "justfiles/test.just"
 import "justfiles/smoke-test.just"
 import "justfiles/langgraph-cli.just"
 import "justfiles/langgraph-gen.just"
+import "justfiles/mcp.just"
 # display help information
 default:
 	@just --list

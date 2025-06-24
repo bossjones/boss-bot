@@ -304,6 +304,150 @@ class BossSettings(BaseSettings):
 - **User Experience**: Reduced command complexity and better outcomes
 - **Learning Effectiveness**: Improved performance over time
 
+## Project Structure
+
+<project_structure>
+```
+src/boss_bot/
+├── ai/                                      # 🤖 LangGraph Multi-Agent System
+│   ├── __init__.py
+│   ├── agents/                              # Agent implementations
+│   │   ├── __init__.py
+│   │   ├── base_agent.py                   # Abstract base agent class
+│   │   ├── main_supervisor.py              # Top-level orchestrator agent
+│   │   ├── strategy_selector.py            # AI-enhanced strategy selection
+│   │   ├── content_analyzer.py             # Multi-modal content analysis
+│   │   ├── nlp_processor.py                # Natural language understanding
+│   │   ├── intent_classifier.py            # User intent classification
+│   │   └── teams/                          # Specialized agent teams
+│   │       ├── __init__.py
+│   │       ├── social_media/               # Social media team
+│   │       │   ├── __init__.py
+│   │       │   ├── social_media_coordinator.py
+│   │       │   ├── twitter_specialist.py
+│   │       │   ├── reddit_specialist.py
+│   │       │   ├── instagram_specialist.py
+│   │       │   └── youtube_specialist.py
+│   │       ├── media_processing/           # Media processing team
+│   │       │   ├── __init__.py
+│   │       │   ├── media_supervisor.py
+│   │       │   ├── video_processor.py
+│   │       │   ├── image_processor.py
+│   │       │   ├── audio_processor.py
+│   │       │   └── format_optimizer.py
+│   │       ├── content_analysis/           # Content analysis team
+│   │       │   ├── __init__.py
+│   │       │   ├── content_coordinator.py
+│   │       │   ├── quality_assessor.py
+│   │       │   ├── metadata_extractor.py
+│   │       │   └── safety_analyzer.py
+│   │       └── user_interaction/           # User interaction team
+│   │           ├── __init__.py
+│   │           ├── interaction_coordinator.py
+│   │           ├── preference_learner.py
+│   │           └── feedback_processor.py
+│   ├── chains/                             # LangChain chains
+│   │   ├── __init__.py
+│   │   ├── content_analysis.py             # Content analysis chains
+│   │   ├── summarization.py                # Text summarization chains
+│   │   ├── classification.py               # Content classification chains
+│   │   └── optimization.py                 # Media optimization chains
+│   ├── coordination/                       # Agent coordination
+│   │   ├── __init__.py
+│   │   ├── handoff_manager.py              # Agent handoff coordination
+│   │   ├── swarm_protocols.py              # Inter-agent communication
+│   │   └── workflow_orchestrator.py        # Workflow management
+│   ├── graphs/                             # LangGraph definitions
+│   │   ├── __init__.py
+│   │   ├── main_graph.py                   # Main application graph
+│   │   ├── download_graph.py               # Download workflow graph
+│   │   ├── analysis_graph.py               # Content analysis graph
+│   │   └── processing_graph.py             # Media processing graph
+│   ├── memory/                             # Memory management
+│   │   ├── __init__.py
+│   │   ├── session_manager.py              # Session memory management
+│   │   ├── conversation_memory.py          # LangMem integration
+│   │   ├── user_preferences.py             # User preference learning
+│   │   ├── workflow_memory.py              # Workflow pattern storage
+│   │   └── vector_store.py                 # Vector database integration
+│   ├── prompts/                            # Prompt templates
+│   │   ├── __init__.py
+│   │   ├── content_analysis.py             # Analysis prompts
+│   │   ├── command_templates.py            # Command processing prompts
+│   │   ├── strategy_selection.py           # Strategy decision prompts
+│   │   └── quality_assessment.py           # Quality evaluation prompts
+│   ├── routing/                            # Request routing
+│   │   ├── __init__.py
+│   │   ├── agent_router.py                 # Agent routing logic
+│   │   ├── load_balancer.py                # Agent load balancing
+│   │   └── circuit_breaker.py             # Failure circuit breaker
+│   ├── safety/                             # Safety and security
+│   │   ├── __init__.py
+│   │   ├── content_filter.py               # Content safety filtering
+│   │   ├── prompt_injection_detector.py    # Security monitoring
+│   │   ├── rate_limiter.py                 # AI-specific rate limiting
+│   │   └── audit_logger.py                 # AI decision auditing
+│   ├── state/                              # State management
+│   │   ├── __init__.py
+│   │   ├── shared_state.py                 # Inter-agent state
+│   │   ├── state_manager.py                # State lifecycle management
+│   │   └── checkpoint_manager.py           # State checkpointing
+│   └── tools/                              # LangChain tools
+│       ├── __init__.py
+│       ├── media_inspector.py              # Media analysis tools
+│       ├── discord_tools.py                # Discord integration tools
+│       ├── download_tools.py               # Download operation tools
+│       ├── metadata_tools.py               # Metadata extraction tools
+│       └── web_scraping_tools.py           # Web content tools
+├── bot/                                    # Discord bot (enhanced with AI)
+│   └── cogs/
+│       ├── ai_commands.py                  # New AI-specific commands
+│       └── downloads.py                    # Enhanced with AI features
+├── core/                                   # Core business logic
+│   ├── downloads/
+│   │   └── strategies/                     # Enhanced with AI integration
+│   │       ├── base_strategy.py            # AI-aware base strategy
+│   │       └── ai_enhanced_mixin.py        # AI enhancement mixin
+│   └── env.py                              # Updated with AI configuration
+├── monitoring/                             # Enhanced monitoring
+│   ├── ai_metrics.py                       # AI-specific metrics
+│   ├── agent_health.py                     # Agent health monitoring
+│   └── performance_tracker.py              # AI performance tracking
+└── tests/
+    └── ai/                                 # AI system tests
+        ├── __init__.py
+        ├── test_agent_workflows.py         # Agent workflow testing
+        ├── test_content_analysis.py        # Content analysis testing
+        ├── test_memory_persistence.py      # Memory system testing
+        ├── test_safety_filters.py          # Safety system testing
+        └── fixtures/                       # AI test fixtures
+            ├── __init__.py
+            ├── mock_agents.py              # Mock agent implementations
+            └── sample_workflows.py         # Test workflow definitions
+```
+</project_structure>
+
+## Key Architectural Decisions
+
+### Directory Organization
+1. **ai/agents/teams/**: Hierarchical organization reflecting the supervisor-team structure
+2. **ai/graphs/**: Centralized LangGraph workflow definitions
+3. **ai/coordination/**: Dedicated coordination layer for swarm-style handoffs
+4. **ai/state/**: Centralized state management with checkpointing support
+5. **ai/safety/**: Comprehensive safety and security measures
+
+### Integration Points
+- **Strategy Pattern Enhancement**: AI components integrate seamlessly with existing strategies
+- **Discord Bot Integration**: New AI cogs alongside enhanced existing commands
+- **Monitoring Integration**: AI metrics flow through existing monitoring infrastructure
+- **Configuration Management**: AI settings extend existing env.py configuration
+
+### Scalability Considerations
+- **Modular Agent Design**: Each agent is independently deployable and testable
+- **Team-Based Organization**: Clear boundaries for parallel development
+- **Tool Separation**: Reusable tools across multiple agents and chains
+- **Graph-Based Workflows**: Visual, maintainable workflow definitions
+
 ## Conclusion
 
 This implementation plan leverages Boss-Bot's excellent existing architecture while introducing sophisticated AI capabilities through a structured, phased approach. The hybrid hierarchical-swarm architecture will provide:

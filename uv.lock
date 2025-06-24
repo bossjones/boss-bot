@@ -38,6 +38,18 @@ wheels = [
 ]
 
 [[package]]
+name = "agentevals"
+version = "0.0.8"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "openevals" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/89/ff/e37a6acde2f326c0d6e2623e5aff8ff007080fe16df10d85caea6089fb79/agentevals-0.0.8.tar.gz", hash = "sha256:12427c4952efc043ebfffd2f707bc42d6af1d198f0e7b6bf2771dbeae55e9096", size = 40101, upload-time = "2025-05-22T14:46:07.812Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c5/78/484bc98ea2dd949f1a270e0f33b75896972f04244d3f5eaa9f323198032b/agentevals-0.0.8-py3-none-any.whl", hash = "sha256:3d5f68f16c2ec2827271ed65794c17c14f8d3908efba88589d8ee44fb6c2c970", size = 27451, upload-time = "2025-05-22T14:46:06.333Z" },
+]
+
+[[package]]
 name = "aiocache"
 version = "0.12.3"
 source = { registry = "https://pypi.org/simple" }
@@ -698,6 +710,7 @@ name = "boss-bot"
 version = "0.12.0"
 source = { editable = "." }
 dependencies = [
+    { name = "agentevals" },
     { name = "aiocache" },
     { name = "aiodns" },
     { name = "aiofile" },
@@ -764,6 +777,9 @@ dependencies = [
     { name = "langgraph-checkpoint-sqlite" },
     { name = "langgraph-gen" },
     { name = "langgraph-sdk" },
+    { name = "langgraph-supervisor" },
+    { name = "langgraph-swarm" },
+    { name = "langmem" },
     { name = "langsmith", extra = ["pytest"] },
     { name = "lazy-object-proxy" },
     { name = "llm" },
@@ -791,6 +807,7 @@ dependencies = [
     { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13'" },
     { name = "numpy", version = "2.3.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13'" },
     { name = "openai" },
+    { name = "openevals" },
     { name = "pandas" },
     { name = "passlib", extra = ["bcrypt"] },
     { name = "pathlib-mate" },
@@ -955,6 +972,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "agentevals", specifier = ">=0.0.8" },
     { name = "aiocache", specifier = ">=0.12.3" },
     { name = "aiodns", specifier = ">=3.2.0" },
     { name = "aiofile", specifier = ">=3.9.0" },
@@ -1021,6 +1039,9 @@ requires-dist = [
     { name = "langgraph-checkpoint-sqlite", specifier = ">=2.0.10" },
     { name = "langgraph-gen", specifier = ">=0.0.6" },
     { name = "langgraph-sdk", specifier = ">=0.1.70" },
+    { name = "langgraph-supervisor", specifier = ">=0.0.27" },
+    { name = "langgraph-swarm", specifier = ">=0.0.11" },
+    { name = "langmem", specifier = ">=0.0.27" },
     { name = "langsmith", extras = ["pytest"], specifier = ">=0.3.13" },
     { name = "lazy-object-proxy", specifier = ">=1.10.0" },
     { name = "llm", specifier = ">=0.19" },
@@ -1047,6 +1068,7 @@ requires-dist = [
     { name = "mutagen", specifier = ">=1.47.0" },
     { name = "numpy", specifier = ">=1.26.4" },
     { name = "openai", specifier = ">=1.71.0" },
+    { name = "openevals", specifier = ">=0.1.0" },
     { name = "pandas", specifier = ">=2.2.3" },
     { name = "passlib", extras = ["bcrypt"], specifier = ">=1.7.4" },
     { name = "pathlib-mate", specifier = ">=1.3.2" },
@@ -4325,6 +4347,52 @@ wheels = [
 ]
 
 [[package]]
+name = "langgraph-supervisor"
+version = "0.0.27"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "langchain-core" },
+    { name = "langgraph" },
+    { name = "langgraph-prebuilt" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c4/96/46a6bfa2df4a9f120438e1e6dc343f3804485e188f26e4428185c864699a/langgraph_supervisor-0.0.27.tar.gz", hash = "sha256:1d07b722f54ab446e4ce8ad45f26cde7a593a77b1d1641684d91cb8fe6ac725a", size = 20769, upload-time = "2025-05-29T14:45:46.155Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/74/0e/48d0d29739e969450cd4aa5d83b68cb9cd3d1ba663cb3e02f43c445cbaf5/langgraph_supervisor-0.0.27-py3-none-any.whl", hash = "sha256:f3b200acf04fd7a0476b4688136fee49b0ed1505e6cec7058367e62fec2e8121", size = 15760, upload-time = "2025-05-29T14:45:44.76Z" },
+]
+
+[[package]]
+name = "langgraph-swarm"
+version = "0.0.11"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "langchain-core" },
+    { name = "langgraph" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/8f/36/49afc8dc81bf877956d5f3d0e9980aca1f83884a81ad200302a84a11ad64/langgraph_swarm-0.0.11.tar.gz", hash = "sha256:8aafc47c849c0e4eb6ea5cdc7791977be67e11b319ff91f8a6ccef0ded1984a4", size = 11118, upload-time = "2025-04-30T15:59:28.525Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/fe/97/135f4372e3e9bf74fc4d12151758d25970a0e842716c144e348aac12af1b/langgraph_swarm-0.0.11-py3-none-any.whl", hash = "sha256:c99a92a4d383a2f5a4db40952a37bfdef0c41b44288fef56b0214056eb6801a0", size = 9458, upload-time = "2025-04-30T15:59:27.646Z" },
+]
+
+[[package]]
+name = "langmem"
+version = "0.0.27"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "langchain" },
+    { name = "langchain-anthropic" },
+    { name = "langchain-core" },
+    { name = "langchain-openai" },
+    { name = "langgraph" },
+    { name = "langgraph-checkpoint" },
+    { name = "langsmith" },
+    { name = "trustcall" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/26/23/f77472943199b8c4a41a967866592ec8673856d2ab29e769ef136302b7bf/langmem-0.0.27.tar.gz", hash = "sha256:729c1eb77c4cd8d9f2285f908a68a1e622ef01f074eeeb8cbbc7343f296efc53", size = 226326, upload-time = "2025-05-27T16:55:29.364Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/71/d6/7012adaf502e50772cae1564518c77741af2158af23bd980addf5a1bcdae/langmem-0.0.27-py3-none-any.whl", hash = "sha256:25e9f06ad7c420442cf4b62caff6f805b124dfb2e2cc9cacc464d7a455fbafda", size = 66918, upload-time = "2025-05-27T16:55:27.674Z" },
+]
+
+[[package]]
 name = "langsmith"
 version = "0.4.1"
 source = { registry = "https://pypi.org/simple" }
@@ -6062,6 +6130,21 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/2c/8b/90eb44a40476fa0e71e05a0283947cfd74a5d36121a11d926ad6f3193cc4/opencv_python-4.11.0.86-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6b02611523803495003bd87362db3e1d2a0454a6a63025dc6658a9830570aa0d", size = 62986597, upload-time = "2025-01-16T13:52:08.836Z" },
     { url = "https://files.pythonhosted.org/packages/fb/d7/1d5941a9dde095468b288d989ff6539dd69cd429dbf1b9e839013d21b6f0/opencv_python-4.11.0.86-cp37-abi3-win32.whl", hash = "sha256:810549cb2a4aedaa84ad9a1c92fbfdfc14090e2749cedf2c1589ad8359aa169b", size = 29384337, upload-time = "2025-01-16T13:52:13.549Z" },
     { url = "https://files.pythonhosted.org/packages/a4/7d/f1c30a92854540bf789e9cd5dde7ef49bbe63f855b85a2e6b3db8135c591/opencv_python-4.11.0.86-cp37-abi3-win_amd64.whl", hash = "sha256:085ad9b77c18853ea66283e98affefe2de8cc4c1f43eda4c100cf9b2721142ec", size = 39488044, upload-time = "2025-01-16T13:52:21.928Z" },
+]
+
+[[package]]
+name = "openevals"
+version = "0.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "langchain" },
+    { name = "langchain-openai" },
+    { name = "langsmith" },
+    { name = "rich" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ca/3f/245f4e86e60b873ec93b71aaf219c9a6840a74d957e6d9f756ce3be64b9f/openevals-0.1.0.tar.gz", hash = "sha256:3dbb7cc4251ab7f6fcd5cbc8939b8538c5bf333e88ad01e5d8ac287f509891a4", size = 95378, upload-time = "2025-05-08T23:30:09.907Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5e/10/5a340aa03999f8e1e89b7bb7f34de27d195219f207a2e311e8f1655d1075/openevals-0.1.0-py3-none-any.whl", hash = "sha256:214b53197b1becff74279ea063c8752f8887a81afda700477639c19a0d683647", size = 62693, upload-time = "2025-05-08T23:30:08.22Z" },
 ]
 
 [[package]]

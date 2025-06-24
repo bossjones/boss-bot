@@ -69,6 +69,46 @@ This directory contains the comprehensive planning documents for implementing a 
 
 ---
 
+#### [AGENT_DEPS.md](./AGENT_DEPS.md)
+**Dependency Analysis and Management** - Comprehensive dependency mapping and upgrade strategy
+
+**What it covers:**
+- **Current Dependency Audit** - Analysis of existing LangChain/LangGraph ecosystem packages
+- **Required Dependencies** - Core packages needed for multi-agent implementation
+- **Version Compatibility Matrix** - Ensuring compatibility across all AI packages
+- **Installation Strategy** - Step-by-step dependency upgrade and installation plan
+- **Conflict Resolution** - Handling potential package conflicts and resolution strategies
+- **Performance Considerations** - Dependency choices impacting performance and memory usage
+
+**Key Components:**
+- LangChain ecosystem packages (langchain-core, langchain-community, etc.)
+- LangGraph and LangSmith integration requirements
+- AI model provider packages (OpenAI, Anthropic, etc.)
+- Additional utility packages for enhanced functionality
+
+---
+
+#### [AGENT_TESTING.md](./AGENT_TESTING.md)
+**Comprehensive Testing Strategy** - Testing framework and methodologies for multi-agent systems
+
+**What it covers:**
+- **Testing Architecture** - Framework for testing individual agents and agent teams
+- **Integration Testing** - End-to-end testing of agent workflows and handoffs
+- **Performance Testing** - Load testing and performance benchmarking strategies
+- **AI-Specific Testing** - LLM response validation and behavior testing methodologies
+- **Mock Strategies** - Mocking external AI services and dependencies for reliable testing
+- **Continuous Testing** - CI/CD integration and automated testing pipelines
+- **Error Scenario Testing** - Comprehensive error handling and recovery testing
+
+**Key Testing Components:**
+- Agent unit testing with pytest and asyncio support
+- LangGraph workflow testing and state validation
+- Mock LLM providers for deterministic testing
+- Performance benchmarking and regression detection
+- Integration testing with existing Discord bot functionality
+
+---
+
 ### 🎯 Specialized Implementation Guides
 
 #### [from-langgraph-repo-boss-bot-langgraph-implementation-plan.md](./from-langgraph-repo-boss-bot-langgraph-implementation-plan.md)

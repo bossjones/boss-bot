@@ -24,3 +24,11 @@ add-mcp-to-claude-code:
     claude mcp add-json mcp-mermaid '{"command":"npx","args":["-y","mcp-mermaid"]}'
     claude mcp add-json mermaid-validator '{"command":"npx","args":["-y","@rtuin/mcp-mermaid-validator@latest"]}'
     claude mcp add langgraph-docs-mcp -- uvx --from mcpdoc mcpdoc --urls "LangGraph:https://langchain-ai.github.io/langgraph/llms.txt LangChain:https://python.langchain.com/llms.txt" --transport stdio
+    claude mcp add claude-code-docs-mcp -- uvx --from mcpdoc mcpdoc --urls "ClaudeCode:https://docs.anthropic.com/llms.txt" --transport stdio
+
+# Generate MCP commands from repos.txt
+[group('mcp')]
+generate-mcp-commands:
+    uv run python scripts/generate_mcp_commands.py
+    @echo 'claude mcp add langgraph-docs-mcp -- uvx --from mcpdoc mcpdoc --urls "LangGraph:https://langchain-ai.github.io/langgraph/llms.txt LangChain:https://python.langchain.com/llms.txt" --transport stdio'
+    @echo 'claude mcp add claude-code-docs-mcp -- uvx --from mcpdoc mcpdoc --urls "ClaudeCode:https://docs.anthropic.com/llms.txt" --transport stdio'

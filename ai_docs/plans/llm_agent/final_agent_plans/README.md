@@ -111,7 +111,64 @@ This directory contains the comprehensive planning documents for implementing a 
 
 ### 🎯 Specialized Implementation Guides
 
-#### [from-langgraph-repo-boss-bot-langgraph-implementation-plan.md](./from-langgraph-repo-boss-bot-langgraph-implementation-plan.md)
+#### [spec_architecture_diagram.md](./spec_architecture_diagram.md)
+**System Architecture Visualization** - Comprehensive architecture diagrams and component relationships
+
+**What it covers:**
+- **Multi-Agent System Architecture** - High-level system design and agent interactions
+- **Component Integration Flow** - Data flow between existing components and new agent teams
+- **Communication Patterns** - Inter-agent messaging and coordination protocols
+- **State Management** - Persistent state and memory architecture
+- **Error Handling Flow** - Comprehensive error propagation and recovery mechanisms
+
+**Key Visual Elements:**
+- Agent team hierarchies and responsibilities
+- Integration points with existing Boss-Bot architecture
+- Data flow diagrams for complex workflows
+- State transition diagrams for agent coordination
+- Circuit breaker and fallback mechanism illustrations
+
+---
+
+#### [spec_entity_relationship_diagram.md](./spec_entity_relationship_diagram.md)
+**Data Model and Entity Relationships** - Comprehensive data structure and relationship mapping
+
+**What it covers:**
+- **Core Entity Models** - Agent, Task, User, Content, and State entities
+- **Relationship Mapping** - Entity relationships and data flow patterns
+- **Database Schema Evolution** - Extending existing schemas for AI capabilities
+- **Memory Architecture** - Persistent and session-based memory structures
+- **Integration Models** - Bridging existing data models with agent requirements
+
+**Key Data Structures:**
+- Agent state and configuration entities
+- Task orchestration and queue management models
+- User context and preference storage
+- Content analysis and metadata structures
+- Performance metrics and monitoring entities
+
+---
+
+#### [spec_state_diagram.md](./spec_state_diagram.md)
+**Agent State Management** - Detailed state machine definitions and transitions
+
+**What it covers:**
+- **Agent State Machines** - Individual agent lifecycle and state transitions
+- **Workflow State Management** - Multi-agent workflow orchestration states
+- **Error State Handling** - Error recovery and fallback state transitions
+- **Integration State Flow** - State synchronization with existing systems
+- **Memory State Evolution** - Context and conversation state management
+
+**Key State Components:**
+- Agent initialization and configuration states
+- Task execution and handoff state transitions
+- Error detection and recovery state flows
+- Integration checkpoint and rollback states
+- Performance monitoring and optimization states
+
+---
+
+#### [from-langgraph-repo-boss-bot-langgraph-implementation-plan.md](./experimental_plans/from-langgraph-repo-boss-bot-langgraph-implementation-plan.md)
 **Simplified Implementation Approach** - Alternative implementation focusing on Twitter→Discord workflow
 
 **What it covers:**

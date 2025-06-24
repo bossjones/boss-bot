@@ -6,7 +6,7 @@ This document outlines all dependencies required to successfully build and deplo
 
 | **Category** | **Package Count** | **Purpose** |
 |--------------|-------------------|-------------|
-| Core Framework | 6 | LangGraph workflow orchestration and execution |
+| Core Framework | 8 | LangGraph workflow orchestration and execution |
 | Model Providers | 6 | AI model integrations (OpenAI, Anthropic, Google, etc.) |
 | Data & Storage | 3 | Persistence, checkpointing, and vector storage |
 | Evaluation & Testing | 3 | Agent performance evaluation and debugging |
@@ -23,6 +23,8 @@ This document outlines all dependencies required to successfully build and deplo
 | **[langgraph-cli[inmem]](https://github.com/langchain-ai/langgraph)** | CLI tools for LangGraph development with in-memory graph execution | Develop and test Boss-Bot agent workflows locally with hot-reload capabilities | `uv tool install 'langgraph-cli[inmem]'` |
 | **[langgraph-sdk](https://github.com/langchain-ai/langgraph)** | Software development kit with APIs, primitives, and utilities for LangGraph applications | Core SDK for building Boss-Bot's custom agent workflows and state management | `uv add langgraph-sdk` |
 | **[langgraph-gen](https://github.com/langchain-ai/langgraph-gen-py)** | CLI tool for auto-generating LangGraph stubs from YAML specifications | Generate initial Boss-Bot agent code from our spec.yml configuration | `uv add langgraph-gen` |
+| **[langgraph-swarm-py](https://github.com/langchain-ai/langgraph-swarm-py)** | LangGraph implementation of swarm-style multi-agent orchestration patterns | Enable swarm coordination patterns for distributed agent collaboration in Boss-Bot | `uv add git+https://github.com/langchain-ai/langgraph-swarm-py` |
+| **[langgraph-supervisor-py](https://github.com/langchain-ai/langgraph-supervisor-py)** | Supervisor pattern implementation for hierarchical agent management | Implement hierarchical supervision in Boss-Bot's hybrid agent architecture | `uv add git+https://github.com/langchain-ai/langgraph-supervisor-py` |
 | **[langgraph-checkpoint-sqlite](https://github.com/langchain-ai/langgraph)** | Checkpointing and state persistence for LangGraph applications using SQLite | Enable state persistence across Discord sessions and agent handoffs | `uv add langgraph-checkpoint-sqlite` |
 | **[langchain-core](https://github.com/langchain-ai/langchain)** | Core abstractions and interfaces for LangChain ecosystem | Foundation for all LangChain integrations in Boss-Bot | `uv add langchain-core` |
 
@@ -88,6 +90,8 @@ This document outlines all dependencies required to successfully build and deplo
 ```bash
 # Core LangGraph/LangChain Framework
 uv add langgraph langgraph-sdk langgraph-gen langgraph-checkpoint-sqlite langchain-core
+uv add git+https://github.com/langchain-ai/langgraph-swarm-py
+uv add git+https://github.com/langchain-ai/langgraph-supervisor-py
 
 # LangGraph CLI Tools (installed as tool due to dependency conflicts)
 uv tool install 'langgraph-cli[inmem]'

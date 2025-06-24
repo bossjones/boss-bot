@@ -711,7 +711,7 @@ dependencies = [
     { name = "imageio" },
     { name = "imutils" },
     { name = "jq" },
-    { name = "langchain", extra = ["anthropic", "community", "huggingface", "openai", "perplexity", "xai"] },
+    { name = "langchain", extra = ["anthropic", "community", "google-genai", "huggingface", "openai", "perplexity", "xai"] },
     { name = "langchain-anthropic" },
     { name = "langchain-aws" },
     { name = "langchain-community" },
@@ -944,7 +944,7 @@ requires-dist = [
     { name = "imageio", specifier = ">=2.37.0" },
     { name = "imutils", specifier = ">=0.5.4" },
     { name = "jq", specifier = ">=1.8.0" },
-    { name = "langchain", extras = ["anthropic", "community", "huggingface", "openai", "perplexity", "xai"], specifier = ">=0.3.20" },
+    { name = "langchain", extras = ["anthropic", "community", "google-genai", "huggingface", "openai", "perplexity", "xai"], specifier = ">=0.3.20" },
     { name = "langchain-anthropic", specifier = ">=0.3.9" },
     { name = "langchain-aws", specifier = ">=0.2.15" },
     { name = "langchain-community", specifier = ">=0.3.19" },
@@ -3520,6 +3520,9 @@ anthropic = [
 ]
 community = [
     { name = "langchain-community" },
+]
+google-genai = [
+    { name = "langchain-google-genai" },
 ]
 huggingface = [
     { name = "langchain-huggingface" },

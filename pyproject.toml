@@ -140,7 +140,7 @@
         "langchain-openai>=0.3.8",
         "langchain-postgres>=0.0.13",
         "langchain-text-splitters>=0.3.6",
-        "langchain[anthropic,community,huggingface,openai,perplexity,xai]>=0.3.20",
+        "langchain[anthropic,community,google-genai,huggingface,openai,perplexity,xai]>=0.3.20",
         "langchainhub>=0.1.21",
         "langgraph-api>=0.2.61",
         "langgraph-checkpoint-sqlite>=2.0.10",

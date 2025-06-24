@@ -48,7 +48,8 @@
       "mcp__perplexity-ask__perplexity_ask",
       "mcp__github__search_repositories",
       "WebFetch(domain:docs.smith.langchain.com)",
-      "WebFetch(domain:python.langchain.com)"
+      "WebFetch(domain:python.langchain.com)",
+      "mcp__mermaid-validator__validateMermaid"
     ],
     "deny": []
   },

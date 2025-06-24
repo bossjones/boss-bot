@@ -42,7 +42,9 @@
       "mcp__mcp-server-yt-dlp__search_yt_dlp_code",
       "mcp__mcp-server-yt-dlp__fetch_generic_url_content",
       "Bash(git add:*)",
-      "mcp__github__get_file_contents"
+      "mcp__github__get_file_contents",
+      "mcp__mcp-server-langgraph-gen-py__fetch_generic_url_content",
+      "mcp__mcp-server-langgraph-gen-py__search_langgraph_gen_py_docs"
     ],
     "deny": []
   },

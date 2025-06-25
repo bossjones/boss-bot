@@ -56,7 +56,8 @@
       "mcp__claude-code-docs-mcp__fetch_docs",
       "Bash(touch:*)",
       "Bash(git commit:*)",
-      "Bash(uv list:*)"
+      "Bash(uv list:*)",
+      "Bash(uv pip:*)"
     ],
     "deny": []
   },

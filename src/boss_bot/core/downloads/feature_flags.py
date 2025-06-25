@@ -71,6 +71,35 @@ class DownloadFeatureFlags:
         """
         return getattr(self.settings, "download_api_fallback_to_cli", True)
 
+    # AI-Enhanced Strategy Flags
+
+    @property
+    def ai_strategy_selection_enabled(self) -> bool:
+        """Use AI for intelligent strategy selection.
+
+        Returns:
+            True if AI-powered strategy selection is enabled
+        """
+        return getattr(self.settings, "ai_strategy_selection_enabled", False)
+
+    @property
+    def ai_content_analysis_enabled(self) -> bool:
+        """Use AI for content analysis and optimization.
+
+        Returns:
+            True if AI-powered content analysis is enabled
+        """
+        return getattr(self.settings, "ai_content_analysis_enabled", False)
+
+    @property
+    def ai_workflow_orchestration_enabled(self) -> bool:
+        """Use AI for workflow orchestration and coordination.
+
+        Returns:
+            True if AI-powered workflow orchestration is enabled
+        """
+        return getattr(self.settings, "ai_workflow_orchestration_enabled", False)
+
     def is_api_enabled_for_platform(self, platform: str) -> bool:
         """Check if API is enabled for a specific platform.
 
@@ -106,6 +135,9 @@ class DownloadFeatureFlags:
             "youtube_api": self.use_api_youtube,
             "instagram_api": self.use_api_instagram,
             "api_fallback": self.api_fallback_to_cli,
+            "ai_strategy_selection": self.ai_strategy_selection_enabled,
+            "ai_content_analysis": self.ai_content_analysis_enabled,
+            "ai_workflow_orchestration": self.ai_workflow_orchestration_enabled,
         }
 
     def __repr__(self) -> str:

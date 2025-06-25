@@ -58,7 +58,8 @@
       "Bash(git commit:*)",
       "Bash(uv list:*)",
       "Bash(uv pip:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(BETTER_EXCEPTIONS=1 uv run python -m boss_bot.cli.main print-exceptionhook)"
     ],
     "deny": []
   },

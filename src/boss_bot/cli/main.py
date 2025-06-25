@@ -13,6 +13,11 @@ from boss_bot.monitoring.logging import early_init
 # 🔥 STEP 1: Call early_init() FIRST - before ANY other imports
 early_init()
 
+# 🔥 STEP 2: Configure secure exception handling if better_exceptions is enabled
+from boss_bot.monitoring.exceptions import init_secure_exceptions
+
+init_secure_exceptions()
+
 import asyncio
 import inspect
 import json
@@ -1555,6 +1560,86 @@ def logtree() -> None:
         cprint("[red]❌ logging_tree is not installed[/red]")
         cprint("[yellow]Install with: pip install logging-tree[/yellow]")
         raise typer.Exit(1)
+
+
+@APP.command()
+def print_exceptionhook(
+    pe: bool = typer.Option(False, "--pe", help="Alias for --print-exceptionhook"),
+) -> None:
+    """Inspect the current sys.excepthook to see what exception handler is configured"""
+    import inspect
+
+    current_hook = sys.excepthook
+    original_hook = sys.__excepthook__
+
+    cprint("\n[bold blue]🔍 Exception Hook Analysis[/bold blue]", style="bold blue")
+    cprint("=" * 50, style="blue")
+
+    # Current exception hook
+    cprint("\n[bold green]Current Exception Hook:[/bold green]")
+    cprint(f"  Function: {current_hook}")
+    cprint(f"  Module: {current_hook.__module__}")
+    cprint(f"  Name: {current_hook.__name__ if hasattr(current_hook, '__name__') else 'N/A'}")
+
+    # Original exception hook
+    cprint("\n[bold green]Original Exception Hook:[/bold green]")
+    cprint(f"  Function: {original_hook}")
+    cprint(f"  Module: {original_hook.__module__}")
+    cprint(f"  Name: {original_hook.__name__ if hasattr(original_hook, '__name__') else 'N/A'}")
+
+    # Check if hooks are the same
+    is_modified = current_hook != original_hook
+    if is_modified:
+        cprint("\n[yellow]⚠️  Exception hook has been modified![/yellow]")
+    else:
+        cprint("\n[green]✅ Using default Python exception hook[/green]")
+
+    # Try to identify the library
+    cprint("\n[bold green]Exception Handler Detection:[/bold green]")
+
+    # Check for better-exceptions
+    try:
+        import better_exceptions
+
+        if hasattr(better_exceptions, "hook") and current_hook == better_exceptions.hook:
+            cprint("[cyan]📦 Detected: better-exceptions hook is active[/cyan]")
+        else:
+            cprint("[dim]📦 better-exceptions is installed but not active[/dim]")
+    except ImportError:
+        cprint("[dim]📦 better-exceptions is not installed[/dim]")
+
+    # Check for rich
+    try:
+        import rich.traceback
+
+        # Rich doesn't directly replace sys.excepthook, but check if rich is handling exceptions
+        if hasattr(rich.traceback, "install") and is_modified:
+            cprint("[cyan]📦 Possibly using rich.traceback (check if install() was called)[/cyan]")
+        else:
+            cprint("[dim]📦 rich.traceback is available but not detected as active[/dim]")
+    except ImportError:
+        cprint("[dim]📦 rich.traceback is not available[/dim]")
+
+    # Check source code if possible
+    if is_modified and hasattr(current_hook, "__code__"):
+        try:
+            source = inspect.getsource(current_hook)
+            cprint("\n[bold green]Exception Hook Source:[/bold green]")
+            cprint("[dim]" + source[:500] + "...[/dim]" if len(source) > 500 else "[dim]" + source + "[/dim]")
+        except (OSError, TypeError):
+            cprint("\n[yellow]Could not retrieve source code for current hook[/yellow]")
+
+    # Show installed exception-related packages
+    cprint("\n[bold green]Installed Exception Libraries:[/bold green]")
+    exception_libs = ["better-exceptions", "rich", "colorama", "termcolor"]
+
+    for lib in exception_libs:
+        try:
+            module = __import__(lib.replace("-", "_"))
+            version = getattr(module, "__version__", "unknown")
+            cprint(f"[green]✓[/green] {lib}: {version}")
+        except ImportError:
+            cprint(f"[red]✗[/red] {lib}: not installed")
 
 
 @APP.command()

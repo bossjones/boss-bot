@@ -261,7 +261,7 @@ class TestCLIAIIntegration:
             upload_date="2024-01-15",
             like_count=1250,
             view_count=8500,
-            url="https://twitter.com/test/status/123456789",
+            url="https://twitter.com/bossjones/status/1818781891249815783",
             platform="twitter",
             download_method="api",
             files=["enhanced_content.mp4", "metadata.json"],
@@ -296,7 +296,7 @@ class TestCLIAIIntegration:
             upload_date="2024-01-15",
             like_count=1250,
             view_count=8500,
-            url="https://twitter.com/test/status/123456789",
+            url="https://twitter.com/bossjones/status/1818781891249815783",
             platform="twitter",
             download_method="api",
             files=["enhanced_content.mp4", "metadata.json"],
@@ -313,14 +313,14 @@ class TestCLIAIIntegration:
             }
         )
 
-        mocker.patch('boss_bot.cli.commands.download.get_strategy_for_platform', return_value=mock_strategy)
+        mocker.patch('boss_bot.cli.commands.download.get_ai_enhanced_strategy', return_value=(mock_strategy, None))
         mock_strategy.get_metadata.return_value = ai_enhanced_metadata
         mock_strategy.download.return_value = ai_enhanced_metadata
 
         # Test current CLI functionality that would be enhanced by AI
         result = runner.invoke(download_app, [
             "twitter",
-            "https://twitter.com/test/status/123456789",
+            "https://twitter.com/bossjones/status/1818781891249815783",
             "--verbose"
         ])
 
@@ -329,7 +329,7 @@ class TestCLIAIIntegration:
 
         # Verify current functionality works
         assert "Twitter Download" in clean_output
-        assert "https://twitter.com/test/status/123456789" in clean_output
+        assert "https://twitter.com/bossjones/status/1818781891249815783" in clean_output
         assert "Download completed successfully" in clean_output
         assert "Downloaded 2 files" in clean_output
 
@@ -348,18 +348,18 @@ class TestCLIAIIntegration:
             upload_date="2024-01-15",
             like_count=1250,
             view_count=8500,
-            url="https://twitter.com/test/status/123456789",
+            url="https://twitter.com/bossjones/status/1818781891249815783",
             platform="twitter",
             download_method="cli",  # CLI-based approach
             files=[]
         )
 
-        mocker.patch('boss_bot.cli.commands.download.get_strategy_for_platform', return_value=mock_strategy)
+        mocker.patch('boss_bot.cli.commands.download.get_ai_enhanced_strategy', return_value=(mock_strategy, None))
         mock_strategy.get_metadata.return_value = traditional_metadata
 
         result = runner.invoke(download_app, [
             "twitter",
-            "https://twitter.com/test/status/123456789",
+            "https://twitter.com/bossjones/status/1818781891249815783",
             "--metadata-only"
         ])
 
@@ -407,13 +407,13 @@ class TestCLIAIIntegration:
             }
         )
 
-        mocker.patch('boss_bot.cli.commands.download.get_strategy_for_platform', return_value=mock_strategy)
-        mocker.patch('boss_bot.cli.commands.download.settings', ai_settings)
+        mocker.patch('boss_bot.cli.commands.download.get_ai_enhanced_strategy', return_value=(mock_strategy, None))
+        mocker.patch('boss_bot.cli.commands.download.get_settings', return_value=ai_settings)
         mock_strategy.get_metadata.return_value = future_ai_metadata
 
         result = runner.invoke(download_app, [
             "twitter",
-            "https://twitter.com/test/status/123456789",
+            "https://twitter.com/bossjones/status/1818781891249815783",
             "--metadata-only",
             "--verbose"
         ])
@@ -458,7 +458,7 @@ class TestCLIAIIntegration:
                 }
             )
 
-            mocker.patch('boss_bot.cli.commands.download.get_strategy_for_platform', return_value=mock_strategy)
+            mocker.patch('boss_bot.cli.commands.download.get_ai_enhanced_strategy', return_value=(mock_strategy, None))
             mock_strategy.get_metadata.return_value = platform_metadata
 
             result = runner.invoke(download_app, [
@@ -506,7 +506,7 @@ class TestCLIAIIntegration:
             }
         )
 
-        mocker.patch('boss_bot.cli.commands.download.get_strategy_for_platform', return_value=mock_strategy)
+        mocker.patch('boss_bot.cli.commands.download.get_ai_enhanced_strategy', return_value=(mock_strategy, None))
         mock_strategy.get_metadata.return_value = metadata_with_reasoning
 
         result = runner.invoke(download_app, [
@@ -576,7 +576,7 @@ class TestCLIAIIntegration:
             download_method="cli"
         )
 
-        mocker.patch('boss_bot.cli.commands.download.get_strategy_for_platform', return_value=mock_strategy)
+        mocker.patch('boss_bot.cli.commands.download.get_ai_enhanced_strategy', return_value=(mock_strategy, None))
         mock_strategy.get_metadata.return_value = failing_metadata
 
         result = runner.invoke(download_app, [
@@ -606,7 +606,7 @@ class TestCLIAIIntegration:
             }
         )
 
-        mocker.patch('boss_bot.cli.commands.download.get_strategy_for_platform', return_value=mock_strategy)
+        mocker.patch('boss_bot.cli.commands.download.get_ai_enhanced_strategy', return_value=(mock_strategy, None))
         mock_strategy.get_metadata.return_value = async_metadata
 
         result = runner.invoke(download_app, [
@@ -654,7 +654,7 @@ class TestCLIAIIntegration:
             }
         )
 
-        mocker.patch('boss_bot.cli.commands.download.get_strategy_for_platform', return_value=mock_strategy)
+        mocker.patch('boss_bot.cli.commands.download.get_ai_enhanced_strategy', return_value=(mock_strategy, None))
         mock_strategy.get_metadata.return_value = future_enhanced_metadata
 
         result = runner.invoke(download_app, [

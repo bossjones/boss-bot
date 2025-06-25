@@ -35,43 +35,70 @@ app = typer.Typer(name="download", help="Download content from various platforms
 console = Console()
 
 
-# Initialize settings and feature flags
-settings = BossSettings()
-feature_flags = DownloadFeatureFlags(settings)
+# Initialize settings and feature flags lazily to avoid test collection issues
+_settings = None
+_feature_flags = None
 
-# Initialize AI agents if available
-strategy_selector_agent = None
-content_analyzer_agent = None
 
-if AI_AGENTS_AVAILABLE and feature_flags.ai_strategy_selection_enabled:
-    try:
-        # Create a simple mock model for now (will be replaced with actual LLM)
-        from types import SimpleNamespace
+def get_settings() -> BossSettings:
+    """Get or create settings instance."""
+    global _settings
+    if _settings is None:
+        _settings = BossSettings()
+    return _settings
 
-        mock_model = SimpleNamespace()
-        mock_model.invoke = lambda x: {"content": "AI response"}
 
-        strategy_selector_agent = StrategySelector(
-            name="cli-strategy-selector",
-            model=mock_model,
-            system_prompt="Select the best download strategy for CLI users",
-        )
-    except Exception as e:
-        console.print(f"[yellow]Warning: Failed to initialize AI Strategy Selector: {e}[/yellow]")
+def get_feature_flags() -> DownloadFeatureFlags:
+    """Get or create feature flags instance."""
+    global _feature_flags
+    if _feature_flags is None:
+        _feature_flags = DownloadFeatureFlags(get_settings())
+    return _feature_flags
 
-if AI_AGENTS_AVAILABLE and feature_flags.ai_content_analysis_enabled:
-    try:
-        # Create a simple mock model for now (will be replaced with actual LLM)
-        from types import SimpleNamespace
 
-        mock_model = SimpleNamespace()
-        mock_model.invoke = lambda x: {"content": "AI analysis"}
+# Initialize AI agents lazily to avoid test collection issues
+_strategy_selector_agent = None
+_content_analyzer_agent = None
 
-        content_analyzer_agent = ContentAnalyzer(
-            name="cli-content-analyzer", model=mock_model, system_prompt="Analyze content metadata for CLI users"
-        )
-    except Exception as e:
-        console.print(f"[yellow]Warning: Failed to initialize AI Content Analyzer: {e}[/yellow]")
+
+def get_strategy_selector_agent():
+    """Get or create strategy selector agent."""
+    global _strategy_selector_agent
+    if _strategy_selector_agent is None and AI_AGENTS_AVAILABLE and get_feature_flags().ai_strategy_selection_enabled:
+        try:
+            # Create a simple mock model for now (will be replaced with actual LLM)
+            from types import SimpleNamespace
+
+            mock_model = SimpleNamespace()
+            mock_model.invoke = lambda x: {"content": "AI response"}
+
+            _strategy_selector_agent = StrategySelector(
+                name="cli-strategy-selector",
+                model=mock_model,
+                system_prompt="Select the best download strategy for CLI users",
+            )
+        except Exception as e:
+            console.print(f"[yellow]Warning: Failed to initialize AI Strategy Selector: {e}[/yellow]")
+    return _strategy_selector_agent
+
+
+def get_content_analyzer_agent():
+    """Get or create content analyzer agent."""
+    global _content_analyzer_agent
+    if _content_analyzer_agent is None and AI_AGENTS_AVAILABLE and get_feature_flags().ai_content_analysis_enabled:
+        try:
+            # Create a simple mock model for now (will be replaced with actual LLM)
+            from types import SimpleNamespace
+
+            mock_model = SimpleNamespace()
+            mock_model.invoke = lambda x: {"content": "AI analysis"}
+
+            _content_analyzer_agent = ContentAnalyzer(
+                name="cli-content-analyzer", model=mock_model, system_prompt="Analyze content metadata for CLI users"
+            )
+        except Exception as e:
+            console.print(f"[yellow]Warning: Failed to initialize AI Content Analyzer: {e}[/yellow]")
+    return _content_analyzer_agent
 
 
 def get_strategy_for_platform(platform: str, download_dir: Path):
@@ -84,6 +111,7 @@ def get_strategy_for_platform(platform: str, download_dir: Path):
     Returns:
         Strategy instance for the platform
     """
+    feature_flags = get_feature_flags()
     strategies = {
         "twitter": TwitterDownloadStrategy(feature_flags=feature_flags, download_dir=download_dir),
         "reddit": RedditDownloadStrategy(feature_flags=feature_flags, download_dir=download_dir),
@@ -106,6 +134,7 @@ async def get_ai_enhanced_strategy(url: str, download_dir: Path) -> tuple:
     ai_metadata = None
 
     # Check if AI strategy selection is available
+    strategy_selector_agent = get_strategy_selector_agent()
     if strategy_selector_agent:
         try:
             # Create agent context
@@ -137,6 +166,7 @@ async def get_ai_enhanced_strategy(url: str, download_dir: Path) -> tuple:
             console.print(f"[yellow]AI strategy selection failed: {e}, using traditional method[/yellow]")
 
     # Fall back to traditional method
+    feature_flags = get_feature_flags()
     all_strategies = {
         "twitter": TwitterDownloadStrategy(feature_flags=feature_flags, download_dir=download_dir),
         "reddit": RedditDownloadStrategy(feature_flags=feature_flags, download_dir=download_dir),
@@ -295,7 +325,7 @@ def download_twitter(
             console.print(f"   AI reasoning: {ai_metadata['reasoning']}")
 
     # Show strategy status
-    if feature_flags.is_api_enabled_for_platform("twitter"):
+    if get_feature_flags().is_api_enabled_for_platform("twitter"):
         console.print("🚀 Using experimental API-direct approach")
     else:
         console.print("🖥️ Using CLI-based approach")
@@ -422,7 +452,7 @@ def download_reddit(
         console.print(f"Cookies File: {cookies_file}")
 
     # Show strategy status
-    if feature_flags.is_api_enabled_for_platform("reddit"):
+    if get_feature_flags().is_api_enabled_for_platform("reddit"):
         console.print("🚀 Using experimental API-direct approach")
     else:
         console.print("🖥️ Using CLI-based approach")
@@ -559,7 +589,7 @@ def download_instagram(
     console.print(f"User Agent: {user_agent}")
 
     # Show strategy status
-    if feature_flags.is_api_enabled_for_platform("instagram"):
+    if get_feature_flags().is_api_enabled_for_platform("instagram"):
         console.print("🚀 Using experimental API-direct approach")
     else:
         console.print("🖥️ Using CLI-based approach")
@@ -696,7 +726,7 @@ def download_youtube(
     console.print(f"Audio Only: {audio_only}")
 
     # Show strategy status
-    if feature_flags.is_api_enabled_for_platform("youtube"):
+    if get_feature_flags().is_api_enabled_for_platform("youtube"):
         console.print("🚀 Using experimental API-direct approach")
     else:
         console.print("🖥️ Using CLI-based approach")
@@ -850,7 +880,7 @@ def download_info() -> None:
 @app.command("strategies")
 def show_strategies() -> None:
     """Show current download strategy configuration."""
-    info = feature_flags.get_strategy_info()
+    info = get_feature_flags().get_strategy_info()
 
     console.print("[bold blue]Download Strategy Configuration[/bold blue]")
     console.print()
@@ -880,10 +910,12 @@ def show_strategies() -> None:
     if AI_AGENTS_AVAILABLE:
         console.print()
         console.print("[bold green]AI Agents Available:[/bold green]")
+        strategy_selector_agent = get_strategy_selector_agent()
         if strategy_selector_agent:
             console.print("  ✅ Strategy Selector Agent: Ready")
         else:
             console.print("  ❌ Strategy Selector Agent: Not initialized")
+        content_analyzer_agent = get_content_analyzer_agent()
         if content_analyzer_agent:
             console.print("  ✅ Content Analyzer Agent: Ready")
         else:

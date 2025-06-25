@@ -54,6 +54,15 @@ from boss_bot.core.downloads.manager import DownloadManager
 from boss_bot.core.env import BossSettings
 from boss_bot.core.queue.manager import QueueManager
 
+# AI agent imports (optional)
+try:
+    from boss_bot.ai.agents.content_analyzer import ContentAnalyzer
+    from boss_bot.ai.agents.strategy_selector import StrategySelector
+
+    AI_AGENTS_AVAILABLE = True
+except ImportError:
+    AI_AGENTS_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 
@@ -122,12 +131,64 @@ class BossBot(commands.Bot):
         self.invite: str | None = None
         self.uptime: datetime.datetime | None = None
 
+        # Initialize AI agents if available and enabled
+        self.strategy_selector: StrategySelector | None = None
+        self.content_analyzer: ContentAnalyzer | None = None
+        self._initialize_ai_agents()
+
         # Set up logging only if not already configured
         if not logging.root.handlers:
             logging.basicConfig(
                 level=getattr(logging, self.settings.log_level.upper()),
                 format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
             )
+
+    def _initialize_ai_agents(self) -> None:
+        """Initialize AI agents if available and enabled."""
+        if not AI_AGENTS_AVAILABLE:
+            logger.info("AI agents not available - modules not found")
+            return
+
+        try:
+            # Initialize Strategy Selector if enabled
+            if hasattr(self.settings, "ai_strategy_selection_enabled") and getattr(
+                self.settings, "ai_strategy_selection_enabled", False
+            ):
+                # Create a simple mock model for now (will be replaced with actual LLM)
+                from types import SimpleNamespace
+
+                mock_model = SimpleNamespace()
+                mock_model.invoke = lambda x: {"content": "AI response"}
+
+                self.strategy_selector = StrategySelector(
+                    name="discord-strategy-selector",
+                    model=mock_model,
+                    system_prompt="Select the best download strategy for Discord bot users",
+                )
+                logger.info("Initialized AI Strategy Selector agent")
+
+            # Initialize Content Analyzer if enabled
+            if hasattr(self.settings, "ai_content_analysis_enabled") and getattr(
+                self.settings, "ai_content_analysis_enabled", False
+            ):
+                # Create a simple mock model for now (will be replaced with actual LLM)
+                from types import SimpleNamespace
+
+                mock_model = SimpleNamespace()
+                mock_model.invoke = lambda x: {"content": "AI analysis"}
+
+                self.content_analyzer = ContentAnalyzer(
+                    name="discord-content-analyzer",
+                    model=mock_model,
+                    system_prompt="Analyze content metadata for Discord bot users",
+                )
+                logger.info("Initialized AI Content Analyzer agent")
+
+        except Exception as e:
+            logger.error(f"Failed to initialize AI agents: {e}", exc_info=True)
+            # Don't fail bot startup if AI agents fail to initialize
+            self.strategy_selector = None
+            self.content_analyzer = None
 
     async def setup_hook(self):
         """Initialize services and load extensions."""

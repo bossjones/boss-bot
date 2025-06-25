@@ -22,6 +22,16 @@ from boss_bot.core.downloads.strategies import (
 )
 from boss_bot.core.uploads.manager import UploadManager
 
+# AI agent imports for enhanced functionality
+try:
+    from boss_bot.ai.agents.content_analyzer import ContentAnalyzer
+    from boss_bot.ai.agents.context import AgentContext, AgentRequest
+    from boss_bot.ai.agents.strategy_selector import StrategySelector
+
+    AI_AGENTS_AVAILABLE = True
+except ImportError:
+    AI_AGENTS_AVAILABLE = False
+
 
 class DownloadCog(commands.Cog):
     """Cog for handling downloads."""
@@ -71,10 +81,70 @@ class DownloadCog(commands.Cog):
         Returns:
             Strategy instance if supported, None otherwise
         """
+        # Traditional method - check each strategy
         for strategy in self.strategies.values():
             if strategy.supports_url(url):
                 return strategy
         return None
+
+    async def _get_ai_enhanced_strategy_for_url(
+        self, url: str, ctx: commands.Context
+    ) -> tuple[BaseDownloadStrategy | None, dict | None]:
+        """Get strategy using AI agent if available, otherwise fall back to traditional method.
+
+        Args:
+            url: The URL to check
+            ctx: Discord context for user information
+
+        Returns:
+            Tuple of (strategy, ai_metadata) where ai_metadata contains AI insights if used
+        """
+        ai_metadata = None
+
+        # Check if AI strategy selection is available and enabled
+        if (
+            AI_AGENTS_AVAILABLE
+            and hasattr(self.bot, "strategy_selector")
+            and self.bot.strategy_selector
+            and self.feature_flags.ai_strategy_selection_enabled
+        ):
+            try:
+                # Create agent context
+                agent_context = AgentContext(
+                    request_id=f"{ctx.author.id}_{ctx.message.id}",
+                    user_id=str(ctx.author.id),
+                    guild_id=str(ctx.guild.id) if ctx.guild else None,
+                )
+
+                # Create agent request
+                request = AgentRequest(
+                    context=agent_context, action="select_strategy", data={"url": url, "user_preferences": {}}
+                )
+
+                # Process with AI agent
+                response = await self.bot.strategy_selector.process_request(request)
+
+                if response.success and response.result:
+                    platform = response.result.get("platform")
+                    strategy = self.strategies.get(platform)
+
+                    if strategy and strategy.supports_url(url):
+                        ai_metadata = {
+                            "ai_enhanced": True,
+                            "confidence": response.confidence,
+                            "reasoning": response.reasoning,
+                            "platform": platform,
+                            "recommended_options": response.result.get("recommended_options", {}),
+                        }
+                        return strategy, ai_metadata
+
+            except Exception as e:
+                # Log but don't fail - fall back to traditional method
+                print(f"AI strategy selection failed: {e}, falling back to traditional method")
+
+        # Fall back to traditional method
+        strategy = self._get_strategy_for_url(url)
+        return strategy, ai_metadata
 
     @commands.command(name="download")
     async def download(self, ctx: commands.Context, url: str, upload: bool = True):
@@ -84,8 +154,8 @@ class DownloadCog(commands.Cog):
             url: URL to download
             upload: Whether to upload files to Discord (default: True)
         """
-        # Try to find a strategy that supports this URL
-        strategy = self._get_strategy_for_url(url)
+        # Try to find a strategy that supports this URL (with AI enhancement if available)
+        strategy, ai_metadata = await self._get_ai_enhanced_strategy_for_url(url, ctx)
 
         if strategy:
             # Determine platform emoji and name
@@ -94,6 +164,11 @@ class DownloadCog(commands.Cog):
             name = platform_info["name"]
 
             await ctx.send(f"{emoji} Downloading {name} content: {url}")
+
+            # Show AI enhancement status if used
+            if ai_metadata and ai_metadata.get("ai_enhanced"):
+                confidence = ai_metadata.get("confidence", 0)
+                await ctx.send(f"🤖 AI selected {name} strategy (confidence: {confidence:.2f})")
 
             # Show feature flag status if API is enabled
             platform_key = strategy.__class__.__name__.lower().replace("downloadstrategy", "")
@@ -524,6 +599,62 @@ class DownloadCog(commands.Cog):
         else:
             return {"emoji": "🔗", "name": "Unknown"}
 
+    async def _get_ai_enhanced_metadata(self, metadata, url: str, platform: str, ctx: commands.Context) -> dict | None:
+        """Enhance metadata using AI Content Analyzer if available.
+
+        Args:
+            metadata: Basic metadata from strategy
+            url: The URL being analyzed
+            platform: Platform name
+            ctx: Discord context
+
+        Returns:
+            Enhanced metadata dict or None if AI not available
+        """
+        if not (
+            AI_AGENTS_AVAILABLE
+            and hasattr(self.bot, "content_analyzer")
+            and self.bot.content_analyzer
+            and self.feature_flags.ai_content_analysis_enabled
+        ):
+            return None
+
+        try:
+            # Create agent context
+            agent_context = AgentContext(
+                request_id=f"{ctx.author.id}_{ctx.message.id}_metadata",
+                user_id=str(ctx.author.id),
+                guild_id=str(ctx.guild.id) if ctx.guild else None,
+            )
+
+            # Request metadata enrichment
+            request = AgentRequest(
+                context=agent_context,
+                action="enrich_metadata",
+                data={
+                    "url": url,
+                    "platform": platform,
+                    "basic_metadata": {
+                        "title": metadata.title,
+                        "uploader": metadata.uploader,
+                        "upload_date": metadata.upload_date,
+                        "duration": metadata.duration,
+                        "view_count": metadata.view_count,
+                        "like_count": metadata.like_count,
+                    },
+                },
+            )
+
+            response = await self.bot.content_analyzer.process_request(request)
+
+            if response.success and response.result:
+                return response.result
+
+        except Exception as e:
+            print(f"AI metadata enrichment failed: {e}")
+
+        return None
+
     @commands.command(name="metadata")
     async def metadata(self, ctx: commands.Context, url: str):
         """Get metadata information about a URL without downloading."""
@@ -546,8 +677,21 @@ class DownloadCog(commands.Cog):
             try:
                 metadata = await strategy.get_metadata(url)
 
+                # Try to enhance metadata with AI if available
+                enhanced_metadata = await self._get_ai_enhanced_metadata(metadata, url, name.lower(), ctx)
+
                 # Build info message
-                info_lines = [f"{emoji} **{name} Content Info**"]
+                ai_enhanced = enhanced_metadata is not None
+                header = f"{emoji} **{name} Content Info**"
+                if ai_enhanced:
+                    header += " (AI Enhanced)"
+                info_lines = [header]
+
+                # If AI provided insights, show them
+                if enhanced_metadata:
+                    ai_insights = enhanced_metadata.get("ai_insights", [])
+                    if ai_insights and len(ai_insights) > 0:
+                        info_lines.append(f"🤖 **AI Insights:** {ai_insights[0]}")
 
                 if metadata.title:
                     info_lines.append(
@@ -605,6 +749,7 @@ class DownloadCog(commands.Cog):
 
         lines = ["🔧 **Download Strategy Configuration**", ""]
 
+        # Platform API status
         platforms = [
             ("🐦 Twitter/X", "twitter_api"),
             ("🤖 Reddit", "reddit_api"),
@@ -621,7 +766,12 @@ class DownloadCog(commands.Cog):
                 "",
                 f"🔄 **API Fallback**: {'✅ Enabled' if info['api_fallback'] else '❌ Disabled'}",
                 "",
-                "💡 *Tip: Enable experimental features with environment variables like `TWITTER_USE_API_CLIENT=true`*",
+                "🤖 **AI Enhancement Status**",
+                f"- Strategy Selection: {'✅ Enabled' if info['ai_strategy_selection'] else '❌ Disabled'}",
+                f"- Content Analysis: {'✅ Enabled' if info['ai_content_analysis'] else '❌ Disabled'}",
+                f"- Workflow Orchestration: {'✅ Enabled' if info['ai_workflow_orchestration'] else '❌ Disabled'}",
+                "",
+                "💡 *Tip: Enable AI features with `AI_STRATEGY_SELECTION_ENABLED=true`*",
             ]
         )
 

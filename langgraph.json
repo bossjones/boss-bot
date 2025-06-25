@@ -9,7 +9,7 @@
         "    PYTHONASYNCIODEBUG=1 \\",
         "    DEBIAN_FRONTEND=noninteractive \\",
         "    TAPLO_VERSION=0.9.3 \\",
-        "    UV_VERSION=0.5.16 \\",
+        "    UV_VERSION=0.7.15 \\",
         "    PATH=/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \\",
         "    PYTHONFAULTHANDLER=1 \\",
         "    PYTHONDONTWRITEBYTECODE=1 \\",

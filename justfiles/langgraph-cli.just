@@ -8,20 +8,20 @@ install-langgraph-cli:
 
 # Build LangGraph application
 [group('langgraph-cli')]
-build:
-	uvx langgraph build
+langgraph-build:
+	uv tool run --from langgraph-cli langgraph build
 
 # Run LangGraph in development mode
 [group('langgraph-cli')]
-dev:
-	uvx langgraph dev
+langgraph-dev:
+	uv tool run --from langgraph-cli langgraph dev
 
 # Generate Dockerfile for LangGraph
 [group('langgraph-cli')]
-dockerfile:
-	uvx langgraph dockerfile
+langgraph-dockerfile:
+	uv tool run --from langgraph-cli langgraph dockerfile -c langgraph.json Dockerfile
 
 # Start LangGraph services
 [group('langgraph-cli')]
-up:
-	uvx langgraph up
+langgraph-up:
+	uv tool run --from langgraph-cli langgraph up

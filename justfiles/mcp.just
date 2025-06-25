@@ -25,6 +25,7 @@ add-mcp-to-claude-code:
     claude mcp add-json mermaid-validator '{"command":"npx","args":["-y","@rtuin/mcp-mermaid-validator@latest"]}'
     claude mcp add langgraph-docs-mcp -- uvx --from mcpdoc mcpdoc --urls "LangGraph:https://langchain-ai.github.io/langgraph/llms.txt LangChain:https://python.langchain.com/llms.txt" --transport stdio
     claude mcp add claude-code-docs-mcp -- uvx --from mcpdoc mcpdoc --urls "ClaudeCode:https://docs.anthropic.com/llms.txt" --transport stdio
+    claude mcp add github -e GITHUB_PERSONAL_ACCESS_TOKEN=$GITHUB_PERSONAL_ACCESS_TOKEN -- docker run -i --rm -e GITHUB_PERSONAL_ACCESS_TOKEN ghcr.io/github/github-mcp-server
 
 # Generate MCP commands from repos.txt
 [group('mcp')]
@@ -32,3 +33,9 @@ generate-mcp-commands:
     uv run python scripts/generate_mcp_commands.py
     @echo 'claude mcp add langgraph-docs-mcp -- uvx --from mcpdoc mcpdoc --urls "LangGraph:https://langchain-ai.github.io/langgraph/llms.txt LangChain:https://python.langchain.com/llms.txt" --transport stdio'
     @echo 'claude mcp add claude-code-docs-mcp -- uvx --from mcpdoc mcpdoc --urls "ClaudeCode:https://docs.anthropic.com/llms.txt" --transport stdio'
+
+generate-mcp-experimental:
+    @echo 'claude mcp add context7 -- npx -y @upstash/context7-mcp'
+    @echo 'claude mcp add-json memory-bank '\''{"command":"npx","args":["-y","@allpepper/memory-bank-mcp@latest"], "env":{"MEMORY_BANK_ROOT":"/Users/malcolm/shared_memory_bank"}}'\'''
+    @echo 'claude mcp add-json mcp-knowledge-graph '\''{"command":"npx","args":["-y","mcp-knowledge-graph","--memory-path","/Users/malcolm/shared_knowledge_graph"]}'\'''
+    @echo 'claude mcp add-json taskmaster-ai '\''{"command":"npx","args":["-y","--package=task-master-ai","task-master-ai"],"env":{"ANTHROPIC_API_KEY":"$ANTHROPIC_API_KEY","PERPLEXITY_API_KEY":"$PERPLEXITY_API_KEY","OPENAI_API_KEY":"$OPENAI_API_KEY","GOOGLE_API_KEY":"$GOOGLE_API_KEY"}}'\'''

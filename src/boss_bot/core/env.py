@@ -71,6 +71,9 @@ class BossSettings(BaseSettings):
         cohere_api_key: Cohere API key (optional)
         debug_aider: Enable debug aider
         firecrawl_api_key: Firecrawl API key (optional)
+        perplexity_api_key: Perplexity API key (optional)
+        google_api_key: Google API key (optional)
+        github_personal_access_token: GitHub Personal Access Token (optional)
         langchain_api_key: LangChain API key
         langchain_debug_logs: Enable LangChain debug logs
         langchain_endpoint: LangChain endpoint
@@ -256,6 +259,13 @@ class BossSettings(BaseSettings):
     firecrawl_api_key: SecretStr | None = Field(
         None, description="Firecrawl API key", validation_alias="FIRECRAWL_API_KEY"
     )
+    perplexity_api_key: SecretStr | None = Field(
+        None, description="Perplexity API key", validation_alias="PERPLEXITY_API_KEY"
+    )
+    google_api_key: SecretStr | None = Field(None, description="Google API key", validation_alias="GOOGLE_API_KEY")
+    github_personal_access_token: SecretStr | None = Field(
+        None, description="GitHub Personal Access Token", validation_alias="GITHUB_PERSONAL_ACCESS_TOKEN"
+    )
     langchain_api_key: SecretStr = Field(..., description="LangChain API key", validation_alias="LANGCHAIN_API_KEY")
     langchain_debug_logs: bool = Field(
         False, description="Enable LangChain debug logs", validation_alias="LANGCHAIN_DEBUG_LOGS"
@@ -396,6 +406,9 @@ class BossSettings(BaseSettings):
             f"cohere_api_key=SecretStr('**********'), "
             f"debug_aider={self.debug_aider}, "
             f"firecrawl_api_key=SecretStr('**********'), "
+            f"perplexity_api_key=SecretStr('**********'), "
+            f"google_api_key=SecretStr('**********'), "
+            f"github_personal_access_token=SecretStr('**********'), "
             f"langchain_api_key=SecretStr('**********'), "
             f"langchain_debug_logs={self.langchain_debug_logs}, "
             f"langchain_endpoint={self.langchain_endpoint}, "

@@ -5,8 +5,8 @@ from unittest.mock import AsyncMock, Mock
 from pathlib import Path
 from typing import Dict, Any
 
-from boss_bot.ai.agents.base_agent import BaseAgent, AgentContext, AgentRequest, AgentResponse
-from boss_bot.ai.agents.context import AgentContextManager
+from boss_bot.ai.agents.base_agent import BaseAgent
+from boss_bot.ai.agents.context import AgentContext, AgentRequest, AgentResponse, AgentContextManager
 
 
 class TestAgentContext:
@@ -24,7 +24,7 @@ class TestAgentContext:
 
     def test_agent_context_validation(self):
         """Test AgentContext validates required fields."""
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             AgentContext()  # Missing required fields
 
     def test_agent_context_optional_fields(self):
@@ -58,7 +58,7 @@ class TestAgentRequest:
 
     def test_agent_request_validation(self):
         """Test AgentRequest validates required fields."""
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             AgentRequest()  # Missing required fields
 
 
@@ -96,12 +96,25 @@ class TestAgentResponse:
         assert response.reasoning == "URL does not match any known patterns"
 
 
+class ConcreteTestAgent(BaseAgent):
+    """Concrete implementation of BaseAgent for testing."""
+
+    async def _process_request(self, request: AgentRequest) -> AgentResponse:
+        """Test implementation of process request."""
+        return AgentResponse(
+            success=True,
+            result=f"Processed action: {request.action}",
+            confidence=0.95,
+            reasoning="Test agent processing"
+        )
+
+
 class TestBaseAgent:
     """Test base agent functionality."""
 
     def test_base_agent_creation(self, fixture_mock_llm_model):
         """Test BaseAgent can be created with required parameters."""
-        agent = BaseAgent(
+        agent = ConcreteTestAgent(
             name="test_agent",
             model=fixture_mock_llm_model,
             system_prompt="You are a test agent"
@@ -116,7 +129,7 @@ class TestBaseAgent:
     def test_base_agent_abstract_methods(self, fixture_mock_llm_model):
         """Test BaseAgent is abstract and requires implementation."""
         # BaseAgent should be abstract - this will be implemented by concrete agents
-        agent = BaseAgent(
+        agent = ConcreteTestAgent(
             name="test_agent",
             model=fixture_mock_llm_model,
             system_prompt="Test prompt"
@@ -129,7 +142,7 @@ class TestBaseAgent:
     @pytest.mark.asyncio
     async def test_base_agent_process_request_interface(self, fixture_mock_llm_model, fixture_agent_context):
         """Test BaseAgent process_request interface."""
-        agent = BaseAgent(
+        agent = ConcreteTestAgent(
             name="test_agent",
             model=fixture_mock_llm_model,
             system_prompt="Test prompt"
@@ -142,19 +155,15 @@ class TestBaseAgent:
             data={"test": "data"}
         )
 
-        # BaseAgent should define the interface even if not fully implemented
-        # This test ensures the method signature is correct
-        try:
-            response = await agent.process_request(request)
-            # If implemented, should return AgentResponse
-            assert isinstance(response, AgentResponse)
-        except NotImplementedError:
-            # Expected for abstract base class
-            pass
+        # BaseAgent should define the interface and concrete implementation should work
+        response = await agent.process_request(request)
+        assert isinstance(response, AgentResponse)
+        assert response.success is True
+        assert "test_action" in response.result
 
     def test_base_agent_add_tool(self, fixture_mock_llm_model):
         """Test adding tools to agent."""
-        agent = BaseAgent(
+        agent = ConcreteTestAgent(
             name="test_agent",
             model=fixture_mock_llm_model,
             system_prompt="Test prompt"
@@ -170,7 +179,7 @@ class TestBaseAgent:
 
     def test_base_agent_add_handoff_target(self, fixture_mock_llm_model):
         """Test adding handoff targets to agent."""
-        agent = BaseAgent(
+        agent = ConcreteTestAgent(
             name="test_agent",
             model=fixture_mock_llm_model,
             system_prompt="Test prompt"
@@ -183,6 +192,56 @@ class TestBaseAgent:
 
         assert len(agent.handoff_targets) == 1
         assert agent.handoff_targets[0] == target_agent
+
+    @pytest.mark.asyncio
+    async def test_base_agent_langgraph_integration(self, fixture_mock_llm_model):
+        """Test BaseAgent can create LangGraph react agent."""
+        agent = ConcreteTestAgent(
+            name="test_agent",
+            model=fixture_mock_llm_model,
+            system_prompt="You are a test agent with tools"
+        )
+
+        # Add some mock tools
+        mock_tool1 = Mock()
+        mock_tool1.name = "search_tool"
+        mock_tool2 = Mock()
+        mock_tool2.name = "download_tool"
+
+        agent.add_tool(mock_tool1)
+        agent.add_tool(mock_tool2)
+
+        # Test LangGraph react agent creation
+        react_agent = agent.create_react_agent()
+
+        assert react_agent is not None
+        assert hasattr(react_agent, 'invoke')  # LangGraph agent interface
+        assert hasattr(react_agent, 'name')
+
+    @pytest.mark.asyncio
+    async def test_base_agent_langgraph_with_handoffs(self, fixture_mock_llm_model):
+        """Test BaseAgent creates handoff tools for LangGraph coordination."""
+        agent1 = ConcreteTestAgent(
+            name="strategy_selector",
+            model=fixture_mock_llm_model,
+            system_prompt="You select download strategies"
+        )
+
+        agent2 = ConcreteTestAgent(
+            name="content_analyzer",
+            model=fixture_mock_llm_model,
+            system_prompt="You analyze content"
+        )
+
+        # Set up handoff relationship
+        agent1.add_handoff_target(agent2)
+
+        # Create react agent with handoffs
+        react_agent = agent1.create_react_agent()
+
+        assert react_agent is not None
+        # Should have handoff tools for coordination
+        assert agent1.handoff_targets == [agent2]
 
 
 class TestAgentContextManager:

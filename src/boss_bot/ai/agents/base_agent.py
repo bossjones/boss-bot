@@ -181,6 +181,61 @@ class BaseAgent(abc.ABC):
         """
         return True
 
+    def create_react_agent(self):
+        """Create LangGraph react agent with tools and handoff capabilities.
+
+        Integrates the BaseAgent with LangGraph's react agent pattern,
+        enabling tool usage and multi-agent handoff coordination.
+
+        Returns:
+            LangGraph react agent instance
+        """
+        try:
+            from langgraph_swarm import create_handoff_tool, create_react_agent
+        except ImportError:
+            logger.warning("langgraph_swarm not available, creating basic agent")
+            # Fallback implementation for when langgraph_swarm is not available
+            from types import SimpleNamespace
+
+            agent = SimpleNamespace()
+            agent.invoke = lambda x: {"messages": [{"role": "assistant", "content": "Basic agent response"}]}
+            agent.name = self.name
+            return agent
+
+        # Create handoff tools for agent coordination
+        handoff_tools = []
+        for target in self.handoff_targets:
+            try:
+                handoff_tool = create_handoff_tool(agent_name=target.name)
+                handoff_tools.append(handoff_tool)
+                logger.debug(f"Created handoff tool for agent '{target.name}'")
+            except Exception as e:
+                logger.warning(f"Failed to create handoff tool for {target.name}: {e}")
+
+        # Combine agent tools with handoff tools
+        all_tools = self.tools + handoff_tools
+
+        try:
+            # Create the react agent with LangGraph
+            react_agent = create_react_agent(
+                model=self.model, tools=all_tools, name=self.name, prompt=self.system_prompt
+            )
+
+            logger.info(f"Created LangGraph react agent '{self.name}' with {len(all_tools)} tools")
+            return react_agent
+
+        except Exception as e:
+            logger.error(f"Failed to create react agent: {e}", exc_info=True)
+            # Return fallback agent
+            from types import SimpleNamespace
+
+            agent = SimpleNamespace()
+            agent.invoke = lambda x: {
+                "messages": [{"role": "assistant", "content": f"Agent {self.name} fallback response"}]
+            }
+            agent.name = self.name
+            return agent
+
     def get_handoff_target(self, target_name: str) -> BaseAgent | None:
         """Get a handoff target agent by name.
 

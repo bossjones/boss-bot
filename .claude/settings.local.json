@@ -51,7 +51,11 @@
       "WebFetch(domain:python.langchain.com)",
       "mcp__mermaid-validator__validateMermaid",
       "WebFetch(domain:docs.datasette.io)",
-      "Bash(just generate-mcp-commands:*)"
+      "Bash(just generate-mcp-commands:*)",
+      "Bash(claude mcp:*)",
+      "mcp__claude-code-docs-mcp__fetch_docs",
+      "Bash(touch:*)",
+      "Bash(git commit:*)"
     ],
     "deny": []
   },

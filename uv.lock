@@ -738,7 +738,6 @@ dependencies = [
     { name = "datasette-render-images" },
     { name = "datasette-scraper" },
     { name = "datasette-search-all" },
-    { name = "datasette-sqlite-ulid" },
     { name = "datasette-sqlite-vec" },
     { name = "datasette-statistics" },
     { name = "datasette-vega" },
@@ -1000,7 +999,6 @@ requires-dist = [
     { name = "datasette-render-images", specifier = ">=0.4" },
     { name = "datasette-scraper", specifier = ">=0.5.3" },
     { name = "datasette-search-all", specifier = ">=1.1.4" },
-    { name = "datasette-sqlite-ulid", specifier = ">=0.2.1" },
     { name = "datasette-sqlite-vec", specifier = ">=0.1.6" },
     { name = "datasette-statistics", specifier = ">=0.2.1" },
     { name = "datasette-vega", specifier = ">=0.6.2" },
@@ -2117,18 +2115,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/33/3d/2111599e89583f9415b8e1e89f4b57f2dd41833f95ab023ea54157c9e636/datasette_search_all-1.1.4.tar.gz", hash = "sha256:371de80eff4f2f0e5ba70cc8efcdd68c1089ebf03d743febced250012d678911", size = 10885, upload-time = "2024-09-06T03:11:56.932Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/1f/57/3d7535970622b175527e1fc270db0c193df8008ab56c2b8e628a373cdafe/datasette_search_all-1.1.4-py3-none-any.whl", hash = "sha256:8590099131899f5cb9d51d90a857ed3a828a5d8e2003fd3f0f5939a1a6bc7a8d", size = 10640, upload-time = "2024-09-06T03:11:55.455Z" },
-]
-
-[[package]]
-name = "datasette-sqlite-ulid"
-version = "0.2.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "datasette" },
-    { name = "sqlite-ulid" },
-]
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/89/bb/6442c5d5d60e3a1fcdda5e86aad1e88b124afd068bba54a7306d870df929/datasette_sqlite_ulid-0.2.1-py3-none-any.whl", hash = "sha256:c7ec4325e5f4af6a6ca70f93a2d5ad1d7ef7798c4a08f59966c16fc317a94ff5", size = 2139, upload-time = "2023-07-24T06:15:20.894Z" },
 ]
 
 [[package]]
@@ -8996,17 +8982,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/13/86/1463a00d3c4bdb707c0ed4077d17687465a0aa9444593f66f6c4b49e39b5/sqlite-migrate-0.1b0.tar.gz", hash = "sha256:8d502b3ca4b9c45e56012bd35c03d23235f0823c976d4ce940cbb40e33087ded", size = 10736, upload-time = "2023-10-27T23:47:43.855Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/df/92/994545b912e6d6feb40323047f02ca039321e690aa2c27afcd5c4105e37b/sqlite_migrate-0.1b0-py3-none-any.whl", hash = "sha256:a4125e35e1de3dc56b6b6ec60e9833ce0ce20192b929ddcb2d4246c5098859c6", size = 9986, upload-time = "2023-10-27T23:47:42.476Z" },
-]
-
-[[package]]
-name = "sqlite-ulid"
-version = "0.2.1"
-source = { registry = "https://pypi.org/simple" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/cd/09/0f931ccc1127fbe6630e100cb4e4e819cf3f7dde25eb3c46461f261cd064/sqlite_ulid-0.2.1-py3-none-macosx_10_6_x86_64.whl", hash = "sha256:f5c95ba91bfdfe16f9cde2844c7f57fa970f2f80dda2378b4d3b45857646eef7", size = 252580, upload-time = "2023-07-24T06:15:22.533Z" },
-    { url = "https://files.pythonhosted.org/packages/ba/b9/207a1b644f861034233572082717e5899bc827259572a75f9b8f6a389bcf/sqlite_ulid-0.2.1-py3-none-macosx_11_0_arm64.whl", hash = "sha256:a06768a6ce380c83668a40e6ddae285c903ee1f9a70f7ebc5479dbcdf75d3f21", size = 834754, upload-time = "2023-07-24T06:15:24.327Z" },
-    { url = "https://files.pythonhosted.org/packages/3e/88/fc558250eaedbb90cf65b1471ef31f3854359cd0e7a3357a37545dd43bf8/sqlite_ulid-0.2.1-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.manylinux1_x86_64.whl", hash = "sha256:0c1bd80b8043cf02e47d23a07dbf4254b96af770de8f3666d314c4e789ac11f6", size = 1104965, upload-time = "2023-07-24T06:15:26.159Z" },
-    { url = "https://files.pythonhosted.org/packages/89/29/0dc43bcd1af313f0bf51f26916e15e218aef63b59c90a30debeffdd4ecf6/sqlite_ulid-0.2.1-py3-none-win_amd64.whl", hash = "sha256:0d8092fdf996b171cbf60d7d1121045dc77b26db2a5cc95ce69b7c22b5f62fdd", size = 2296438, upload-time = "2023-07-24T06:15:28.094Z" },
 ]
 
 [[package]]

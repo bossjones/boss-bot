@@ -122,7 +122,6 @@
         "datasette-render-images>=0.4",
         "datasette-scraper>=0.5.3",
         "datasette-search-all>=1.1.4",
-        "datasette-sqlite-ulid>=0.2.1",
         "datasette-sqlite-vec>=0.1.6",
         "datasette-statistics>=0.2.1",
         "datasette-vega>=0.6.2",

@@ -57,7 +57,8 @@
       "Bash(touch:*)",
       "Bash(git commit:*)",
       "Bash(uv list:*)",
-      "Bash(uv pip:*)"
+      "Bash(uv pip:*)",
+      "Bash(python:*)"
     ],
     "deny": []
   },

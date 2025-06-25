@@ -61,10 +61,10 @@ from boss_bot.core.env import BossSettings
 from boss_bot.monitoring.logging import setup_boss_bot_logging
 
 # Initialize boss-bot settings
-settings = BossSettings()
+# settings = BossSettings()
 
 # Configure logging with boss-bot integration
-LOGGER = setup_boss_bot_logging(settings)
+LOGGER = setup_boss_bot_logging()
 
 
 # Set up logging

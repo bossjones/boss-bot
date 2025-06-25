@@ -457,3 +457,145 @@ class DownloadWorkflow:
             "workflow_steps": state["current_step"],
             "retry_count": state.get("retry_count", 0),
         }
+
+
+def create_download_workflow_graph():
+    """Create and return the compiled LangGraph workflow for LangGraph Cloud.
+
+    This function creates a standalone instance of the DownloadWorkflow
+    and returns the compiled graph for deployment to LangGraph Cloud.
+    """
+    from langgraph.graph import END, StateGraph
+
+    # Create workflow graph
+    workflow = StateGraph(WorkflowState)
+
+    # For LangGraph Cloud, we need simple node functions
+    # These will be basic implementations that can work without the full class context
+    async def strategy_selection_node(state: WorkflowState) -> WorkflowState:
+        """Simple strategy selection for LangGraph Cloud."""
+        # Basic URL-based strategy selection
+        url = state["url"]
+
+        # Simple pattern matching for common platforms
+        if "youtube.com" in url or "youtu.be" in url:
+            selected_strategy = "youtube"
+        elif "reddit.com" in url:
+            selected_strategy = "reddit"
+        elif "twitter.com" in url or "x.com" in url:
+            selected_strategy = "twitter"
+        elif "instagram.com" in url:
+            selected_strategy = "instagram"
+        else:
+            selected_strategy = "generic"
+
+        state["strategy_selection"] = {
+            "selected_strategy": selected_strategy,
+            "confidence": 0.8,
+            "reasoning": f"URL pattern matches {selected_strategy} platform",
+            "ai_enhanced": False,
+        }
+        return state
+
+    async def content_analysis_node(state: WorkflowState) -> WorkflowState:
+        """Simple content analysis for LangGraph Cloud."""
+        # Basic content analysis based on URL
+        url = state["url"]
+
+        # Get platform from strategy selection, with fallback
+        strategy_selection = state.get("strategy_selection", {})
+        platform = strategy_selection.get("selected_strategy", "unknown") if strategy_selection else "unknown"
+
+        state["content_analysis"] = {
+            "analysis": {"platform": platform},
+            "confidence": 0.7,
+            "reasoning": "Basic platform-based analysis",
+            "metadata": {"url": url},
+        }
+        return state
+
+    async def download_execution_node(state: WorkflowState) -> WorkflowState:
+        """Download execution node for LangGraph Cloud."""
+        # Simulate download result
+        strategy_info = state.get("strategy_selection", {})
+        strategy_name = strategy_info.get("selected_strategy", "unknown")
+
+        state["download_result"] = {
+            "success": True,
+            "metadata": {"strategy": strategy_name, "url": state["url"]},
+            "strategy_used": strategy_name,
+            "content_analysis": state.get("content_analysis"),
+        }
+        return state
+
+    async def error_handler_node(state: WorkflowState) -> WorkflowState:
+        """Error handling node for LangGraph Cloud."""
+        state["current_step"] = "error"
+        return state
+
+    def route_after_strategy_selection(state: WorkflowState) -> str:
+        """Route after strategy selection."""
+        if state.get("error_message"):
+            return "error"
+        return "content_analysis"
+
+    def route_after_content_analysis(state: WorkflowState) -> str:
+        """Route after content analysis."""
+        if state.get("error_message"):
+            return "error"
+        return "download"
+
+    def route_after_download(state: WorkflowState) -> str:
+        """Route after download."""
+        if state.get("error_message"):
+            return "error"
+        return "complete"
+
+    # Add workflow nodes
+    workflow.add_node("select_strategy", strategy_selection_node)
+    workflow.add_node("analyze_content", content_analysis_node)
+    workflow.add_node("execute_download", download_execution_node)
+    workflow.add_node("handle_error", error_handler_node)
+
+    # Define workflow edges
+    workflow.set_entry_point("select_strategy")
+
+    # Strategy selection routing
+    workflow.add_conditional_edges(
+        "select_strategy",
+        route_after_strategy_selection,
+        {
+            "content_analysis": "analyze_content",
+            "error": "handle_error",
+        },
+    )
+
+    # Content analysis routing
+    workflow.add_conditional_edges(
+        "analyze_content",
+        route_after_content_analysis,
+        {
+            "download": "execute_download",
+            "error": "handle_error",
+        },
+    )
+
+    # Download routing
+    workflow.add_conditional_edges(
+        "execute_download",
+        route_after_download,
+        {
+            "complete": END,
+            "error": "handle_error",
+        },
+    )
+
+    # Error handler always ends
+    workflow.add_edge("handle_error", END)
+
+    # Compile and return the graph
+    return workflow.compile()
+
+
+# Export the graph for LangGraph Cloud
+graph = create_download_workflow_graph()

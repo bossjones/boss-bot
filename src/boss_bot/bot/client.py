@@ -150,45 +150,109 @@ class BossBot(commands.Bot):
             return
 
         try:
+            # Get LLM model for AI agents
+            model = self._create_llm_model()
+            if not model:
+                logger.warning("No LLM model available - AI agents will use fallback mode")
+                return
+
             # Initialize Strategy Selector if enabled
             if hasattr(self.settings, "ai_strategy_selection_enabled") and getattr(
                 self.settings, "ai_strategy_selection_enabled", False
             ):
-                # Create a simple mock model for now (will be replaced with actual LLM)
-                from types import SimpleNamespace
-
-                mock_model = SimpleNamespace()
-                mock_model.invoke = lambda x: {"content": "AI response"}
-
                 self.strategy_selector = StrategySelector(
                     name="discord-strategy-selector",
-                    model=mock_model,
-                    system_prompt="Select the best download strategy for Discord bot users",
+                    model=model,
+                    system_prompt="""You are an AI assistant that selects optimal download strategies for social media content.
+
+Given a URL and user preferences, analyze the content and recommend the best download strategy.
+
+Consider these factors:
+1. Platform compatibility (Twitter/X, Reddit, Instagram, YouTube)
+2. Content type (image, video, audio, text)
+3. User preferences (quality, format, speed)
+4. API availability vs CLI reliability
+
+Respond with the platform name and confidence score (0.0-1.0).""",
                 )
-                logger.info("Initialized AI Strategy Selector agent")
+                logger.info("Initialized AI Strategy Selector agent with LLM model")
 
             # Initialize Content Analyzer if enabled
             if hasattr(self.settings, "ai_content_analysis_enabled") and getattr(
                 self.settings, "ai_content_analysis_enabled", False
             ):
-                # Create a simple mock model for now (will be replaced with actual LLM)
-                from types import SimpleNamespace
-
-                mock_model = SimpleNamespace()
-                mock_model.invoke = lambda x: {"content": "AI analysis"}
-
                 self.content_analyzer = ContentAnalyzer(
                     name="discord-content-analyzer",
-                    model=mock_model,
-                    system_prompt="Analyze content metadata for Discord bot users",
+                    model=model,
+                    system_prompt="""You are an AI assistant that analyzes social media content for quality and relevance.
+
+Analyze content metadata and provide insights about:
+1. Content quality and engagement potential
+2. Optimal format recommendations
+3. Content categorization and tagging
+4. Audience targeting suggestions
+5. Potential issues or compliance concerns
+
+Provide actionable insights that help users make informed decisions about content management.""",
                 )
-                logger.info("Initialized AI Content Analyzer agent")
+                logger.info("Initialized AI Content Analyzer agent with LLM model")
 
         except Exception as e:
             logger.error(f"Failed to initialize AI agents: {e}", exc_info=True)
             # Don't fail bot startup if AI agents fail to initialize
             self.strategy_selector = None
             self.content_analyzer = None
+
+    def _create_llm_model(self):
+        """Create and configure LLM model for AI agents.
+
+        Returns:
+            Configured language model instance or None if not available
+        """
+        try:
+            # Check for OpenAI API key first (most common)
+            if hasattr(self.settings, "openai_api_key") and self.settings.openai_api_key:
+                from langchain_openai import ChatOpenAI
+
+                return ChatOpenAI(
+                    api_key=self.settings.openai_api_key,
+                    model="gpt-4o-mini",  # Fast and cost-effective model
+                    temperature=0.1,
+                    max_tokens=1000,
+                )
+
+            # Check for Anthropic API key (Claude)
+            elif hasattr(self.settings, "anthropic_api_key") and self.settings.anthropic_api_key:
+                from langchain_anthropic import ChatAnthropic
+
+                return ChatAnthropic(
+                    api_key=self.settings.anthropic_api_key,
+                    model="claude-3-haiku-20240307",  # Fast and cost-effective model
+                    temperature=0.1,
+                    max_tokens=1000,
+                )
+
+            # Check for Google/Gemini API key
+            elif hasattr(self.settings, "google_api_key") and self.settings.google_api_key:
+                from langchain_google_genai import ChatGoogleGenerativeAI
+
+                return ChatGoogleGenerativeAI(
+                    api_key=self.settings.google_api_key,
+                    model="gemini-1.5-flash",  # Fast and cost-effective model
+                    temperature=0.1,
+                    max_tokens=1000,
+                )
+
+            else:
+                logger.info("No LLM API keys found - AI agents will use fallback implementations")
+                return None
+
+        except ImportError as e:
+            logger.warning(f"LLM dependencies not available: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Failed to create LLM model: {e}", exc_info=True)
+            return None
 
     async def setup_hook(self):
         """Initialize services and load extensions."""

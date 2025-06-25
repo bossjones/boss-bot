@@ -153,10 +153,19 @@ class TestDownloadWorkflow:
     async def test_content_analysis_integration(
         self,
         fixture_download_workflow,
+        fixture_mock_strategy_selector,
         fixture_mock_content_analyzer,
         fixture_mock_strategy,
     ):
         """Test content analysis integration in workflow."""
+        # Setup strategy selector response
+        fixture_mock_strategy_selector.process_request.return_value = AgentResponse(
+            success=True,
+            result="twitter",
+            confidence=0.95,
+            reasoning="AI selected Twitter strategy",
+        )
+
         # Setup content analyzer response
         fixture_mock_content_analyzer.process_request.return_value = AgentResponse(
             success=True,
@@ -255,6 +264,9 @@ class TestDownloadWorkflow:
     async def test_workflow_error_handling(self, fixture_download_workflow):
         """Test workflow error handling."""
         # Don't initialize any strategies to force error
+        # Disable AI strategy selection to force traditional fallback
+        fixture_download_workflow.config.enable_ai_strategy_selection = False
+
         result = await fixture_download_workflow.run_workflow("https://example.com/test")
 
         assert result["success"] is False
@@ -267,6 +279,9 @@ class TestDownloadWorkflow:
         fixture_mock_strategy,
     ):
         """Test download retry logic on failure."""
+        # Disable AI strategy selection to use traditional fallback
+        fixture_download_workflow.config.enable_ai_strategy_selection = False
+
         # Setup strategy to fail then succeed
         fixture_mock_strategy.download.side_effect = [
             Exception("Network error"),
@@ -321,6 +336,7 @@ class TestDownloadWorkflow:
         self,
         fixture_download_workflow,
         fixture_mock_strategy_selector,
+        fixture_mock_content_analyzer,
         fixture_mock_strategy,
     ):
         """Test workflow state tracking through steps."""
@@ -330,6 +346,14 @@ class TestDownloadWorkflow:
             result="twitter",
             confidence=0.95,
             reasoning="AI selected Twitter strategy",
+        )
+
+        # Setup content analyzer
+        fixture_mock_content_analyzer.process_request.return_value = AgentResponse(
+            success=True,
+            result="High quality content",
+            confidence=0.9,
+            reasoning="Content analysis successful",
         )
 
         fixture_mock_strategy.download.return_value = {"title": "Test"}

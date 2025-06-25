@@ -209,7 +209,13 @@ class DownloadWorkflow:
             logger.info("Running LangGraph workflow")
             result = await app.ainvoke(state)
 
-            return self._create_success_result(result)
+            # Check if workflow ended with an error
+            if result.get("error_message"):
+                return self._create_error_result(result, result["error_message"])
+            else:
+                # Update state to complete for successful workflow
+                result["current_step"] = "complete"
+                return self._create_success_result(result)
 
         except Exception as e:
             logger.error(f"LangGraph workflow failed: {e}", exc_info=True)
@@ -293,6 +299,11 @@ class DownloadWorkflow:
     async def _traditional_strategy_selection(self, state: WorkflowState) -> None:
         """Traditional strategy selection based on URL patterns."""
         url = state["url"]
+
+        # Check if any strategies are available
+        if not self._strategies:
+            state["error_message"] = f"No strategy found for URL: {url}"
+            return
 
         # Simple URL-based strategy selection
         selected_strategy = None

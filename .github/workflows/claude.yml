@@ -1,0 +1,208 @@
+# Define the display name for this GitHub Actions workflow
+name: Claude PR Assistant
+
+# Define the events that trigger this workflow
+on:
+  # Trigger when a comment is created on an issue
+  issue_comment:
+    types: [created]
+  # Trigger when a comment is created on a pull request review
+  pull_request_review_comment:
+    types: [created]
+  # Trigger when an issue is opened or assigned
+  issues:
+    types: [opened, assigned]
+  # Trigger when a pull request review is submitted
+  pull_request_review:
+    types: [submitted]
+
+# Define the jobs that run in this workflow
+jobs:
+  # Job name for the Claude Code action
+  claude-code-action:
+    # Only run this job if @claude is mentioned in the triggering event
+    if: |
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
+      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
+    # Specify the runner environment (Ubuntu Linux latest version)
+    runs-on: ubuntu-latest
+    # Define the minimum permissions needed for this job
+    permissions:
+      # Allow reading repository contents
+      contents: write
+      # Allow reading pull request information
+      pull-requests: write
+      # Allow reading issue information
+      issues: write
+      # Allow writing ID tokens for OIDC authentication
+      id-token: write
+    # Define the sequence of steps to execute
+    steps:
+      # Step to clone the repository code
+      - name: Checkout repository
+        # Use the official GitHub checkout action (version 4)
+        uses: actions/checkout@v4
+        # Configuration for the checkout action
+        with:
+          # Only fetch the latest commit (shallow clone for performance)
+          fetch-depth: 1
+
+      - name: Configure Git
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      # Step to execute Claude Code's AI assistant functionality
+      - name: Run Claude PR Action
+        id: claude-code-action
+        # Use Anthropic's Claude Code action (beta version)
+        uses: anthropics/claude-code-action@beta
+        # Configuration parameters for Claude Code
+        with:
+          # API key for Anthropic's Claude service (stored as GitHub secret)
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          # Maximum time allowed for Claude to process the request
+          # timeout_minutes: "30"
+          # Custom instructions to guide Claude's behavior for this project
+          # custom_instructions: |
+          #   This is the boss-bot project. Always read CLAUDE.md first.
+          #   Focus on the immediate success criteria.
+          #   Follow conventional commits and create focused, working code.
+          #   Always read the codebase and the documentation first.
+          # SOURCE: https://github.com/tktcorporation/vrchat-albums/blob/3777f0be3a05effa85cf60554580251264a6e54a/.github/workflows/claude.yml#L34
+          # SOURCE: https://github.com/redis-developer/agent-memory-server/blob/74f6b2c9f536c50b832fde5f907ac880e804197a/.github/workflows/claude.yml#L34
+          # Restrict Claude to specific tools for security (git commands, file viewing, searching)
+          allowed_tools: |
+            Bash,
+            Bash(cd:*),
+            Bash(cp:*),
+            Bash(find:*),
+            Bash(git blame),
+            Bash(git branch),
+            Bash(git diff),
+            Bash(git log),
+            Bash(git ls-files),
+            Bash(git reflog),
+            Bash(git show),
+            Bash(git stash list),
+            Bash(git status),
+            Bash(git tag),
+            Bash(git:*),
+            Bash(grep:*),
+            Bash(just check-test:*),
+            Bash(just check-type:*),
+            Bash(just ci:*),
+            Bash(just:*),
+            Bash(ls:*),
+            Bash(make:*),
+            Bash(make),
+            Bash(mv:*),
+            Bash(pip:*),
+            Bash(pytest:*),
+            Bash(python:*),
+            Bash(rg:*),
+            Bash(ruff:*),
+            Bash(sed:*),
+            Bash(timeout 10 uv run:*),
+            Bash(tree:*),
+            Bash(uv run pytest:*),
+            Bash(uv run:*),
+            Bash(uv:*),
+            BatchTool,
+            Edit,
+            Glob,
+            GlobTool,
+            Grep,
+            GrepTool,
+            LS,
+            mcp__github__add_issue_comment,
+            mcp__github__add_pull_request_review_comment,
+            mcp__github__create_branch,
+            mcp__github__create_issue,
+            mcp__github__create_or_update_file,
+            mcp__github__create_pull_request_review,
+            mcp__github__create_pull_request,
+            mcp__github__create_repository,
+            mcp__github__delete_file,
+            mcp__github__fork_repository,
+            mcp__github__get_code_scanning_alert,
+            mcp__github__get_commit,
+            mcp__github__get_file_contents,
+            mcp__github__get_issue_comments,
+            mcp__github__get_issue,
+            mcp__github__get_me,
+            mcp__github__get_pull_request_comments,
+            mcp__github__get_pull_request_files,
+            mcp__github__get_pull_request_reviews,
+            mcp__github__get_pull_request_status,
+            mcp__github__get_pull_request,
+            mcp__github__get_secret_scanning_alert,
+            mcp__github__get_tag,
+            mcp__github__list_branches,
+            mcp__github__list_code_scanning_alerts,
+            mcp__github__list_commits,
+            mcp__github__list_issues,
+            mcp__github__list_pull_requests,
+            mcp__github__list_secret_scanning_alerts,
+            mcp__github__list_tags,
+            mcp__github__merge_pull_request,
+            mcp__github__push_files,
+            mcp__github__search_code,
+            mcp__github__search_issues,
+            mcp__github__search_repositories,
+            mcp__github__search_users,
+            mcp__github__update_issue_comment,
+            mcp__github__update_issue,
+            mcp__github__update_pull_request_branch,
+            mcp__github__update_pull_request_comment,
+            mcp__github__update_pull_request,
+            mcp__github_file_ops__apply_patch,
+            mcp__github_file_ops__commit_files,
+            mcp__github_file_ops__delete_files,
+            MultiEdit,
+            NotebookEdit,
+            NotebookRead,
+            Read,
+            RipgrepSearch,
+            SearchReplace,
+            TodoRead,
+            TodoWrite,
+            View,
+            WebFetch,
+            WebFetch(domain:discordpy.readthedocs.io),
+            WebFetch(domain:docs.anthropic.com),
+            WebFetch(domain:docs.astral.sh),
+            WebFetch(domain:docs.datasette.io),
+            WebFetch(domain:docs.smith.langchain.com),
+            WebFetch(domain:dpytest.readthedocs.io),
+            WebFetch(domain:github.com),
+            WebFetch(domain:langchain-ai.github.io),
+            WebFetch(domain:modelcontextprotocol.io),
+            WebFetch(domain:python.langchain.com),
+            Write,
+
+          # Optional: Specify model (defaults to Claude Sonnet 4, uncomment for Claude Opus 4)
+          # model: "claude-opus-4-20250514"
+
+          # Optional: Customize the trigger phrase (default: @claude)
+          # trigger_phrase: "/claude"
+
+          # Optional: Trigger when specific user is assigned to an issue
+          # assignee_trigger: "claude-bot"
+
+          # Optional: Allow Claude to run specific commands
+          # allowed_tools: "Bash(npm install),Bash(npm run build),Bash(npm run test:*),Bash(npm run lint:*)"
+
+          # Optional: Add custom instructions for Claude to customize its behavior for your project
+          # custom_instructions: |
+          #   Follow our coding standards
+          #   Ensure all new code has tests
+          #   Use TypeScript for new files
+
+          # Optional: Custom environment variables for Claude
+          # claude_env: |
+          #   NODE_ENV: test

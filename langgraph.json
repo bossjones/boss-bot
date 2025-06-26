@@ -1,4 +1,5 @@
 {
+    "base_image": "langchain/langgraph-api:0.2",
     "dockerfile_lines": [
         "# Install system dependencies for boss-bot",
         "",
@@ -78,6 +79,31 @@
     "dependencies": [
         "."
     ],
+    "checkpointer": {
+        "ttl": {
+            "strategy": "delete",
+            "sweep_interval_minutes": 60,
+            "default_ttl": 43200
+        }
+    },
+    "store": {
+        "ttl": {
+            "refresh_on_read": true,
+            "sweep_interval_minutes": 120,
+            "default_ttl": 10080
+        },
+        "index": {
+            "embed": "openai:text-embedding-3-small",
+            "dims": 1536,
+            "fields": ["content", "metadata"]
+        }
+    },
+    "http": {
+        "configurable_headers": {
+            "include": ["x-user-id", "x-discord-guild-id", "x-discord-channel-id"],
+            "exclude": ["authorization", "x-api-key"]
+        }
+    },
     "env_vars": {
         "PYTHONDONTWRITEBYTECODE": "1",
         "PYTHONUNBUFFERED": "1",

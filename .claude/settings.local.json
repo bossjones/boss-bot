@@ -62,7 +62,8 @@
       "Bash(BETTER_EXCEPTIONS=1 uv run python -m boss_bot.cli.main print-exceptionhook)",
       "WebFetch(domain:langchain-ai.github.io)",
       "WebFetch(domain:docs.astral.sh)",
-      "Bash(just:*)"
+      "Bash(just:*)",
+      "mcp__mcp-server-langgraph__search_langgraph_documentation"
     ],
     "deny": []
   },

@@ -1,0 +1,46 @@
+name: "Fast Download Assistant"
+description: "Optimized for speed with minimal processing. Best for quick downloads and real-time use cases where speed is critical."
+graph_id: "download_workflow"
+config:
+  configurable:
+    # AI Features - Disabled for maximum speed
+    enable_ai_strategy_selection: false
+    enable_content_analysis: false
+
+    # Download Settings - Optimized for speed
+    max_retries: 1
+    timeout_seconds: 120  # 2 minutes max
+    download_quality: "good"
+    fallback_to_traditional: true
+
+    # Platform Specific - Balanced quality/speed settings
+    youtube_quality: "720p"
+    youtube_include_subtitles: false
+    youtube_include_metadata: false
+
+    twitter_include_replies: false
+    twitter_include_media_variants: false
+    twitter_high_quality: false
+
+    instagram_include_stories: false
+    instagram_include_highlights: false
+    instagram_include_videos: true  # Keep videos but not extras
+    instagram_high_quality: false
+
+    reddit_include_comments: false
+    reddit_include_awards: false
+    reddit_deep_comments: false
+
+    # Advanced settings - Minimal processing
+    preserve_original_filenames: false
+    include_metadata_files: false
+    verify_downloads: false
+
+metadata:
+  version: "1.0.0"
+  author: "boss-bot-team"
+  use_case: "quick-access"
+  performance_profile: "speed"
+  tags: ["fast", "minimal", "real-time"]
+  created_at: "2024-01-01"
+  notes: "Use this assistant when you need downloads completed as quickly as possible, trading some quality for speed."

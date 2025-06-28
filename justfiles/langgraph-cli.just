@@ -16,6 +16,11 @@ langgraph-build:
 langgraph-dev:
 	uv run langgraph dev
 
+# Run LangGraph API server in development mode with hot reloading and debugging capabilities. This lightweight server requires no Docker installation and is suitable for development and testing. State is persisted to a local directory.
+[group('langgraph-cli')]
+langgraph-dev-debug:
+	uv run langgraph dev --debug-port 5678
+
 # Generate a Dockerfile for building a LangGraph Platform API server Docker image.
 [group('langgraph-cli')]
 langgraph-dockerfile:
@@ -25,3 +30,7 @@ langgraph-dockerfile:
 [group('langgraph-cli')]
 langgraph-up:
 	uv run langgraph up --wait --verbose -c langgraph.json
+
+open-langgraph-studio:
+    open https://smith.langchain.com/studio/?baseUrl=http://127.0.0.1:2024
+    open http://localhost:2024/docs#tag/assistants

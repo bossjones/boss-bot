@@ -21,9 +21,9 @@ class WorkflowState(TypedDict):
     """State structure for the download workflow."""
 
     # Input data
-    url: str
-    user_context: dict[str, Any]
-    request_id: str
+    url: str  # Required, no default
+    user_context: dict[str, Any]  # Could default to {}
+    request_id: str  # Could default to "" or generate UUID
 
     # Agent results
     strategy_selection: dict[str, Any] | None
@@ -33,8 +33,8 @@ class WorkflowState(TypedDict):
     # Workflow control
     current_step: Literal["start", "strategy_selection", "content_analysis", "download", "complete", "error"]
     error_message: str | None
-    retry_count: int
-    max_retries: int
+    retry_count: int  # Default: 0
+    max_retries: int  # Default: 3
 
 
 @dataclass

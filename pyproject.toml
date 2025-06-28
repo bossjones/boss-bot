@@ -127,6 +127,7 @@
         "datasette-vega>=0.6.2",
         "datasette>=0.65.1",
         "dclient>=0.4",
+        "debugpy>=1.8.13",
         "discord-py>=2.5.2",
         "docutils>=0.21.2",
         "faiss-cpu>=1.10.0",

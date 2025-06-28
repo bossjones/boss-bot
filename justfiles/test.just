@@ -9,6 +9,13 @@ test-ci:
 
 ci: test-ci
 
+# test ci-debug
+[group('test')]
+test-ci-debug:
+    uv run pytest --pdb --pdbcls bpdb:BPdb --diff-width=60 --diff-symbols --cov-append --cov-branch --cov-report=term-missing --cov-report=xml:cov.xml --cov-report=html:htmlcov --junitxml=junit/test-results.xml --cov=.
+
+ci-debug: test-ci-debug
+
 # fix via pre-commit
 [group('test')]
 test-fix:

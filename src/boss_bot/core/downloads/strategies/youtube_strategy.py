@@ -36,15 +36,21 @@ class YouTubeDownloadStrategy(BaseDownloadStrategy):
             feature_flags: Feature flags for download implementation choice
             download_dir: Directory where downloads should be saved
         """
+        logger.debug(f"Initializing YouTubeDownloadStrategy with download_dir={download_dir}")
+        logger.debug(
+            f"Feature flags: api_enabled={feature_flags.use_api_youtube}, fallback_enabled={feature_flags.api_fallback_to_cli}"
+        )
         # Initialize with internal variable to allow property override
         self._download_dir = download_dir
         self.feature_flags = feature_flags
 
         # ✅ Keep existing handler (no changes to existing functionality)
+        logger.debug("Initializing CLI handler (YouTubeHandler)")
         self.cli_handler = YouTubeHandler(download_dir=download_dir)
 
         # 🆕 New API client (lazy loaded only when needed)
         self._api_client: AsyncYtDlp | None = None
+        logger.debug("YouTube strategy initialization complete")
 
     @property
     def download_dir(self) -> Path:
@@ -54,15 +60,20 @@ class YouTubeDownloadStrategy(BaseDownloadStrategy):
     @download_dir.setter
     def download_dir(self, value: Path) -> None:
         """Set download directory and invalidate API client to force recreation."""
+        logger.debug(f"Updating download directory from {self._download_dir} to {value}")
         self._download_dir = value
         # Update CLI handler download directory
         self.cli_handler.download_dir = value
+        logger.debug("Updated CLI handler download directory")
         # Invalidate API client so it gets recreated with new directory
+        if self._api_client is not None:
+            logger.debug("Invalidating API client due to directory change")
         self._api_client = None
 
     def _get_youtube_config(self) -> dict[str, Any]:
         """Get optimized yt-dlp configuration for Discord workflow."""
-        return {
+        logger.debug(f"Generating yt-dlp configuration for download_dir={self.download_dir}")
+        config = {
             # Directory structure using yt-dlp's built-in outtmpl
             "outtmpl": {
                 "default": f"{self.download_dir}/yt-dlp/youtube/%(uploader|Unknown)s/%(title).100s-%(id)s.%(ext)s",
@@ -88,20 +99,28 @@ class YouTubeDownloadStrategy(BaseDownloadStrategy):
             "merge_output_format": "mp4",
             "postprocessor_args": ["-movflags", "+faststart"],  # Web-optimized MP4
         }
+        logger.debug(f"Generated yt-dlp config with outtmpl: {config['outtmpl']['default']}")
+        logger.debug(f"Format selector: {config['format']}")
+        return config
 
     @property
     def api_client(self) -> AsyncYtDlp:
         """Lazy load API client only when needed."""
         if self._api_client is None:
+            logger.debug("Creating new AsyncYtDlp API client")
             from boss_bot.core.downloads.clients import AsyncYtDlp
 
             # Use enhanced configuration
             config = self._get_youtube_config()
+            logger.debug(f"API client config keys: {list(config.keys())}")
 
             self._api_client = AsyncYtDlp(
                 config=config,
                 output_dir=self.download_dir,
             )
+            logger.debug(f"AsyncYtDlp client created with output_dir={self.download_dir}")
+        else:
+            logger.debug("Reusing existing AsyncYtDlp API client")
 
         return self._api_client
 
@@ -149,34 +168,48 @@ class YouTubeDownloadStrategy(BaseDownloadStrategy):
         Returns:
             MediaMetadata with download results
         """
+        logger.debug(f"Starting YouTube download for URL: {url}")
+        logger.debug(f"Download options: {kwargs}")
         if not self.supports_url(url):
             raise ValueError(f"URL not supported by YouTube strategy: {url}")
 
         # Check for duplicates unless force_redownload is specified
+        logger.debug("Checking for duplicate downloads")
         duplicate_check = self._check_deduplication(url, **kwargs)
         if duplicate_check:
             logger.info(f"Skipping duplicate download: {url}")
             return duplicate_check
 
         # Feature flag: choose implementation with performance tracking
+        logger.debug(
+            f"Selecting download method - API enabled: {self.feature_flags.use_api_youtube}, Fallback enabled: {self.feature_flags.api_fallback_to_cli}"
+        )
         start_time = time.time()
         download_method = "unknown"
 
         try:
             if self.feature_flags.use_api_youtube:
                 try:
+                    logger.debug("Attempting API-based download")
                     download_method = "api"
                     metadata = await self._download_via_api(url, **kwargs)
+                    logger.debug("API download successful")
                 except Exception as e:
+                    logger.debug(f"API download failed: {e}")
                     if self.feature_flags.api_fallback_to_cli:
                         logger.warning(f"YouTube API download failed, falling back to CLI: {e}")
+                        logger.debug("Attempting CLI fallback")
                         download_method = "cli_fallback"
                         metadata = await self._download_via_cli(url, **kwargs)
+                        logger.debug("CLI fallback successful")
                     else:
+                        logger.error("API download failed and fallback disabled")
                         raise
             else:
+                logger.debug("Using CLI-based download (API disabled)")
                 download_method = "cli"
                 metadata = await self._download_via_cli(url, **kwargs)
+                logger.debug("CLI download successful")
 
             # Add performance metrics to metadata
             download_duration = time.time() - start_time
@@ -212,20 +245,37 @@ class YouTubeDownloadStrategy(BaseDownloadStrategy):
         Returns:
             MediaMetadata with extracted information
         """
+        logger.debug(f"Getting YouTube metadata for URL: {url}")
+        logger.debug(f"Metadata options: {kwargs}")
         if not self.supports_url(url):
             raise ValueError(f"URL not supported by YouTube strategy: {url}")
 
         # Feature flag: choose implementation
+        logger.debug(
+            f"Selecting metadata method - API enabled: {self.feature_flags.use_api_youtube}, Fallback enabled: {self.feature_flags.api_fallback_to_cli}"
+        )
         if self.feature_flags.use_api_youtube:
             try:
-                return await self._get_metadata_via_api(url, **kwargs)
+                logger.debug("Attempting API-based metadata extraction")
+                metadata = await self._get_metadata_via_api(url, **kwargs)
+                logger.debug("API metadata extraction successful")
+                return metadata
             except Exception as e:
+                logger.debug(f"API metadata extraction failed: {e}")
                 if self.feature_flags.api_fallback_to_cli:
                     logger.warning(f"YouTube API metadata failed, falling back to CLI: {e}")
-                    return await self._get_metadata_via_cli(url, **kwargs)
-                raise
+                    logger.debug("Attempting CLI fallback for metadata")
+                    metadata = await self._get_metadata_via_cli(url, **kwargs)
+                    logger.debug("CLI metadata fallback successful")
+                    return metadata
+                else:
+                    logger.error("API metadata extraction failed and fallback disabled")
+                    raise
         else:
-            return await self._get_metadata_via_cli(url, **kwargs)
+            logger.debug("Using CLI-based metadata extraction (API disabled)")
+            metadata = await self._get_metadata_via_cli(url, **kwargs)
+            logger.debug("CLI metadata extraction successful")
+            return metadata
 
     async def _download_via_cli(self, url: str, **kwargs) -> MediaMetadata:
         """Use existing CLI handler (unchanged).
@@ -237,14 +287,20 @@ class YouTubeDownloadStrategy(BaseDownloadStrategy):
         Returns:
             MediaMetadata from CLI handler
         """
+        logger.debug(f"Starting CLI download for URL: {url}")
+        logger.debug(f"CLI download options: {kwargs}")
         # ✅ Call existing handler in executor to maintain async interface
         loop = asyncio.get_event_loop()
+        logger.debug("Executing CLI handler in thread pool")
         result = await loop.run_in_executor(None, self.cli_handler.download, url, **kwargs)
+        logger.debug(f"CLI handler completed - success: {result.success}")
 
         # Convert DownloadResult to MediaMetadata
         if result.success and result.metadata:
+            logger.debug(f"CLI download successful with metadata - title: {result.metadata.title}")
             return result.metadata
         elif result.success:
+            logger.debug("CLI download successful but no metadata, creating basic metadata")
             # Create basic metadata if download succeeded but no metadata extracted
             return MediaMetadata(
                 platform="youtube",
@@ -252,6 +308,7 @@ class YouTubeDownloadStrategy(BaseDownloadStrategy):
                 files=result.files,
             )
         else:
+            logger.error(f"CLI download failed: {result.error}")
             raise RuntimeError(f"CLI download failed: {result.error}")
 
     async def _get_metadata_via_cli(self, url: str, **kwargs) -> MediaMetadata:
@@ -264,8 +321,13 @@ class YouTubeDownloadStrategy(BaseDownloadStrategy):
         Returns:
             MediaMetadata from CLI handler
         """
+        logger.debug(f"Getting metadata via CLI for URL: {url}")
+        logger.debug(f"CLI metadata options: {kwargs}")
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, self.cli_handler.get_metadata, url, **kwargs)
+        logger.debug("Executing CLI metadata extraction in thread pool")
+        result = await loop.run_in_executor(None, self.cli_handler.get_metadata, url, **kwargs)
+        logger.debug(f"CLI metadata extraction complete - title: {result.title if result else 'None'}")
+        return result
 
     async def _download_via_api(self, url: str, **kwargs) -> MediaMetadata:
         """Use new API client with enhanced error handling.
@@ -642,12 +704,14 @@ class YouTubeDownloadStrategy(BaseDownloadStrategy):
         Raises:
             RuntimeError: If download fails after all retry attempts
         """
+        logger.debug(f"Starting API download with fallbacks for URL: {url}")
         # Update client configuration with download options
         download_options = {}
 
         # Quality selection
         quality = kwargs.get("quality", "720p")
         audio_only = kwargs.get("audio_only", False)
+        logger.debug(f"Download options - quality: {quality}, audio_only: {audio_only}")
 
         if audio_only:
             download_options.update(
@@ -682,18 +746,27 @@ class YouTubeDownloadStrategy(BaseDownloadStrategy):
 
         max_retries = 3
         retry_delay = 2.0
+        logger.debug(f"Starting download attempts with max_retries={max_retries}, initial_delay={retry_delay}s")
 
         for attempt in range(max_retries):
+            logger.debug(f"Download attempt {attempt + 1}/{max_retries}")
             try:
+                logger.debug("Acquiring API client for download")
                 async with self.api_client as client:
+                    logger.debug(f"Starting download with options: {download_options}")
                     # Download and convert API response to MediaMetadata
                     async for item in client.download(url, **download_options):
-                        return self._convert_api_response_to_metadata(item)
+                        logger.debug("Download successful, converting response to metadata")
+                        result = self._convert_api_response_to_metadata(item)
+                        logger.debug(f"Metadata conversion complete - title: {result.title}")
+                        return result
 
                 # If no results, raise an error
+                logger.error("No download results from YouTube API")
                 raise RuntimeError("No download results from YouTube API")
 
             except Exception as e:
+                logger.debug(f"Download attempt {attempt + 1} failed with error: {e}")
                 error_message = str(e).lower()
 
                 # Check for YouTube-specific errors that shouldn't be retried
@@ -711,6 +784,7 @@ class YouTubeDownloadStrategy(BaseDownloadStrategy):
                 ]
 
                 is_fatal = any(fatal_error in error_message for fatal_error in youtube_fatal_errors)
+                logger.debug(f"Error classification - fatal: {is_fatal}, message: {error_message}")
 
                 if is_fatal:
                     logger.warning(f"YouTube fatal error detected, not retrying: {e}")
@@ -721,8 +795,10 @@ class YouTubeDownloadStrategy(BaseDownloadStrategy):
                     logger.warning(
                         f"YouTube API download attempt {attempt + 1} failed, retrying in {retry_delay}s: {e}"
                     )
+                    logger.debug(f"Sleeping for {retry_delay}s before retry")
                     await asyncio.sleep(retry_delay)
                     retry_delay *= 2  # Exponential backoff
+                    logger.debug(f"Next retry delay will be {retry_delay}s")
                 else:
                     logger.error(f"YouTube API download failed after {max_retries} attempts: {e}")
                     raise RuntimeError(f"YouTube download failed after {max_retries} attempts: {e}")

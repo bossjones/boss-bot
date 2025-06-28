@@ -1,0 +1,412 @@
+<documents>
+<document index="1">
+<source>EXAMPLES_SECURE.md</source>
+<document_content>
+# Secure Exception Formatting Examples
+
+This demonstrates how to use better_exceptions with custom filtering to hide sensitive data like Pydantic SecretStr values.
+
+## Files
+
+- `example_secure_formatter.py` - Custom formatter that filters sensitive data
+- `example_usage.py` - Examples showing different use cases
+
+## Features
+
+The `SecureExceptionFormatter` extends better_exceptions to:
+
+1. **Automatically filter Pydantic SecretStr** - Shows only first 4 characters
+2. **Support custom filters** - Define filters for your own sensitive types
+3. **Preserve all other better_exceptions features** - Colored output, variable inspection, etc.
+
+## Usage Examples
+
+### 1. Basic better_exceptions (no filtering)
+```bash
+python example_usage.py basic
+```
+
+### 2. With Pydantic SecretStr filtering
+```bash
+# Install pydantic first
+pip install pydantic
+
+# Run example
+python example_usage.py pydantic
+```
+
+This will show SecretStr values as `'secr...***REDACTED***'` instead of the full value.
+
+### 3. With custom filters
+```bash
+python example_usage.py custom
+```
+
+Define custom filters for any type:
+```python
+custom_filters = {
+    "APIKey": lambda v: f"'{str(v)[:8]}...***REDACTED***'",
+    "Token": lambda v: "'***TOKEN_REDACTED***'"
+}
+hook_secure(custom_filters)
+```
+
+### 4. Manual exception formatting
+```bash
+python example_usage.py manual
+```
+
+Use `format_exception_secure()` to manually format exceptions with filtering.
+
+## Integration in Your Code
+
+### Quick setup:
+```python
+from example_secure_formatter import hook_secure
+
+# Install the secure hook at startup
+hook_secure()
+
+# Your code here - any exceptions will have sensitive data filtered
+```
+
+### With custom configuration:
+```python
+from example_secure_formatter import hook_secure
+
+# Define what to filter
+sensitive_filters = {
+    "Password": lambda v: "'***PASSWORD***'",
+    "CreditCard": lambda v: f"'****{str(v)[-4:]}'",  # Show last 4 digits
+}
+
+hook_secure(sensitive_filters)
+```
+
+## How It Works
+
+The `SecureExceptionFormatter`:
+1. Inherits from `ExceptionFormatter`
+2. Overrides `format_value()` to check each variable
+3. Detects Pydantic SecretStr by module and type name
+4. Applies custom filters based on type name matching
+5. Falls back to normal formatting for non-sensitive values
+
+This preserves all better_exceptions functionality while adding security.
+</document_content>
+</document>
+<document index="2">
+<source>example_secure_formatter.py</source>
+<document_content>
+"""Example: Custom formatter that filters out sensitive data like Pydantic SecretStr"""
+
+import sys
+from better_exceptions import (ExceptionFormatter, THEME, SUPPORTS_COLOR,
+                              PIPE_CHAR, CAP_CHAR, write_stream, STREAM)
+
+
+class SecureExceptionFormatter(ExceptionFormatter):
+    """Custom formatter that filters out sensitive data"""
+
+    def __init__(self, *args, **kwargs):
+        # Extract our custom config
+        self.sensitive_filter_config = kwargs.pop('sensitive_filter_config', {})
+        super().__init__(*args, **kwargs)
+
+    def format_value(self, v):
+        """Override to filter sensitive values"""
+        # Check if this is a Pydantic SecretStr
+        type_name = type(v).__name__
+        module = type(v).__module__ if hasattr(type(v), '__module__') else ''
+
+        # Filter Pydantic SecretStr
+        if 'pydantic' in module and 'Secret' in type_name:
+            # Show only first 4 characters
+            try:
+                str_val = str(v.get_secret_value() if hasattr(v, 'get_secret_value') else v)
+                if len(str_val) > 4:
+                    return f"'{str_val[:4]}...***REDACTED***'"
+                return "'***REDACTED***'"
+            except Exception:
+                return f"<{type_name} ***REDACTED***>"
+
+        # Check custom filters from config
+        for filter_type, filter_func in self.sensitive_filter_config.items():
+            if filter_type in type_name or filter_type in module:
+                try:
+                    return filter_func(v)
+                except Exception:
+                    return f"<{type_name} ***FILTERED***>"
+
+        # Default formatting for non-sensitive values
+        return super().format_value(v)
+
+
+def format_exception_secure(exc, value, tb, sensitive_filter_config=None):
+    """Format exception with sensitive data filtering"""
+    formatter = SecureExceptionFormatter(
+        colored=SUPPORTS_COLOR,
+        theme=THEME,
+        max_length=128,
+        pipe_char=PIPE_CHAR,
+        cap_char=CAP_CHAR,
+        sensitive_filter_config=sensitive_filter_config or {}
+    )
+    return list(formatter.format_exception(exc, value, tb))
+
+
+def secure_excepthook(exc, value, tb):
+    """Exception hook that filters sensitive data"""
+    formatted = ''.join(format_exception_secure(exc, value, tb))
+    write_stream(formatted, STREAM)
+
+
+# Module-level variable for storing config
+_sensitive_filter_config = {}
+
+
+def hook_secure(sensitive_filter_config=None):
+    """Install the secure exception hook"""
+    global _sensitive_filter_config
+    _sensitive_filter_config = sensitive_filter_config or {}
+
+    def _secure_excepthook(exc, value, tb):
+        formatted = ''.join(format_exception_secure(exc, value, tb, _sensitive_filter_config))
+        write_stream(formatted, STREAM)
+
+    sys.excepthook = _secure_excepthook
+</document_content>
+</document>
+<document index="3">
+<source>example_usage.py</source>
+<document_content>
+"""Example usage of better_exceptions with sensitive data filtering"""
+
+import os
+import sys
+
+# Add better_exceptions to path if running from source
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from example_secure_formatter import hook_secure, format_exception_secure
+
+
+def example_basic():
+    """Basic example with better_exceptions"""
+    import better_exceptions
+    better_exceptions.hook()
+
+    def process_data(data):
+        result = data["value"] * 2
+        return result / data["divisor"]
+
+    data = {"value": 42, "divisor": 0}
+    process_data(data)
+
+
+def example_with_pydantic():
+    """Example with Pydantic SecretStr filtering"""
+    try:
+        from pydantic import BaseModel, SecretStr
+    except ImportError:
+        print("Please install pydantic: pip install pydantic")
+        return
+
+    # Install our secure hook
+    hook_secure()
+
+    class UserCredentials(BaseModel):
+        username: str
+        password: SecretStr
+        api_key: SecretStr
+
+    def authenticate_user(credentials):
+        # Simulate authentication logic
+        if credentials.username == "admin":
+            # This will trigger an exception with sensitive data in locals
+            secret_token = "super-secret-token-12345"
+            raise ValueError(f"Authentication failed for user: {credentials.username}")
+
+    # Create credentials with sensitive data
+    creds = UserCredentials(
+        username="admin",
+        password="my-super-secret-password",
+        api_key="sk-1234567890abcdef"
+    )
+
+    authenticate_user(creds)
+
+
+def example_with_custom_filters():
+    """Example with custom sensitive data filters"""
+
+    # Define custom filters for specific types
+    custom_filters = {
+        "APIKey": lambda v: f"'{str(v)[:8]}...***REDACTED***'" if len(str(v)) > 8 else "'***REDACTED***'",
+        "Token": lambda v: "'***TOKEN_REDACTED***'",
+        "Secret": lambda v: "'***SECRET_REDACTED***'"
+    }
+
+    # Install hook with custom filters
+    hook_secure(custom_filters)
+
+    class APIKey:
+        def __init__(self, key):
+            self.key = key
+        def __repr__(self):
+            return f"APIKey('{self.key}')"
+
+    class SecretToken:
+        def __init__(self, token):
+            self.token = token
+        def __repr__(self):
+            return f"SecretToken('{self.token}')"
+
+    def process_api_request(api_key, token):
+        # Some processing that will fail
+        auth_header = f"Bearer {token.token}"
+        endpoint = "https://api.example.com/data"
+
+        # Simulate an error with sensitive data in scope
+        raise ConnectionError("Failed to connect to API endpoint")
+
+    api_key = APIKey("ak-prod-1234567890abcdefghijklmnop")
+    token = SecretToken("tok_secret_abc123def456")
+
+    process_api_request(api_key, token)
+
+
+def example_manual_formatting():
+    """Example of manually formatting exceptions with filtering"""
+    try:
+        from pydantic import SecretStr
+    except ImportError:
+        print("Please install pydantic: pip install pydantic")
+        return
+
+    try:
+        password = SecretStr("my-secret-password-12345")
+        api_key = "sk-1234567890abcdefghijklmnopqrstuvwxyz"
+
+        # Cause an error
+        result = 1 / 0
+    except Exception:
+        exc_info = sys.exc_info()
+
+        # Format with filtering
+        formatted_lines = format_exception_secure(*exc_info)
+
+        print("=== Filtered Exception Output ===")
+        for line in formatted_lines:
+            print(line, end='')
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Examples of better_exceptions with sensitive data filtering")
+    parser.add_argument("example", choices=["basic", "pydantic", "custom", "manual"],
+                        help="Which example to run")
+
+    args = parser.parse_args()
+
+    examples = {
+        "basic": example_basic,
+        "pydantic": example_with_pydantic,
+        "custom": example_with_custom_filters,
+        "manual": example_manual_formatting
+    }
+
+    print(f"\n=== Running {args.example} example ===\n")
+    examples[args.example]()
+</document_content>
+</document>
+<document index="4">
+<source>test_secure_formatter.py</source>
+<document_content>
+"""Simple test to verify SecretStr filtering works"""
+
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from example_secure_formatter import SecureExceptionFormatter, SUPPORTS_COLOR, THEME
+
+def test_secretstr_filtering():
+    """Test that SecretStr values are properly filtered"""
+    try:
+        from pydantic import SecretStr
+    except ImportError:
+        print("Pydantic not installed, skipping test")
+        return
+
+    formatter = SecureExceptionFormatter(
+        colored=False,  # Disable colors for testing
+        theme=THEME,
+        max_length=128
+    )
+
+    # Test with a SecretStr
+    secret = SecretStr("my-super-secret-password-12345")
+    result = formatter.format_value(secret)
+    print(f"SecretStr filtered: {result}")
+    assert result == "'my-s...***REDACTED***'"
+
+    # Test with a short SecretStr
+    short_secret = SecretStr("abc")
+    result = formatter.format_value(short_secret)
+    print(f"Short SecretStr filtered: {result}")
+    assert result == "'***REDACTED***'"
+
+    # Test with regular string
+    regular = "not-a-secret"
+    result = formatter.format_value(regular)
+    print(f"Regular string: {result}")
+    assert result == "'not-a-secret'"
+
+    print("\n✓ All tests passed!")
+
+
+def test_custom_filters():
+    """Test custom filter configuration"""
+    formatter = SecureExceptionFormatter(
+        colored=False,
+        theme=THEME,
+        max_length=128,
+        sensitive_filter_config={
+            "APIKey": lambda v: "'***API_KEY***'",
+            "Token": lambda v: "'***TOKEN***'"
+        }
+    )
+
+    class APIKey:
+        def __repr__(self):
+            return "APIKey('secret')"
+
+    class Token:
+        def __repr__(self):
+            return "Token('secret')"
+
+    # Test custom filters
+    api_key = APIKey()
+    result = formatter.format_value(api_key)
+    print(f"APIKey filtered: {result}")
+    assert result == "'***API_KEY***'"
+
+    token = Token()
+    result = formatter.format_value(token)
+    print(f"Token filtered: {result}")
+    assert result == "'***TOKEN***'"
+
+    print("\n✓ Custom filter tests passed!")
+
+
+if __name__ == "__main__":
+    print("Testing SecretStr filtering...")
+    test_secretstr_filtering()
+
+    print("\nTesting custom filters...")
+    test_custom_filters()
+</document_content>
+</document>
+</documents>

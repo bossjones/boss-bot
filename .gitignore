@@ -391,3 +391,4 @@ typingcov_cobertura/
 typingcov_txt/
 typingcov_xml/
 .downloads
+.langgraph_api/

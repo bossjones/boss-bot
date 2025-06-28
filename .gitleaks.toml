@@ -10,6 +10,7 @@
     # generated specifically for this usecase. The owner of the key is:
     # insights-core (Signing key for unit testing) <insights-core@example.org>
     '''.env.sample''',
+    '''ai_docs/plans/better_exceptions_secure_formatter.xml''',
     '''docs/development/fastmcp/security-guide.md''',
     '''hack/drafts/cursor_rules/python_rules.mdc.md''',
     '''insights/tests/client/test_crypto.py''',
@@ -17,6 +18,7 @@
     '''tests/conftest.py''',
     '''tests/test_bot/test_client.py''',
     '''tests/test_core/test_env.py''',
+    '''tests/test_secure_exceptions.py''',
   ]
 
   commits = [

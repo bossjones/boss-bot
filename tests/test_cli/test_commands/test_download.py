@@ -57,16 +57,16 @@ class TestDownloadCommands:
             upload_date="2024-01-01",
             like_count=42,
             view_count=10,
-            url="https://twitter.com/user/status/123",
+            url="https://twitter.com/bossjones/status/1818781891249815783",
             platform="twitter"
         )
         mock_strategy.get_metadata = mocker.AsyncMock(return_value=mock_metadata)
 
-        mocker.patch('boss_bot.cli.commands.download.get_strategy_for_platform', return_value=mock_strategy)
+        mocker.patch('boss_bot.cli.commands.download.get_ai_enhanced_strategy', return_value=(mock_strategy, None))
 
         result = runner.invoke(app, [
             "twitter",
-            "https://twitter.com/user/status/123",
+            "https://twitter.com/bossjones/status/1818781891249815783",
             "--metadata-only"
         ])
 
@@ -90,16 +90,16 @@ class TestDownloadCommands:
             upload_date="2024-01-01",
             like_count=24,
             view_count=5,
-            url="https://twitter.com/user/status/123",
+            url="https://twitter.com/bossjones/status/1818781891249815783",
             platform="twitter"
         )
         mock_strategy.get_metadata = mocker.AsyncMock(return_value=mock_metadata)
 
-        mocker.patch('boss_bot.cli.commands.download.get_strategy_for_platform', return_value=mock_strategy)
+        mocker.patch('boss_bot.cli.commands.download.get_ai_enhanced_strategy', return_value=(mock_strategy, None))
 
         result = runner.invoke(app, [
             "twitter",
-            "https://twitter.com/user/status/123",
+            "https://twitter.com/bossjones/status/1818781891249815783",
             "--metadata-only",
             "--async"
         ])
@@ -118,11 +118,11 @@ class TestDownloadCommands:
         mock_strategy.supports_url.return_value = True
         mock_strategy.get_metadata = mocker.AsyncMock(side_effect=Exception("Metadata extraction failed"))
 
-        mocker.patch('boss_bot.cli.commands.download.get_strategy_for_platform', return_value=mock_strategy)
+        mocker.patch('boss_bot.cli.commands.download.get_ai_enhanced_strategy', return_value=(mock_strategy, None))
 
         result = runner.invoke(app, [
             "twitter",
-            "https://twitter.com/user/status/123",
+            "https://twitter.com/bossjones/status/1818781891249815783",
             "--metadata-only"
         ])
 
@@ -146,11 +146,11 @@ class TestDownloadCommands:
         )
         mock_strategy.download = mocker.AsyncMock(return_value=mock_metadata)
 
-        mocker.patch('boss_bot.cli.commands.download.get_strategy_for_platform', return_value=mock_strategy)
+        mocker.patch('boss_bot.cli.commands.download.get_ai_enhanced_strategy', return_value=(mock_strategy, None))
 
         result = runner.invoke(app, [
             "twitter",
-            "https://twitter.com/user/status/123"
+            "https://twitter.com/bossjones/status/1818781891249815783"
         ])
 
         assert result.exit_code == 0
@@ -175,11 +175,11 @@ class TestDownloadCommands:
         )
         mock_strategy.download = mocker.AsyncMock(return_value=mock_metadata)
 
-        mocker.patch('boss_bot.cli.commands.download.get_strategy_for_platform', return_value=mock_strategy)
+        mocker.patch('boss_bot.cli.commands.download.get_ai_enhanced_strategy', return_value=(mock_strategy, None))
 
         result = runner.invoke(app, [
             "twitter",
-            "https://twitter.com/user/status/123",
+            "https://twitter.com/bossjones/status/1818781891249815783",
             "--async"
         ])
 
@@ -202,11 +202,11 @@ class TestDownloadCommands:
         )
         mock_strategy.download = mocker.AsyncMock(return_value=mock_metadata)
 
-        mocker.patch('boss_bot.cli.commands.download.get_strategy_for_platform', return_value=mock_strategy)
+        mocker.patch('boss_bot.cli.commands.download.get_ai_enhanced_strategy', return_value=(mock_strategy, None))
 
         result = runner.invoke(app, [
             "twitter",
-            "https://twitter.com/user/status/123"
+            "https://twitter.com/bossjones/status/1818781891249815783"
         ])
 
         assert result.exit_code == 1
@@ -220,11 +220,11 @@ class TestDownloadCommands:
         mock_strategy.supports_url.return_value = True
         mock_strategy.download = mocker.AsyncMock(side_effect=Exception("Connection error"))
 
-        mocker.patch('boss_bot.cli.commands.download.get_strategy_for_platform', return_value=mock_strategy)
+        mocker.patch('boss_bot.cli.commands.download.get_ai_enhanced_strategy', return_value=(mock_strategy, None))
 
         result = runner.invoke(app, [
             "twitter",
-            "https://twitter.com/user/status/123"
+            "https://twitter.com/bossjones/status/1818781891249815783"
         ])
 
         assert result.exit_code == 1
@@ -247,11 +247,11 @@ class TestDownloadCommands:
         )
         mock_strategy.download = mocker.AsyncMock(return_value=mock_metadata)
 
-        mocker.patch('boss_bot.cli.commands.download.get_strategy_for_platform', return_value=mock_strategy)
+        mocker.patch('boss_bot.cli.commands.download.get_ai_enhanced_strategy', return_value=(mock_strategy, None))
 
         result = runner.invoke(app, [
             "twitter",
-            "https://twitter.com/user/status/123",
+            "https://twitter.com/bossjones/status/1818781891249815783",
             "--verbose"
         ])
 
@@ -281,7 +281,7 @@ class TestDownloadCommands:
         custom_dir = tmp_path / "custom_downloads"
         result = runner.invoke(app, [
             "twitter",
-            "https://twitter.com/user/status/123",
+            "https://twitter.com/bossjones/status/1818781891249815783",
             "--output-dir", str(custom_dir)
         ])
 

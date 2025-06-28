@@ -8,6 +8,8 @@ uv := require("uv")
 # SETTINGS
 
 # Load a .env file, if present.
-set dotenv-load := true
+# set dotenv-load := true
+set dotenv-load
+
 
 set shell := ["zsh", "-cu"]

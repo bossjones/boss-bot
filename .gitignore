@@ -392,3 +392,4 @@ typingcov_txt/
 typingcov_xml/
 .downloads
 .langgraph_api/
+test_config.yaml

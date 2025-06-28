@@ -48,7 +48,7 @@ from rich.console import Console
 import boss_bot
 from boss_bot.__version__ import __version__
 from boss_bot.bot.client import BossBot
-from boss_bot.cli.commands import download_app
+from boss_bot.cli.commands import assistants_app, download_app
 from boss_bot.core.env import BossSettings
 from boss_bot.utils.asynctyper import AsyncTyper
 
@@ -76,6 +76,9 @@ cprint = console.print
 
 # Add download commands
 APP.add_typer(download_app, name="download")
+
+# Add assistant commands
+APP.add_typer(assistants_app, name="assistants")
 
 
 # Load existing subcommands

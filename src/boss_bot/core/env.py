@@ -81,6 +81,8 @@ class BossSettings(BaseSettings):
         langchain_hub_api_url: LangChain Hub API URL
         langchain_project: LangChain project name
         langchain_tracing_v2: Enable LangChain tracing v2
+        langgraph_deployment_url: LangGraph Cloud deployment URL
+        langgraph_api_key: LangGraph Cloud API key
         pinecone_api_key: Pinecone API key (optional)
         pinecone_env: Pinecone environment
         pinecone_index: Pinecone index name
@@ -287,6 +289,16 @@ class BossSettings(BaseSettings):
     langchain_tracing_v2: bool = Field(
         False, description="Enable LangChain tracing v2", validation_alias="LANGCHAIN_TRACING_V2"
     )
+
+    # LangGraph Cloud Configuration
+    langgraph_deployment_url: AnyHttpUrl = Field(
+        AnyHttpUrl("http://localhost:8000"),
+        description="LangGraph Cloud deployment URL",
+        validation_alias="LANGGRAPH_DEPLOYMENT_URL",
+    )
+    langgraph_api_key: SecretStr | None = Field(
+        None, description="LangGraph Cloud API key", validation_alias="LANGGRAPH_API_KEY"
+    )
     pinecone_api_key: SecretStr | None = Field(
         None, description="Pinecone API key", validation_alias="PINECONE_API_KEY"
     )
@@ -416,6 +428,8 @@ class BossSettings(BaseSettings):
             f"langchain_hub_api_url={self.langchain_hub_api_url}, "
             f"langchain_project={self.langchain_project}, "
             f"langchain_tracing_v2={self.langchain_tracing_v2}, "
+            f"langgraph_deployment_url={self.langgraph_deployment_url}, "
+            f"langgraph_api_key=SecretStr('**********'), "
             f"pinecone_api_key=SecretStr('**********'), "
             f"pinecone_env={self.pinecone_env}, "
             f"pinecone_index={self.pinecone_index}, "

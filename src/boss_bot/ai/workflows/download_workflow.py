@@ -37,6 +37,32 @@ class WorkflowState(TypedDict):
     max_retries: int  # Default: 3
 
 
+class ConfigSchema(TypedDict, total=False):
+    """Configuration schema for download workflow runtime configuration.
+
+    This schema defines all configurable parameters that can be passed
+    to the workflow at runtime via LangGraph assistants configuration.
+    All fields are optional to allow partial configuration.
+    """
+
+    # AI Configuration
+    enable_ai_strategy_selection: bool
+    enable_content_analysis: bool
+    ai_model: str
+    ai_temperature: float
+
+    # Download Configuration
+    max_retries: int
+    timeout_seconds: int
+    download_quality: str
+
+    # Platform Specific Settings
+    youtube_quality: str
+    twitter_include_replies: bool
+    instagram_include_stories: bool
+    reddit_include_comments: bool
+
+
 @dataclass
 class DownloadWorkflowConfig:
     """Configuration for the download workflow."""
@@ -211,11 +237,15 @@ class DownloadWorkflow:
 
             # Check if workflow ended with an error
             if result.get("error_message"):
-                return self._create_error_result(result, result["error_message"])
+                # Cast result to WorkflowState for type safety
+                state_result = dict(result)  # Convert to dict first
+                return self._create_error_result(state_result, result["error_message"])  # type: ignore[arg-type]
             else:
                 # Update state to complete for successful workflow
                 result["current_step"] = "complete"
-                return self._create_success_result(result)
+                # Cast result to WorkflowState for type safety
+                state_result = dict(result)  # Convert to dict first
+                return self._create_success_result(state_result)  # type: ignore[arg-type]
 
         except Exception as e:
             logger.error(f"LangGraph workflow failed: {e}", exc_info=True)
@@ -459,25 +489,61 @@ class DownloadWorkflow:
         }
 
 
-def create_download_workflow_graph():
+def create_download_workflow_graph(config_schema: ConfigSchema | None = None) -> Any:
     """Create and return the compiled LangGraph workflow for LangGraph Cloud.
 
     This function creates a standalone instance of the DownloadWorkflow
     and returns the compiled graph for deployment to LangGraph Cloud.
+
+    Args:
+        config_schema: Optional configuration schema for runtime configuration.
+                      If provided, the workflow will be configurable via assistants.
     """
     from langgraph.graph import END, StateGraph
 
     # Create workflow graph
     workflow = StateGraph(WorkflowState)
 
+    # Configuration access helper
+    def get_config_value(key: str, default: Any = None) -> Any:
+        """Get configuration value from the provided config schema."""
+        if config_schema:
+            # Type safety: we know the key must be a string literal for TypedDict
+            if key == "enable_ai_strategy_selection":
+                return config_schema.get("enable_ai_strategy_selection", default)
+            elif key == "enable_content_analysis":
+                return config_schema.get("enable_content_analysis", default)
+            elif key == "ai_model":
+                return config_schema.get("ai_model", default)
+            elif key == "ai_temperature":
+                return config_schema.get("ai_temperature", default)
+            elif key == "max_retries":
+                return config_schema.get("max_retries", default)
+            elif key == "timeout_seconds":
+                return config_schema.get("timeout_seconds", default)
+            elif key == "download_quality":
+                return config_schema.get("download_quality", default)
+            elif key == "youtube_quality":
+                return config_schema.get("youtube_quality", default)
+            elif key == "twitter_include_replies":
+                return config_schema.get("twitter_include_replies", default)
+            elif key == "instagram_include_stories":
+                return config_schema.get("instagram_include_stories", default)
+            elif key == "reddit_include_comments":
+                return config_schema.get("reddit_include_comments", default)
+        return default
+
     # For LangGraph Cloud, we need simple node functions
     # These will be basic implementations that can work without the full class context
     async def strategy_selection_node(state: WorkflowState) -> WorkflowState:
-        """Simple strategy selection for LangGraph Cloud."""
-        # Basic URL-based strategy selection
+        """Configuration-aware strategy selection for LangGraph Cloud."""
         url = state["url"]
 
-        # Simple pattern matching for common platforms
+        # Check if AI strategy selection is enabled via configuration
+        enable_ai = get_config_value("enable_ai_strategy_selection", False)
+
+        # For now, use simple pattern matching (AI integration would be added later)
+        # This demonstrates configuration awareness
         if "youtube.com" in url or "youtu.be" in url:
             selected_strategy = "youtube"
         elif "reddit.com" in url:
@@ -491,38 +557,73 @@ def create_download_workflow_graph():
 
         state["strategy_selection"] = {
             "selected_strategy": selected_strategy,
-            "confidence": 0.8,
-            "reasoning": f"URL pattern matches {selected_strategy} platform",
-            "ai_enhanced": False,
+            "confidence": 0.9 if enable_ai else 0.8,
+            "reasoning": f"URL pattern matches {selected_strategy} platform"
+            + (f" (AI-enhanced: {enable_ai})" if enable_ai else ""),
+            "ai_enhanced": enable_ai,
         }
         return state
 
     async def content_analysis_node(state: WorkflowState) -> WorkflowState:
-        """Simple content analysis for LangGraph Cloud."""
-        # Basic content analysis based on URL
+        """Configuration-aware content analysis for LangGraph Cloud."""
         url = state["url"]
+
+        # Check if content analysis is enabled via configuration
+        enable_analysis = get_config_value("enable_content_analysis", True)
+
+        if not enable_analysis:
+            # Skip content analysis if disabled
+            return state
 
         # Get platform from strategy selection, with fallback
         strategy_selection = state.get("strategy_selection", {})
         platform = strategy_selection.get("selected_strategy", "unknown") if strategy_selection else "unknown"
 
+        # Get quality setting from configuration
+        download_quality = get_config_value("download_quality", "good")
+
         state["content_analysis"] = {
-            "analysis": {"platform": platform},
-            "confidence": 0.7,
-            "reasoning": "Basic platform-based analysis",
-            "metadata": {"url": url},
+            "analysis": {
+                "platform": platform,
+                "quality_setting": download_quality,
+            },
+            "confidence": 0.8 if enable_analysis else 0.7,
+            "reasoning": f"Platform-based analysis with quality: {download_quality}",
+            "metadata": {"url": url, "config_enabled": enable_analysis},
         }
         return state
 
     async def download_execution_node(state: WorkflowState) -> WorkflowState:
-        """Download execution node for LangGraph Cloud."""
-        # Simulate download result
-        strategy_info = state.get("strategy_selection", {})
-        strategy_name = strategy_info.get("selected_strategy", "unknown")
+        """Configuration-aware download execution for LangGraph Cloud."""
+        strategy_info = state.get("strategy_selection")
+        strategy_name = strategy_info.get("selected_strategy", "unknown") if strategy_info else "unknown"
+
+        # Get configuration values for download behavior
+        max_retries = get_config_value("max_retries", 3)
+        timeout_seconds = get_config_value("timeout_seconds", 300)
+        download_quality = get_config_value("download_quality", "good")
+
+        # Get platform-specific settings
+        platform_config = {}
+        if strategy_name == "youtube":
+            platform_config["quality"] = get_config_value("youtube_quality", "720p")
+        elif strategy_name == "twitter":
+            platform_config["include_replies"] = get_config_value("twitter_include_replies", False)
+        elif strategy_name == "instagram":
+            platform_config["include_stories"] = get_config_value("instagram_include_stories", True)
+        elif strategy_name == "reddit":
+            platform_config["include_comments"] = get_config_value("reddit_include_comments", False)
 
         state["download_result"] = {
             "success": True,
-            "metadata": {"strategy": strategy_name, "url": state["url"]},
+            "metadata": {
+                "strategy": strategy_name,
+                "url": state["url"],
+                "quality": download_quality,
+                "max_retries": max_retries,
+                "timeout": timeout_seconds,
+                "platform_config": platform_config,
+            },
             "strategy_used": strategy_name,
             "content_analysis": state.get("content_analysis"),
         }
@@ -534,10 +635,17 @@ def create_download_workflow_graph():
         return state
 
     def route_after_strategy_selection(state: WorkflowState) -> str:
-        """Route after strategy selection."""
+        """Configuration-aware routing after strategy selection."""
         if state.get("error_message"):
             return "error"
-        return "content_analysis"
+
+        # Check if content analysis is enabled via configuration
+        enable_analysis = get_config_value("enable_content_analysis", True)
+
+        if enable_analysis:
+            return "content_analysis"
+        else:
+            return "download"
 
     def route_after_content_analysis(state: WorkflowState) -> str:
         """Route after content analysis."""
@@ -566,6 +674,7 @@ def create_download_workflow_graph():
         route_after_strategy_selection,
         {
             "content_analysis": "analyze_content",
+            "download": "execute_download",
             "error": "handle_error",
         },
     )

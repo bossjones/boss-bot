@@ -774,6 +774,7 @@ dependencies = [
     { name = "langgraph" },
     { name = "langgraph-api" },
     { name = "langgraph-checkpoint-sqlite" },
+    { name = "langgraph-cli", extra = ["inmem"] },
     { name = "langgraph-gen" },
     { name = "langgraph-sdk" },
     { name = "langgraph-supervisor" },
@@ -1035,6 +1036,7 @@ requires-dist = [
     { name = "langgraph", specifier = ">=0.3.5" },
     { name = "langgraph-api", specifier = ">=0.2.61" },
     { name = "langgraph-checkpoint-sqlite", specifier = ">=2.0.10" },
+    { name = "langgraph-cli", extras = ["inmem"], specifier = ">=0.3.3" },
     { name = "langgraph-gen", specifier = ">=0.0.6" },
     { name = "langgraph-sdk", specifier = ">=0.1.70" },
     { name = "langgraph-supervisor", specifier = ">=0.0.27" },
@@ -4273,6 +4275,26 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/7b/38/5d44b91fa21e06309be8f1658ae966f5c717443401df005b20d9af91b6b5/langgraph_checkpoint_sqlite-2.0.10.tar.gz", hash = "sha256:c8a55a268b857761dc77f123df48addaf8e9a40b72c4eaddb7c551ddced1c5b6", size = 103625, upload-time = "2025-05-19T06:53:25.56Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c1/ff/63b16d83a513f7d7a5001bb01a40024986d330718a5315bf1962d7cc50c8/langgraph_checkpoint_sqlite-2.0.10-py3-none-any.whl", hash = "sha256:89d1d2201fe26aa52f1a9c03e1015d226635649be596b26542a5de78f8cc6c9f", size = 30973, upload-time = "2025-05-19T06:53:23.417Z" },
+]
+
+[[package]]
+name = "langgraph-cli"
+version = "0.3.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "click" },
+    { name = "langgraph-sdk" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f0/c2/53aaae208a3a08f727ef9d03edfd8f499403e017fc451c8ca5b52e95c930/langgraph_cli-0.3.3.tar.gz", hash = "sha256:120adc44064786bb11f1376a7b324b2125276a2e2c3a04bbfab7b8c1622ad4d7", size = 722842, upload-time = "2025-06-13T20:17:52.639Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/50/aa/f52742987a30f9f2d80c00e1caccb310185dd511d07b56c3e611fe31adb5/langgraph_cli-0.3.3-py3-none-any.whl", hash = "sha256:a0c6b04d6a37191431ede17f7a358f1944c6e5ac9e1b7d2004b9f973fe940094", size = 35880, upload-time = "2025-06-13T20:17:51.437Z" },
+]
+
+[package.optional-dependencies]
+inmem = [
+    { name = "langgraph-api" },
+    { name = "langgraph-runtime-inmem" },
+    { name = "python-dotenv" },
 ]
 
 [[package]]

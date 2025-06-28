@@ -65,7 +65,8 @@
       "Bash(just:*)",
       "mcp__mcp-server-langgraph__search_langgraph_documentation",
       "mcp__langgraph-docs-mcp__list_doc_sources",
-      "mcp__langgraph-docs-mcp__fetch_docs"
+      "mcp__langgraph-docs-mcp__fetch_docs",
+      "mcp__time__get_current_time"
     ],
     "deny": []
   },

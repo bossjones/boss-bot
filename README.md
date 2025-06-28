@@ -9,6 +9,7 @@ An AI-powered Discord bot for intelligent media downloads and social media manag
 - **Smart Content Analysis**: AI-powered quality assessment, engagement prediction, and audience insights
 - **Intelligent Strategy Selection**: AI chooses optimal download strategies with confidence scoring
 - **Advanced Workflows**: LangGraph state machines for complex multi-step AI processes
+- **🎯 LangGraph Assistant Management**: Complete CLI for managing AI assistants with LangGraph Cloud integration
 
 ### 📥 **Media Download Capabilities**
 - **Multi-Platform Support**: Twitter/X, Reddit, Instagram, YouTube with strategy pattern architecture
@@ -19,7 +20,7 @@ An AI-powered Discord bot for intelligent media downloads and social media manag
 ### 🛡️ **Enterprise-Grade Reliability**
 - **Feature Flag Control**: Gradual AI rollout with environment variable configuration
 - **Graceful Degradation**: Robust fallback to traditional methods when AI unavailable
-- **Comprehensive Testing**: 407 tests including 82 AI-specific tests (100% passing)
+- **Comprehensive Testing**: 873+ tests including 243 AI/Assistant tests (100% passing)
 - **Performance Monitoring**: Built-in metrics and agent performance tracking
 
 ## Prerequisites
@@ -71,6 +72,10 @@ An AI-powered Discord bot for intelligent media downloads and social media manag
    OPENAI_API_KEY=your-openai-api-key
    ANTHROPIC_API_KEY=your-anthropic-api-key
    GOOGLE_API_KEY=your-google-api-key
+
+   # LangGraph Assistant Management (optional)
+   LANGGRAPH_DEPLOYMENT_URL=https://your-deployment.langraph.ai
+   LANGGRAPH_API_KEY=your-langgraph-api-key
    ```
 
 6. Start the bot:
@@ -134,6 +139,74 @@ $metadata <url>           # Get content metadata
 $status                   # Show download queue status
 $help                     # Show all available commands
 ```
+
+## 🎯 LangGraph Assistant Management (NEW!)
+
+Comprehensive CLI for managing AI assistants with LangGraph Cloud integration.
+
+### **Assistant Lifecycle Commands**
+
+#### `boss-bot assistants list`
+Display all assistants from LangGraph Cloud in rich tables.
+```bash
+# List all assistants
+boss-bot assistants list
+
+# Filter and limit results
+boss-bot assistants list --graph download_workflow --limit 10
+```
+
+#### `boss-bot assistants health`
+Check connectivity to LangGraph Cloud deployment.
+```bash
+boss-bot assistants health
+# Shows: ✅ LangGraph Cloud connection is healthy
+```
+
+#### `boss-bot assistants create-config`
+Generate assistant YAML configuration files.
+```bash
+# Create a new assistant configuration
+boss-bot assistants create-config "My Assistant" "Downloads media intelligently"
+
+# Specify output location
+boss-bot assistants create-config "My Assistant" "Description" --output my-assistant.yaml
+```
+
+#### `boss-bot assistants sync-from`
+Import assistants from YAML configuration directory.
+```bash
+# Import all assistants from configs/
+boss-bot assistants sync-from ./assistant-configs/
+
+# Dry run to preview changes
+boss-bot assistants sync-from ./configs/ --dry-run
+```
+
+#### `boss-bot assistants sync-to`
+Export assistants to YAML configuration directory.
+```bash
+# Export all assistants to directory
+boss-bot assistants sync-to ./backups/
+
+# Export specific graph assistants
+boss-bot assistants sync-to ./configs/ --graph-id download_workflow
+```
+
+#### `boss-bot assistants graphs`
+List available LangGraph graphs.
+```bash
+boss-bot assistants graphs
+```
+
+### **Configuration & Setup**
+
+1. **Environment Setup**: Add LangGraph Cloud credentials to `.env`
+2. **YAML Schema**: Auto-generated configurations with metadata tracking
+3. **Rich Output**: Beautiful tables and progress indicators
+4. **Error Handling**: Graceful failures with detailed error messages
+
+📚 **[Complete Documentation](docs/langgraph-assistants.md)** - Detailed guide with examples and troubleshooting
 
 ## Development Setup
 

@@ -397,6 +397,57 @@ return traditional_processing(url)
 - Performance metrics include error rates
 - Feature flag status is validated at startup
 
+## 🎯 LangGraph Assistant Management
+
+Boss-Bot includes a comprehensive CLI system for managing LangGraph Cloud assistants, enabling deployment, synchronization, and lifecycle management of AI assistants.
+
+### Key Features
+
+- **Cloud Integration**: Direct connection to LangGraph Cloud deployments
+- **YAML Configuration**: Human-readable assistant definitions with schema validation
+- **Bidirectional Sync**: Deploy local configs or backup cloud assistants
+- **Rich CLI Output**: Beautiful tables and progress indicators using Rich
+- **Version Control**: Track assistant configurations in git
+
+### CLI Commands
+
+```bash
+# Check connectivity
+boss-bot assistants health
+
+# List all assistants
+boss-bot assistants list --graph download_workflow
+
+# Create new assistant config
+boss-bot assistants create-config --name content-analyzer
+
+# Deploy to cloud
+boss-bot assistants sync-to assistants/content-analyzer.yaml
+
+# Backup from cloud
+boss-bot assistants sync-from --output-dir backups/
+```
+
+### Integration with AI System
+
+The assistant management system seamlessly integrates with Boss-Bot's AI features:
+
+1. **Dynamic Loading**: Deployed assistants are automatically available to Discord commands
+2. **Workflow Integration**: Assistants work within LangGraph workflows for complex tasks
+3. **Multi-Agent Coordination**: Multiple assistants can collaborate on download tasks
+4. **Hot Reloading**: Update assistants without restarting the bot
+
+### Configuration
+
+```bash
+# Required environment variables
+LANGGRAPH_DEPLOYMENT_URL=https://your-deployment.langraph.app
+LANGGRAPH_API_KEY=your-api-key-here
+LANGGRAPH_DEFAULT_GRAPH=download_workflow
+```
+
+📚 **[Complete Assistant Management Guide](langgraph-assistants.md)** - Detailed documentation with examples
+
 ## 🔜 Future Enhancements
 
 ### Planned AI Features
@@ -425,5 +476,5 @@ return traditional_processing(url)
 - [Testing Guidelines](../CLAUDE.md#testing-guidelines)
 
 **Status**: ✅ **Complete and Production Ready**
-**Last Updated**: 2025-06-25
-**Test Coverage**: 82 AI tests (100% passing)
+**Last Updated**: 2025-06-28
+**Test Coverage**: 873+ tests including AI & assistant management (100% passing)

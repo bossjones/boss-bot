@@ -254,8 +254,9 @@ class TestAssistantsCLICommands:
                 result = cli_runner.invoke(assistants_app, ["sync-to", temp_dir])
 
                 assert result.exit_code == 0
-                assert "Errors (1)" in result.stdout
-                assert "Permission denied" in result.stdout
+                clean_output = strip_ansi_codes(result.stdout)
+                assert "Errors (1)" in clean_output
+                assert "Permission denied" in clean_output
 
     def test_sync_to_command_exception(self, cli_runner):
         """Test sync-to command with exception."""
@@ -301,7 +302,8 @@ class TestAssistantsCLICommands:
             ])
 
             assert result.exit_code == 0
-            assert "Working (0 accessible)" in result.stdout
+            clean_output = strip_ansi_codes(result.stdout)
+            assert "Working (0 accessible)" in clean_output
 
     def test_health_command_failure(self, cli_runner, mock_assistant_client):
         """Test health command failure."""
@@ -516,7 +518,8 @@ class TestCLIIntegration:
 
                 result = cli_runner.invoke(assistants_app, ["sync-from", str(config_dir)])
                 assert result.exit_code == 0
-                assert "Created: 1" in result.stdout
+                clean_output = strip_ansi_codes(result.stdout)
+                assert "Created: 1" in clean_output
 
             # Step 3: List assistants (mock)
             with patch('boss_bot.cli.commands.assistants.LangGraphAssistantClient') as mock_client_class:
@@ -618,7 +621,8 @@ class TestCLIIntegration:
 
                 result = cli_runner.invoke(assistants_app, ["sync-from", str(config_dir)])
                 assert result.exit_code == 0
-                assert "Created: 3" in result.stdout
+                clean_output = strip_ansi_codes(result.stdout)
+                assert "Created: 3" in clean_output
 
 
 class TestCLIErrorHandling:

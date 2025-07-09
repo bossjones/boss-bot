@@ -23,6 +23,7 @@ from typer.testing import CliRunner
 from boss_bot.cli.commands.download import app as download_app
 from boss_bot.core.downloads.handlers.base_handler import MediaMetadata
 from boss_bot.core.env import BossSettings
+from tests.utils import strip_ansi_codes
 
 # Mock future AI agent functionality - these will be replaced with actual imports later
 class MockAgentContext:
@@ -83,10 +84,6 @@ class MockBaseAgent:
         }
 
 
-def strip_ansi_codes(text: str) -> str:
-    """Strip ANSI escape sequences from text for assertion testing."""
-    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
-    return ansi_escape.sub('', text)
 
 
 class MockStrategySelector(MockBaseAgent):

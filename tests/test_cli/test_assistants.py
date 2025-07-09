@@ -21,6 +21,7 @@ from typer.testing import CliRunner as TyperRunner
 from boss_bot.ai.assistants.client import AssistantSyncResult, LangGraphAssistantClient
 from boss_bot.ai.assistants.models import AssistantConfig, create_default_assistant_config
 from boss_bot.cli.commands.assistants import app as assistants_app
+from tests.utils import strip_ansi_codes
 
 
 # Module-level fixtures shared across all test classes
@@ -130,10 +131,11 @@ class TestAssistantsCLICommands:
                 result = cli_runner.invoke(assistants_app, ["sync-from", temp_dir])
 
                 assert result.exit_code == 0
-                assert "Created: 2" in result.stdout
-                assert "Updated: 1" in result.stdout
-                assert "Deleted: 0" in result.stdout
-                assert "All operations completed successfully" in result.stdout
+                clean_output = strip_ansi_codes(result.stdout)
+                assert "Created: 2" in clean_output
+                assert "Updated: 1" in clean_output
+                assert "Deleted: 0" in clean_output
+                assert "All operations completed successfully" in clean_output
 
     def test_sync_from_command_with_options(self, cli_runner):
         """Test sync-from command with all options."""
@@ -181,9 +183,10 @@ class TestAssistantsCLICommands:
                 result = cli_runner.invoke(assistants_app, ["sync-from", temp_dir])
 
                 assert result.exit_code == 0  # Command completes but shows errors
-                assert "Errors (2)" in result.stdout
-                assert "Connection error" in result.stdout
-                assert "Another error" in result.stdout
+                clean_output = strip_ansi_codes(result.stdout)
+                assert "Errors (2)" in clean_output
+                assert "Connection error" in clean_output
+                assert "Another error" in clean_output
 
     def test_sync_from_command_exception(self, cli_runner):
         """Test sync-from command with exception."""
@@ -194,7 +197,8 @@ class TestAssistantsCLICommands:
                 result = cli_runner.invoke(assistants_app, ["sync-from", temp_dir])
 
                 assert result.exit_code == 1
-                assert "Error during synchronization" in result.stdout
+                clean_output = strip_ansi_codes(result.stdout)
+                assert "Error during synchronization" in clean_output
 
     def test_sync_to_command_success(self, cli_runner):
         """Test successful sync-to command."""
@@ -207,8 +211,9 @@ class TestAssistantsCLICommands:
                 result = cli_runner.invoke(assistants_app, ["sync-to", temp_dir])
 
                 assert result.exit_code == 0
-                assert "Saved: 3" in result.stdout
-                assert "Export completed successfully" in result.stdout
+                clean_output = strip_ansi_codes(result.stdout)
+                assert "Saved: 3" in clean_output
+                assert "Export completed successfully" in clean_output
 
     def test_sync_to_command_with_options(self, cli_runner):
         """Test sync-to command with all options."""
@@ -275,9 +280,10 @@ class TestAssistantsCLICommands:
             result = cli_runner.invoke(assistants_app, ["health"])
 
             assert result.exit_code == 0
-            assert "LangGraph Cloud connection is healthy" in result.stdout
-            assert "https://api.langraph.com" in result.stdout
-            assert "Working (2 accessible)" in result.stdout
+            clean_output = strip_ansi_codes(result.stdout)
+            assert "LangGraph Cloud connection is healthy" in clean_output
+            assert "https://api.langraph.com" in clean_output
+            assert "Working (2 accessible)" in clean_output
 
     def test_health_command_with_options(self, cli_runner, mock_assistant_client):
         """Test health command with custom URL and key."""
@@ -657,7 +663,8 @@ class TestCLIErrorHandling:
                 result = cli_runner.invoke(assistants_app, ["sync-from", temp_dir])
 
                 assert result.exit_code == 1
-                assert "Error during synchronization" in result.stdout
+                clean_output = strip_ansi_codes(result.stdout)
+                assert "Error during synchronization" in clean_output
 
     def test_keyboard_interrupt_handling(self, cli_runner):
         """Test keyboard interrupt handling."""
@@ -771,7 +778,8 @@ class TestCLIOutputFormatting:
                 result = cli_runner.invoke(assistants_app, ["sync-from", temp_dir])
 
                 assert result.exit_code == 1
-                assert "Error during synchronization" in result.stdout
+                clean_output = strip_ansi_codes(result.stdout)
+                assert "Error during synchronization" in clean_output
                 assert "Detailed error message with context" in result.stdout
 
 

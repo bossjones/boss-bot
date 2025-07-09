@@ -65,6 +65,21 @@ Boss-Bot is an AI-powered Discord bot that enables intelligent downloading and m
 - Testing: Create isolated fixtures with appropriate scope and teardown logic
 - Async/await: Use async for all I/O operations and Discord API calls
 
+## Typer CLI Testing Patterns
+- **ANSI Code Handling**: Typer CLI output includes ANSI escape codes for colors and formatting
+- **Strip ANSI Codes**: Always use `strip_ansi_codes()` function when asserting CLI output
+- **Pattern**: Import the function and wrap `result.stdout` before assertions
+- **Example**:
+  ```python
+  from tests.utils import strip_ansi_codes
+
+  result = cli_runner.invoke(app, ["command"])
+  clean_output = strip_ansi_codes(result.stdout)
+  assert "Expected text" in clean_output
+  ```
+- **Why**: CI environments and terminal formatting can cause test failures without stripping ANSI codes
+- **Location**: The `strip_ansi_codes` function is available in `tests/utils.py`
+
 ## 🤖 AI Capabilities (✅ IMPLEMENTED)
 
 ### **Current AI Features** (Production Ready)

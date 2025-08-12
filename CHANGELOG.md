@@ -1,3 +1,45 @@
+## v0.13.0 (2025-08-12)
+
+### Feat
+
+- Complete LangGraph assistant management implementation and CLI integration
+- Implement LangGraph assistant management session and update settings
+- Enhance LangGraph assistant management and update dependencies
+- Update LangGraph configuration and dependencies
+- Update langgraph configuration and enhance session management
+- Enhance Claude workflow documentation and refine configuration details
+- Add Claude PR Assistant workflow for enhanced issue and PR management
+- Add installation script for Taplo
+- Refactor Dockerfile and enhance environment setup for Boss-Bot
+- Update Docker ignore and CLI commands for LangGraph
+- Add session management commands for development tracking
+- Update environment configuration and enhance CLI settings
+- Implement secure exception handling and enhance documentation
+- Expand MCP documentation and enhance command generation
+- Update environment configuration and enhance documentation for AI capabilities
+- Enhance Boss-Bot with AI-powered multi-agent capabilities
+- Implement DownloadWorkflow for multi-agent download coordination
+- Integrate AI agents for enhanced strategy selection and content analysis
+- Enhance AI integration with new tests and configuration updates
+- Introduce AI agents for content analysis and social media processing
+- Enhance BaseAgent with LangGraph integration and multi-agent coordination
+- Add comprehensive LangGraph agent implementation infrastructure
+- Add conventional commit message generation documentation
+- Add script for generating MCP commands from repository URLs
+- Refactor LangGraph agent architecture and enhance coordination patterns
+- Update dependencies and enhance project structure for LangGraph integration
+- Add initial database structure and Datasette commands
+- Add Datasette integration and development utilities
+- Add comprehensive LangGraph agent specification diagrams and update dependencies
+- Enhance Boss-Bot documentation with multi-agent dependencies and testing strategy
+- Add comprehensive LangGraph specification and implementation plan for Boss-Bot
+- Integrate MCP commands into Justfile and add comprehensive documentation
+- Integrate LangGraph CLI and Gen with new configuration and command files
+
+### Fix
+
+- Update documentation for clarity and consistency
+
 ## v0.12.0 (2025-06-23)
 
 ### Feat

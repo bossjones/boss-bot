@@ -1,0 +1,192 @@
+{
+  "title": "Boss-Bot Data Explorer",
+  "description": "Discord bot data and analytics dashboard for media downloads and queue management",
+  "source": "Boss-Bot Discord Bot",
+  "source_url": "https://github.com/bossjones/boss-bot",
+  "license": "MIT",
+  "license_url": "https://github.com/bossjones/boss-bot/blob/main/LICENSE",
+  "databases": {
+    "boss_bot": {
+      "title": "Boss-Bot Core Database",
+      "description": "Main database containing bot operations, downloads, and queue data",
+      "source": "Boss-Bot Discord Bot Runtime Data",
+      "tables": {
+        "downloads": {
+          "title": "Download Records",
+          "description_html": "Media download requests and their status tracking",
+          "sort_desc": "created_at",
+          "columns": {
+            "id": "Unique download identifier",
+            "url": "Source URL for media download",
+            "platform": "Platform type (twitter, reddit, youtube, instagram)",
+            "status": "Download status (pending, processing, completed, failed)",
+            "user_id": "Discord user ID who requested the download",
+            "channel_id": "Discord channel where request was made",
+            "file_path": "Local file path where media was saved",
+            "file_size": "Size of downloaded file in bytes",
+            "metadata": "JSON metadata extracted from the media source",
+            "created_at": "Timestamp when download was requested",
+            "completed_at": "Timestamp when download finished",
+            "error_message": "Error details if download failed"
+          },
+          "units": {
+            "file_size": "bytes"
+          }
+        },
+        "queue_items": {
+          "title": "Download Queue",
+          "description_html": "Active and historical queue items for download processing",
+          "sort_desc": "priority,created_at",
+          "columns": {
+            "id": "Queue item identifier",
+            "download_id": "Reference to downloads table",
+            "priority": "Processing priority (1=highest, 5=lowest)",
+            "status": "Queue status (queued, processing, completed, failed)",
+            "retry_count": "Number of retry attempts",
+            "worker_id": "ID of worker processing this item",
+            "created_at": "When item was added to queue",
+            "started_at": "When processing began",
+            "completed_at": "When processing finished"
+          }
+        },
+        "users": {
+          "title": "Bot Users",
+          "description_html": "Discord users who have interacted with the bot",
+          "label_column": "username",
+          "columns": {
+            "discord_id": "Discord user ID (primary key)",
+            "username": "Discord username",
+            "display_name": "Discord display name",
+            "total_downloads": "Total number of downloads requested",
+            "successful_downloads": "Number of successful downloads",
+            "quota_used": "Storage quota used in bytes",
+            "quota_limit": "Storage limit in bytes",
+            "first_seen": "First interaction with bot",
+            "last_seen": "Most recent activity"
+          },
+          "units": {
+            "quota_used": "bytes",
+            "quota_limit": "bytes"
+          }
+        },
+        "channels": {
+          "title": "Discord Channels",
+          "description_html": "Discord channels where the bot is active",
+          "label_column": "name",
+          "columns": {
+            "discord_id": "Discord channel ID (primary key)",
+            "name": "Channel name",
+            "guild_id": "Discord server/guild ID",
+            "guild_name": "Server/guild name",
+            "download_count": "Total downloads from this channel",
+            "is_active": "Whether bot is currently active in channel"
+          }
+        },
+        "platform_stats": {
+          "title": "Platform Statistics",
+          "description_html": "Download statistics by platform type",
+          "columns": {
+            "platform": "Platform name (twitter, reddit, youtube, instagram)",
+            "total_downloads": "Total download attempts",
+            "successful_downloads": "Successful downloads",
+            "failed_downloads": "Failed downloads",
+            "success_rate": "Success rate as percentage",
+            "avg_file_size": "Average file size in bytes",
+            "total_size": "Total data downloaded in bytes",
+            "last_updated": "When statistics were last calculated"
+          },
+          "units": {
+            "avg_file_size": "bytes",
+            "total_size": "bytes",
+            "success_rate": "percent"
+          }
+        },
+        "error_logs": {
+          "title": "Error Logs",
+          "description_html": "System errors and failures for debugging and monitoring",
+          "sort_desc": "timestamp",
+          "columns": {
+            "id": "Log entry ID",
+            "timestamp": "When error occurred",
+            "level": "Log level (ERROR, WARNING, INFO)",
+            "component": "System component that generated the error",
+            "message": "Error message",
+            "stack_trace": "Full stack trace if available",
+            "user_id": "Associated user ID if relevant",
+            "download_id": "Associated download ID if relevant"
+          }
+        }
+      }
+    },
+    "analytics": {
+      "title": "Bot Analytics",
+      "description": "Analytics and metrics database for performance monitoring",
+      "tables": {
+        "daily_stats": {
+          "title": "Daily Statistics",
+          "description_html": "Daily aggregated statistics for bot usage and performance",
+          "sort_desc": "date",
+          "columns": {
+            "date": "Date (YYYY-MM-DD)",
+            "total_downloads": "Downloads attempted this day",
+            "successful_downloads": "Successful downloads",
+            "unique_users": "Number of unique users",
+            "active_channels": "Number of active channels",
+            "avg_queue_time": "Average time in queue (seconds)",
+            "avg_download_time": "Average download time (seconds)",
+            "total_data_mb": "Total data downloaded (MB)"
+          },
+          "units": {
+            "avg_queue_time": "seconds",
+            "avg_download_time": "seconds",
+            "total_data_mb": "MB"
+          }
+        },
+        "performance_metrics": {
+          "title": "Performance Metrics",
+          "description_html": "System performance and health metrics",
+          "sort_desc": "timestamp",
+          "columns": {
+            "timestamp": "Measurement timestamp",
+            "cpu_usage": "CPU usage percentage",
+            "memory_usage": "Memory usage in MB",
+            "disk_usage": "Disk usage percentage",
+            "active_downloads": "Number of concurrent downloads",
+            "queue_size": "Current queue size",
+            "response_time_ms": "Average API response time in milliseconds"
+          },
+          "units": {
+            "cpu_usage": "percent",
+            "memory_usage": "MB",
+            "disk_usage": "percent",
+            "response_time_ms": "milliseconds"
+          }
+        }
+      }
+    }
+  },
+  "plugins": {
+    "datasette-vega": {
+      "charts": {
+        "downloads_by_platform": {
+          "title": "Downloads by Platform",
+          "db": "boss_bot",
+          "query": "SELECT platform, COUNT(*) as count FROM downloads GROUP BY platform",
+          "chart_type": "bar"
+        },
+        "daily_download_trend": {
+          "title": "Daily Download Trend",
+          "db": "analytics",
+          "query": "SELECT date, total_downloads FROM daily_stats ORDER BY date DESC LIMIT 30",
+          "chart_type": "line"
+        }
+      }
+    }
+  },
+  "extra_css_urls": [
+    "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+  ],
+  "extra_js_urls": [
+    "https://cdn.jsdelivr.net/npm/chart.js"
+  ]
+}

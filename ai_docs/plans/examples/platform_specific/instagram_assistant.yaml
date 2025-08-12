@@ -1,0 +1,56 @@
+name: "Instagram Optimized Assistant"
+description: "Specialized configuration for Instagram downloads with story handling and visual content optimization."
+graph_id: "download_workflow"
+config:
+  configurable:
+    # AI Features - Visual content analysis
+    enable_ai_strategy_selection: true
+    enable_content_analysis: true
+    ai_model: "gpt-4"  # Better for visual content understanding
+    ai_temperature: 0.5
+
+    # Download Settings - Visual content optimized
+    max_retries: 3
+    timeout_seconds: 300  # 5 minutes
+    download_quality: "best"
+    fallback_to_traditional: true
+
+    # Instagram Specific - Comprehensive visual settings
+    instagram_include_stories: true
+    instagram_include_highlights: true
+    instagram_include_videos: true
+    instagram_include_reels: true
+    instagram_include_igtv: true
+    instagram_high_quality: true
+    instagram_include_metadata: true
+    instagram_preserve_carousel_order: true
+    instagram_include_user_info: true
+    instagram_story_quality: "best"
+    instagram_video_quality: "best"
+    instagram_image_format: "jpg"
+
+    # Other platforms - Minimal
+    youtube_quality: "720p"
+    twitter_include_replies: false
+    reddit_include_comments: false
+
+    # Advanced settings - Visual focused
+    preserve_original_filenames: true
+    include_metadata_files: true
+    verify_downloads: true
+
+    # Visual content AI settings
+    analyze_image_quality: true
+    detect_content_type: true
+    aesthetic_scoring: true
+    duplicate_detection: true
+    face_detection: false  # Privacy consideration
+
+metadata:
+  version: "1.0.0"
+  author: "boss-bot-team"
+  use_case: "visual-content-archival"
+  performance_profile: "visual-optimized"
+  tags: ["instagram", "visual", "stories", "reels"]
+  created_at: "2024-01-01"
+  notes: "Optimized for Instagram visual content with story and highlight preservation."

@@ -1,0 +1,53 @@
+name: "AI Enhanced Download Assistant"
+description: "Balanced configuration with AI features enabled for smart downloads. Best for general-purpose use with intelligent content analysis."
+graph_id: "download_workflow"
+config:
+  configurable:
+    # AI Features - Enabled with balanced settings
+    enable_ai_strategy_selection: true
+    enable_content_analysis: true
+    ai_model: "gpt-3.5-turbo"  # Faster than GPT-4, still good quality
+    ai_temperature: 0.5  # Balanced creativity/consistency
+
+    # Download Settings - Balanced approach
+    max_retries: 3
+    timeout_seconds: 300  # 5 minutes
+    download_quality: "high"
+    fallback_to_traditional: true
+
+    # Platform Specific - Smart defaults
+    youtube_quality: "1080p"
+    youtube_include_subtitles: true
+    youtube_include_metadata: true
+
+    twitter_include_replies: false  # AI will decide based on content
+    twitter_include_media_variants: true
+    twitter_high_quality: true
+
+    instagram_include_stories: false  # AI will analyze if needed
+    instagram_include_highlights: false
+    instagram_include_videos: true
+    instagram_high_quality: true
+
+    reddit_include_comments: false  # AI will decide based on content quality
+    reddit_include_awards: false
+    reddit_deep_comments: false
+
+    # Advanced settings - Balanced
+    preserve_original_filenames: true
+    include_metadata_files: true
+    verify_downloads: false  # Trust AI quality assessment
+
+    # AI-specific settings
+    content_quality_threshold: 0.7
+    strategy_confidence_threshold: 0.8
+    enable_smart_filtering: true
+
+metadata:
+  version: "1.0.0"
+  author: "boss-bot-team"
+  use_case: "general-purpose"
+  performance_profile: "balanced"
+  tags: ["ai", "balanced", "smart", "general"]
+  created_at: "2024-01-01"
+  notes: "Use this assistant for most download scenarios. AI will intelligently adapt to content type and quality."

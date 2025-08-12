@@ -1,2 +1,7 @@
 # Ignore documentation examples with redacted API keys
 docs/development/fastmcp/security-guide.md:933
+ai_docs/AUGMENTCODE-SONNET4.md:generic-api-key:669
+ai_docs/AUGMENTCODE-SONNET4.md:generic-api-key:669
+ai_docs/AUGMENTCODE-SONNET4.md:discord-client-id:966
+ai_docs/AUGMENTCODE-SONNET4.md:discord-client-id:967
+ai_docs/AUGMENTCODE-SONNET4.md:discord-client-id:968

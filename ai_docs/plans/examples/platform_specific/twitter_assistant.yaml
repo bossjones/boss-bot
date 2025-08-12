@@ -1,0 +1,53 @@
+name: "Twitter/X Optimized Assistant"
+description: "Specialized configuration for Twitter/X downloads with thread handling and media optimization."
+graph_id: "download_workflow"
+config:
+  configurable:
+    # AI Features - Enabled for social media analysis
+    enable_ai_strategy_selection: true
+    enable_content_analysis: true
+    ai_model: "gpt-3.5-turbo"  # Good for text analysis
+    ai_temperature: 0.6
+
+    # Download Settings - Social media optimized
+    max_retries: 3
+    timeout_seconds: 180  # 3 minutes
+    download_quality: "high"
+    fallback_to_traditional: true
+
+    # Twitter Specific - Comprehensive settings
+    twitter_include_replies: true
+    twitter_include_retweets: false  # Original content focus
+    twitter_include_quoted_tweets: true
+    twitter_include_media_variants: true
+    twitter_high_quality: true
+    twitter_include_metadata: true
+    twitter_preserve_thread_structure: true
+    twitter_max_thread_depth: 10
+    twitter_include_user_info: true
+    twitter_media_format: "original"
+
+    # Other platforms - Minimal
+    youtube_quality: "720p"
+    instagram_include_stories: false
+    reddit_include_comments: false
+
+    # Advanced settings - Social media focused
+    preserve_original_filenames: true
+    include_metadata_files: true
+    verify_downloads: false  # Trust social media APIs
+
+    # Social media AI settings
+    analyze_thread_context: true
+    detect_viral_content: true
+    sentiment_analysis: true
+    extract_hashtags: true
+
+metadata:
+  version: "1.0.0"
+  author: "boss-bot-team"
+  use_case: "social-media-archival"
+  performance_profile: "social-optimized"
+  tags: ["twitter", "x", "threads", "social-media"]
+  created_at: "2024-01-01"
+  notes: "Optimized for Twitter/X content with thread preservation and media collection."

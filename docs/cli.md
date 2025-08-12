@@ -531,6 +531,144 @@ bossctl doctor
 bossctl download strategies
 ```
 
+## Assistant Management Commands
+
+Boss-Bot includes comprehensive LangGraph assistant management capabilities. These commands allow you to create, deploy, sync, and manage AI assistants.
+
+### Prerequisites
+
+Set these environment variables in your `.env` file:
+```bash
+LANGGRAPH_DEPLOYMENT_URL=https://your-deployment.langraph.app
+LANGGRAPH_API_KEY=your-api-key-here
+```
+
+### `assistants list`
+
+List all assistants from your LangGraph Cloud deployment.
+
+```bash
+boss-bot assistants list [OPTIONS]
+```
+
+**Options:**
+- `--limit INTEGER`: Maximum assistants to display (default: 100)
+- `--graph TEXT`: Filter by graph name
+- `--format [table|json]`: Output format (default: table)
+
+**Example:**
+```bash
+# List all assistants
+boss-bot assistants list
+
+# Filter by graph
+boss-bot assistants list --graph download_workflow --limit 10
+```
+
+### `assistants health`
+
+Check LangGraph Cloud connectivity and authentication.
+
+```bash
+boss-bot assistants health
+```
+
+**Output:**
+- ✅ "LangGraph Cloud connection is healthy"
+- ❌ Error message with troubleshooting steps
+
+### `assistants create-config`
+
+Generate a new assistant configuration YAML file.
+
+```bash
+boss-bot assistants create-config [OPTIONS]
+```
+
+**Options:**
+- `--name TEXT`: Assistant name (required)
+- `--graph TEXT`: Graph name (default: from environment)
+- `--output PATH`: Output file path (default: `assistants/{name}.yaml`)
+- `--version TEXT`: Assistant version (default: "1.0.0")
+
+**Example:**
+```bash
+# Create basic configuration
+boss-bot assistants create-config --name content-analyzer
+
+# Custom output path
+boss-bot assistants create-config --name my-assistant --output configs/assistant.yaml
+```
+
+### `assistants sync-from`
+
+Download assistant configurations from LangGraph Cloud to local YAML files.
+
+```bash
+boss-bot assistants sync-from [OPTIONS]
+```
+
+**Options:**
+- `--output-dir PATH`: Directory for YAML files (default: `assistants/`)
+- `--graph TEXT`: Filter by graph name
+- `--overwrite`: Overwrite existing files
+
+**Example:**
+```bash
+# Sync all assistants
+boss-bot assistants sync-from
+
+# Sync specific graph
+boss-bot assistants sync-from --graph download_workflow --overwrite
+```
+
+### `assistants sync-to`
+
+Deploy local YAML configurations to LangGraph Cloud.
+
+```bash
+boss-bot assistants sync-to CONFIG_PATH [OPTIONS]
+```
+
+**Arguments:**
+- `CONFIG_PATH`: Path to YAML file or directory
+
+**Options:**
+- `--dry-run`: Preview changes without deploying
+- `--update`: Update existing assistants
+- `--force`: Skip confirmation prompts
+
+**Example:**
+```bash
+# Deploy single assistant
+boss-bot assistants sync-to assistants/content-analyzer.yaml
+
+# Deploy directory with preview
+boss-bot assistants sync-to assistants/ --dry-run
+```
+
+### `assistants graphs`
+
+List available graphs from your LangGraph deployment.
+
+```bash
+boss-bot assistants graphs [OPTIONS]
+```
+
+**Options:**
+- `--format [table|json|list]`: Output format (default: table)
+
+**Example:**
+```bash
+# Show graphs table
+boss-bot assistants graphs
+
+# Simple list
+boss-bot assistants graphs --format list
+```
+
+📚 **[Complete Assistant Management Guide](langgraph-assistants.md)** - Detailed documentation with YAML schemas, workflows, and troubleshooting
+
 ### Bot Management
 ```bash
 # Start the bot

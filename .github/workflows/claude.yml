@@ -1,0 +1,230 @@
+# GitHub Actions workflow name - displayed in the Actions tab and status checks
+name: Claude PR Assistant
+
+# Event triggers - define when this workflow should run
+on:
+  # Triggered when someone creates a comment on an issue
+  issue_comment:
+    types: [created]
+  # Triggered when someone creates a comment on a pull request review (inline comments)
+  pull_request_review_comment:
+    types: [created]
+  # Triggered when an issue is opened or when someone is assigned to it
+  issues:
+    types: [opened, assigned]
+  # Triggered when a pull request review is submitted (approve/request changes/comment)
+  pull_request_review:
+    types: [submitted]
+
+# Jobs definition - each job runs in parallel by default
+jobs:
+  # Job identifier - must be unique within the workflow
+  claude-code-action:
+    # Conditional execution - only run if @claude is mentioned in the triggering event
+    # This prevents unnecessary runs and controls when Claude should respond
+    if: |
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
+      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
+    # Virtual machine type - ubuntu-latest provides a Linux environment with common tools
+    runs-on: ubuntu-latest
+    # Explicit permissions for security - principle of least privilege
+    permissions:
+      # Write access to repository contents (needed to create branches, commit files)
+      contents: write
+      # Write access to pull requests (needed to create/update PRs and comments)
+      pull-requests: write
+      # Write access to issues (needed to create/update issues and comments)
+      issues: write
+      # Write access to ID tokens (needed for OIDC authentication with external services)
+      id-token: write
+    # Sequential steps that make up this job
+    steps:
+      # First step: Download the repository code to the runner
+      - name: Checkout repository
+        # Official GitHub action for checking out repository code
+        uses: actions/checkout@v4
+        # Action-specific configuration
+        with:
+          # Shallow clone with only the latest commit for faster checkout
+          fetch-depth: 1
+
+      # Second step: Configure Git for potential commits by the action
+      - name: Configure Git
+        run: |
+          # Mark the workspace as safe for Git operations (security requirement)
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          # Set up bot identity for any commits made by Claude
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      # Third step: Execute the Claude Code action
+      - name: Run Claude PR Action
+        # Assign an ID to reference this step's outputs in later steps
+        id: claude-code-action
+        # Use Anthropic's official Claude Code action from the beta branch
+        uses: anthropics/claude-code-action@beta
+        # Action configuration - all the parameters that control Claude's behavior
+        with:
+          # Required: Anthropic API key for Claude access (stored as encrypted secret)
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Required: GitHub token for repository access (automatically provided)
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          # Optional: Maximum time limit for Claude operations (commented out - uses default)
+          # timeout_minutes: "30"
+          # Optional: Project-specific instructions to guide Claude's behavior (commented out)
+          # custom_instructions: |
+          #   This is the boss-bot project. Always read CLAUDE.md first.
+          #   Focus on the immediate success criteria.
+          #   Follow conventional commits and create focused, working code.
+          #   Always read the codebase and the documentation first.
+          # SOURCE: https://github.com/tktcorporation/vrchat-albums/blob/3777f0be3a05effa85cf60554580251264a6e54a/.github/workflows/claude.yml#L34
+          # SOURCE: https://github.com/redis-developer/agent-memory-server/blob/74f6b2c9f536c50b832fde5f907ac880e804197a/.github/workflows/claude.yml#L34
+          # Security: Whitelist of tools Claude is allowed to use (prevents unauthorized operations)
+          allowed_tools: |
+            # Basic shell commands for navigation and file operations
+            Bash,
+            Bash(cd:*),            # Change directory commands
+            Bash(cp:*),            # Copy file commands
+            Bash(find:*),          # File search commands
+            # Git operations for version control
+            Bash(git blame),       # Show line-by-line authorship
+            Bash(git branch),      # List/create/delete branches
+            Bash(git diff),        # Show changes between commits
+            Bash(git log),         # Show commit history
+            Bash(git ls-files),    # List files tracked by git
+            Bash(git reflog),      # Show reference log
+            Bash(git show),        # Show commit details
+            Bash(git stash list),  # List stashed changes
+            Bash(git status),      # Show working tree status
+            Bash(git tag),         # List/create tags
+            Bash(git:*),           # All other git commands
+            Bash(grep:*),          # Text search commands
+            # Project-specific build tools (Just task runner)
+            Bash(just check-test:*), # Run tests via Just
+            Bash(just check-type:*), # Type checking via Just
+            Bash(just ci:*),         # CI tasks via Just
+            Bash(just:*),            # All Just commands
+            # Standard Unix utilities
+            Bash(ls:*),            # List directory contents
+            Bash(make:*),          # Make build tool
+            Bash(make),            # Make without arguments
+            Bash(mv:*),            # Move/rename files
+            # Python ecosystem tools
+            Bash(pip:*),           # Python package manager
+            Bash(pytest:*),        # Python testing framework
+            Bash(python:*),        # Python interpreter
+            Bash(rg:*),            # Ripgrep (fast text search)
+            Bash(ruff:*),          # Python linter/formatter
+            Bash(sed:*),           # Stream editor
+            Bash(timeout 10 uv run:*), # UV package manager with timeout
+            Bash(tree:*),          # Directory tree display
+            Bash(uv run pytest:*), # Run pytest via UV
+            Bash(uv run:*),        # All UV run commands
+            Bash(uv:*),            # All UV commands
+            # Claude's built-in tools
+            BatchTool,             # Batch operations
+            Edit,                  # File editing
+            Glob,                  # File pattern matching
+            GlobTool,              # Advanced file globbing
+            Grep,                  # Text searching
+            GrepTool,              # Advanced text searching
+            LS,                    # Directory listing
+            # GitHub API operations via MCP (Model Context Protocol)
+            mcp__github__add_issue_comment,           # Add comments to issues
+            mcp__github__add_pull_request_review_comment, # Add PR review comments
+            mcp__github__create_branch,               # Create new branches
+            mcp__github__create_issue,                # Create new issues
+            mcp__github__create_or_update_file,       # Modify repository files
+            mcp__github__create_pull_request_review,  # Create PR reviews
+            mcp__github__create_pull_request,         # Create pull requests
+            mcp__github__create_repository,           # Create repositories
+            mcp__github__delete_file,                 # Delete files
+            mcp__github__fork_repository,             # Fork repositories
+            mcp__github__get_code_scanning_alert,     # Retrieve security alerts
+            mcp__github__get_commit,                  # Get commit details
+            mcp__github__get_file_contents,           # Read file contents
+            mcp__github__get_issue_comments,          # Get issue comments
+            mcp__github__get_issue,                   # Get issue details
+            mcp__github__get_me,                      # Get user information
+            mcp__github__get_pull_request_comments,   # Get PR comments
+            mcp__github__get_pull_request_files,      # Get PR file changes
+            mcp__github__get_pull_request_reviews,    # Get PR reviews
+            mcp__github__get_pull_request_status,     # Get PR status
+            mcp__github__get_pull_request,            # Get PR details
+            mcp__github__get_secret_scanning_alert,   # Get security scan alerts
+            mcp__github__get_tag,                     # Get tag information
+            mcp__github__list_branches,               # List repository branches
+            mcp__github__list_code_scanning_alerts,   # List security alerts
+            mcp__github__list_commits,                # List commits
+            mcp__github__list_issues,                 # List issues
+            mcp__github__list_pull_requests,          # List pull requests
+            mcp__github__list_secret_scanning_alerts, # List security scan alerts
+            mcp__github__list_tags,                   # List tags
+            mcp__github__merge_pull_request,          # Merge pull requests
+            mcp__github__push_files,                  # Push file changes
+            mcp__github__search_code,                 # Search code in repositories
+            mcp__github__search_issues,               # Search issues
+            mcp__github__search_repositories,         # Search repositories
+            mcp__github__search_users,                # Search users
+            mcp__github__update_issue_comment,        # Update issue comments
+            mcp__github__update_issue,                # Update issues
+            mcp__github__update_pull_request_branch,  # Update PR branches
+            mcp__github__update_pull_request_comment, # Update PR comments
+            mcp__github__update_pull_request,         # Update pull requests
+            # Advanced GitHub file operations
+            mcp__github_file_ops__apply_patch,        # Apply code patches
+            mcp__github_file_ops__commit_files,       # Commit multiple files
+            mcp__github_file_ops__delete_files,       # Delete multiple files
+            # Advanced editing and analysis tools
+            MultiEdit,             # Edit multiple files
+            NotebookEdit,          # Edit Jupyter notebooks
+            NotebookRead,          # Read Jupyter notebooks
+            Read,                  # Read files
+            RipgrepSearch,         # Advanced text search
+            SearchReplace,         # Find and replace operations
+            TodoRead,              # Read todo lists
+            TodoWrite,             # Write todo lists
+            View,                  # View files
+            # Web access for documentation (restricted to trusted domains)
+            WebFetch,              # General web fetch
+            WebFetch(domain:discordpy.readthedocs.io),    # Discord.py docs
+            WebFetch(domain:docs.anthropic.com),          # Anthropic docs
+            WebFetch(domain:docs.astral.sh),              # Astral (UV/Ruff) docs
+            WebFetch(domain:docs.datasette.io),           # Datasette docs
+            WebFetch(domain:docs.smith.langchain.com),    # LangSmith docs
+            WebFetch(domain:dpytest.readthedocs.io),      # Discord.py test docs
+            WebFetch(domain:github.com),                  # GitHub platform
+            WebFetch(domain:langchain-ai.github.io),      # LangChain docs
+            WebFetch(domain:modelcontextprotocol.io),     # MCP docs
+            WebFetch(domain:python.langchain.com),        # LangChain Python docs
+            Write,                 # Write files
+
+          # Optional: Specify Claude model (defaults to Claude Sonnet 4)
+          # Uncomment and modify to use a different model like Claude Opus 4
+          # model: "claude-opus-4-20250514"
+
+          # Optional: Customize the trigger phrase that activates Claude
+          # Default is @claude, but you can use custom phrases like /claude
+          # trigger_phrase: "/claude"
+
+          # Optional: Only trigger Claude when a specific user is assigned to an issue
+          # Useful for limiting Claude responses to specific team members or bots
+          # assignee_trigger: "claude-bot"
+
+          # Optional: Legacy parameter for specifying allowed tools (deprecated)
+          # Use the allowed_tools parameter above instead for better control
+          # allowed_tools: "Bash(npm install),Bash(npm run build),Bash(npm run test:*),Bash(npm run lint:*)"
+
+          # Optional: Custom instructions to guide Claude's behavior for this project
+          # These instructions help Claude understand project-specific requirements
+          # custom_instructions: |
+          #   Follow our coding standards
+          #   Ensure all new code has tests
+          #   Use TypeScript for new files
+
+          # Optional: Environment variables available to Claude during execution
+          # Useful for providing configuration without exposing sensitive data
+          # claude_env: |
+          #   NODE_ENV: test

@@ -373,3 +373,24 @@ ruff_config.toml
 notebooks/e2e_evals.ipynb
 # tests/services/cassettes/.*
 src/boss_bot/data/chroma/vectorstorage/
+src/boss_bot/bot_logger/__init__.py
+file.out
+
+# Private individual user cursor rules
+.cursor/rules/_*.mdc
+.cursor/mcp.json
+!changes/build/
+!scripts/tests/bats/helpers/lib
+bin/taplo
+
+
+# temp
+Justfile.bak
+pyproject.toml.diff
+pyproject.toml.new
+
+typingcov_cobertura/
+typingcov_txt/
+typingcov_xml/
+.downloads
+.langgraph_api/

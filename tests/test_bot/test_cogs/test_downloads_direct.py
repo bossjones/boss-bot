@@ -435,7 +435,10 @@ async def test_strategies_command_direct(
         "reddit_api": False,
         "youtube_api": True,
         "instagram_api": False,
-        "api_fallback": True
+        "api_fallback": True,
+        "ai_strategy_selection": True,
+        "ai_content_analysis": False,
+        "ai_workflow_orchestration": True
     }
     fixture_download_cog.feature_flags.get_strategy_info = mocker.Mock(return_value=mock_info)
 

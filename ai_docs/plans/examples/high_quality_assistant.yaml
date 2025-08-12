@@ -1,0 +1,48 @@
+name: "High Quality Download Assistant"
+description: "Optimized for maximum quality downloads with full AI enhancement. Best for archival purposes and when quality is more important than speed."
+graph_id: "download_workflow"
+config:
+  configurable:
+    # AI Features - All enabled for best quality analysis
+    enable_ai_strategy_selection: true
+    enable_content_analysis: true
+    ai_model: "gpt-4"
+    ai_temperature: 0.3  # Lower temperature for consistency and accuracy
+
+    # Download Settings - Optimized for quality over speed
+    max_retries: 5
+    timeout_seconds: 600  # 10 minutes for large files
+    download_quality: "best"
+    fallback_to_traditional: true
+
+    # Platform Specific - Maximum quality settings
+    youtube_quality: "4k"
+    youtube_include_subtitles: true
+    youtube_include_metadata: true
+
+    twitter_include_replies: true
+    twitter_include_media_variants: true
+    twitter_high_quality: true
+
+    instagram_include_stories: true
+    instagram_include_highlights: true
+    instagram_include_videos: true
+    instagram_high_quality: true
+
+    reddit_include_comments: true
+    reddit_include_awards: true
+    reddit_deep_comments: true
+
+    # Advanced settings
+    preserve_original_filenames: true
+    include_metadata_files: true
+    verify_downloads: true
+
+metadata:
+  version: "1.0.0"
+  author: "boss-bot-team"
+  use_case: "archival"
+  performance_profile: "quality"
+  tags: ["ai", "high-quality", "comprehensive"]
+  created_at: "2024-01-01"
+  notes: "Use this assistant when download quality and completeness are the primary concerns, regardless of time taken."

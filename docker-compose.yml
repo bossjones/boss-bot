@@ -11,7 +11,7 @@ networks:
     driver: bridge
 services:
   redis:
-    image: bitnami/redis:6.2.10
+    image: soldevelo/redis:6.2.16
     hostname: "boss-redis"
     restart: always
     environment:

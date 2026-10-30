@@ -44,7 +44,7 @@ jobs:
       # First step: Download the repository code to the runner
       - name: Checkout repository
         # Official GitHub action for checking out repository code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         # Action-specific configuration
         with:
           # Shallow clone with only the latest commit for faster checkout
